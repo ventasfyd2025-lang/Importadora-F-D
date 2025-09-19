@@ -1,0 +1,364 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUserAuth } from '@/hooks/useUserAuth';
+import { UserIcon, MapPinIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+
+export default function ProfilePage() {
+  const { currentUser, userProfile, updateUserProfile, isRegistered, loading } = useUserAuth();
+  const router = useRouter();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    address: {
+      street: '',
+      city: '',
+      region: '',
+      postalCode: ''
+    }
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!loading && !isRegistered) {
+      router.push('/login');
+      return;
+    }
+
+    if (userProfile) {
+      setFormData({
+        firstName: userProfile.firstName || '',
+        lastName: userProfile.lastName || '',
+        phone: userProfile.phone || '',
+        address: {
+          street: userProfile.address?.street || '',
+          city: userProfile.address?.city || '',
+          region: userProfile.address?.region || '',
+          postalCode: userProfile.address?.postalCode || ''
+        }
+      });
+    }
+  }, [userProfile, loading, isRegistered, router]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [addressField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage('');
+
+    try {
+      await updateUserProfile(formData);
+      setIsEditing(false);
+      setMessage('Perfil actualizado correctamente');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Error al actualizar el perfil');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (userProfile) {
+      setFormData({
+        firstName: userProfile.firstName || '',
+        lastName: userProfile.lastName || '',
+        phone: userProfile.phone || '',
+        address: {
+          street: userProfile.address?.street || '',
+          city: userProfile.address?.city || '',
+          region: userProfile.address?.region || '',
+          postalCode: userProfile.address?.postalCode || ''
+        }
+      });
+    }
+    setIsEditing(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (!isRegistered) {
+    return null; // Will redirect in useEffect
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-orange-100 p-3 rounded-full">
+                <UserIcon className="h-8 w-8 text-orange-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
+                <p className="text-gray-600">Gestiona tu información personal</p>
+              </div>
+            </div>
+            
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                Editar Perfil
+              </button>
+            ) : (
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {message && (
+            <div className={`mt-4 p-3 rounded ${
+              message.includes('Error') 
+                ? 'bg-red-50 text-red-700 border border-red-200' 
+                : 'bg-green-50 text-green-700 border border-green-200'
+            }`}>
+              {message}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Información Personal */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <UserIcon className="h-5 w-5 mr-2 text-gray-600" />
+              Información Personal
+            </h2>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{userProfile?.firstName || 'No especificado'}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Apellido
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{userProfile?.lastName || 'No especificado'}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <EnvelopeIcon className="h-4 w-4 mr-1" />
+                  Email
+                </label>
+                <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                  {userProfile?.email} (no se puede modificar)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <PhoneIcon className="h-4 w-4 mr-1" />
+                  Teléfono
+                </label>
+                {isEditing ? (
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+56 9 1234 5678"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                ) : (
+                  <p className="text-gray-900">{userProfile?.phone || 'No especificado'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Dirección */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <MapPinIcon className="h-5 w-5 mr-2 text-gray-600" />
+              Dirección
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dirección
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="address.street"
+                    value={formData.address.street}
+                    onChange={handleChange}
+                    placeholder="Calle Principal 123"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                ) : (
+                  <p className="text-gray-900">{userProfile?.address?.street || 'No especificado'}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ciudad
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="address.city"
+                      value={formData.address.city}
+                      onChange={handleChange}
+                      placeholder="Santiago"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{userProfile?.address?.city || 'No especificado'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Región
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="address.region"
+                      value={formData.address.region}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="">Seleccionar región</option>
+                      <option value="Metropolitana">Metropolitana</option>
+                      <option value="Valparaíso">Valparaíso</option>
+                      <option value="Biobío">Biobío</option>
+                      <option value="Araucanía">Araucanía</option>
+                      <option value="Los Lagos">Los Lagos</option>
+                      <option value="Antofagasta">Antofagasta</option>
+                      <option value="Coquimbo">Coquimbo</option>
+                      <option value="O'Higgins">O'Higgins</option>
+                      <option value="Maule">Maule</option>
+                      <option value="Aysén">Aysén</option>
+                      <option value="Magallanes">Magallanes</option>
+                      <option value="Tarapacá">Tarapacá</option>
+                      <option value="Atacama">Atacama</option>
+                      <option value="Los Ríos">Los Ríos</option>
+                      <option value="Arica y Parinacota">Arica y Parinacota</option>
+                      <option value="Ñuble">Ñuble</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900">{userProfile?.address?.region || 'No especificado'}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Código Postal
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="address.postalCode"
+                    value={formData.address.postalCode}
+                    onChange={handleChange}
+                    placeholder="8320000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                ) : (
+                  <p className="text-gray-900">{userProfile?.address?.postalCode || 'No especificado'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => router.push('/mis-pedidos')}
+              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-gray-700">Ver Mis Pedidos</span>
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              <span>Continuar Comprando</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

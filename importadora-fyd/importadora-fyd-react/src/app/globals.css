@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  /* Colores principales del diseño */
+  --orange-primary: #F16529;
+  --red-discount: #D64541;
+  --green-price: #28A745;
+  --blue-link: #0074D9;
+  --white-bg: #FFFFFF;
+  --gray-light: #F5F5F5;
+  --gray-border: #E0E0E0;
+  --text-dark: #333333;
+  --white-text: #FFFFFF;
+}
+
+html {
+  font-size: 18px; /* Aumentamos tamaño base */
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--white-bg);
+  color: var(--text-dark);
+  font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Better responsive scaling - mantenemos tamaños más grandes */
+@media (max-width: 640px) {
+  html {
+    font-size: 16px; /* Móvil más grande */
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 20px; /* Desktop aún más grande */
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Custom animations for popup */
+@keyframes vibrate {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-1px, 1px) rotate(-0.5deg); }
+  50% { transform: translate(1px, -1px) rotate(0.5deg); }
+  75% { transform: translate(-1px, -1px) rotate(-0.5deg); }
+  100% { transform: translate(1px, 1px) rotate(0.5deg); }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.popup-slide-in {
+  animation: slideInRight 0.3s ease-out, vibrate 0.8s ease-in-out 0.3s infinite alternate;
+}

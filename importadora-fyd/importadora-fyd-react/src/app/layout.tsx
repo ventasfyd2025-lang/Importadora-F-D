@@ -1,0 +1,44 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import CartProviderClient from "@/components/CartProviderClient";
+import ChatProvider from "@/components/ChatProvider";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Importadora F&D - Tu tienda online de confianza",
+  description: "Encuentra los mejores productos importados con ofertas especiales. Electrónicos, hogar, ropa y deportes con envío a domicilio.",
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1.0,
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="es">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <CartProviderClient>
+          {children}
+          <ChatProvider />
+        </CartProviderClient>
+      </body>
+    </html>
+  );
+}
