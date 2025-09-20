@@ -112,8 +112,8 @@ export default function MainBannerCarousel({
 
   return (
     <section className="relative w-full bg-gray-900">
-      {/* Main Carousel - Responsive heights */}
-      <div className="relative h-[250px] sm:h-[350px] md:h-[400px] lg:h-[500px] overflow-hidden">
+      {/* Main Carousel - Responsive heights optimized for mobile */}
+      <div className="relative h-[180px] sm:h-[280px] md:h-[350px] lg:h-[450px] xl:h-[500px] overflow-hidden">
         {slides.map((slide, index) => (
           <div
             key={index}

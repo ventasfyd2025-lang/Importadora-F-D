@@ -100,7 +100,7 @@ export default function HeaderClient() {
                 ) : (
                   <div className="text-xl sm:text-3xl">{logoConfig.emoji}</div>
                 )}
-                <span className="text-lg sm:text-2xl font-bold text-white hidden sm:block">{logoConfig.text}</span>
+                <span className="text-sm sm:text-lg md:text-2xl font-bold text-white block">{logoConfig.text}</span>
               </Link>
             </div>
 
