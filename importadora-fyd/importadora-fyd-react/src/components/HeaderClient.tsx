@@ -88,8 +88,16 @@ export default function HeaderClient() {
       <header className="sticky top-0 z-50 shadow-lg" style={{ backgroundColor: '#F16529' }}>
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Left side - Logo */}
+            {/* Left side - Logo + Menu button (mobile) */}
             <div className="flex items-center flex-shrink-0">
+              {/* Menu button - Mobile only, next to logo */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="md:hidden p-2 mr-1 text-white hover:text-orange-100 focus:outline-none"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
+
               <Link href="/" className="flex items-center space-x-1 sm:space-x-3">
                 {logoConfig.image ? (
                   <img 
@@ -104,8 +112,8 @@ export default function HeaderClient() {
               </Link>
             </div>
 
-            {/* Mobile: Right side with menu + cart + user */}
-            <div className="md:hidden flex items-center space-x-1">
+            {/* Mobile: Right side with cart only */}
+            <div className="md:hidden flex items-center">
               {/* Cart - Mobile */}
               <Link
                 href="/carrito"
@@ -119,14 +127,6 @@ export default function HeaderClient() {
                   </span>
                 )}
               </Link>
-
-              {/* Menu button */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 text-white hover:text-orange-100 focus:outline-none"
-              >
-                <Bars3Icon className="h-6 w-6" />
-              </button>
             </div>
 
             {/* Desktop - Categories + Search */}
@@ -254,8 +254,8 @@ export default function HeaderClient() {
               </form>
             </div>
 
-            {/* Right side - User Menu + Cart */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* Right side - User Menu + Cart - Hidden on mobile */}
+            <div className="hidden md:flex items-center space-x-1 sm:space-x-2">
               {/* User Menu */}
               <div className="relative" ref={userMenuRef}>
                 <button
