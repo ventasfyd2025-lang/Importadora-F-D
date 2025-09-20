@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   collection, 
   addDoc, 
@@ -108,7 +108,7 @@ export default function AdminChatPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const { user, authLoading } = useAdmin();
+  const { user, authLoading } = useAuth();
   
   const [order, setOrder] = useState<Order | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);

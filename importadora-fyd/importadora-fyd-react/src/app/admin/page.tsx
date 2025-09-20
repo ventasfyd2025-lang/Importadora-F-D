@@ -617,7 +617,7 @@ export default function AdminPage() {
     }).format(price);
   };
 
-  const getOrderTimeline = (order: any) => {
+  const getOrderTimeline = (order: Order) => {
     const timeline = [
       {
         status: 'pending',
@@ -659,8 +659,8 @@ export default function AdminPage() {
     return timeline.filter(item => order.status !== 'cancelled');
   };
 
-  const groupOrdersByUser = (orders: any[]) => {
-    const grouped: { [key: string]: any[] } = {};
+  const groupOrdersByUser = (orders: Order[]) => {
+    const grouped: { [key: string]: Order[] } = {};
     
     orders.forEach(order => {
       const key = `${order.customerEmail}-${order.userId}`;

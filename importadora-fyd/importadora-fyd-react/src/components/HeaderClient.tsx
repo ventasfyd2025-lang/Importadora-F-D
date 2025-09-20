@@ -6,6 +6,8 @@ import { useCart } from '@/context/CartContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useConfig } from '@/hooks/useConfig';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingCartIcon, UserIcon } from '@heroicons/react/24/outline';
 
 export default function HeaderClient() {
@@ -19,7 +21,31 @@ export default function HeaderClient() {
   const { logoConfig } = useConfig();
   const { currentUser, isRegistered, isGuest, logout } = useUserAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Escuchar mensajes no leídos para mostrar punto rojo
+  useEffect(() => {
+    if (!currentUser) {
+      setHasUnreadMessages(false);
+      return;
+    }
+
+    const messagesQuery = query(
+      collection(db, 'chat_messages'),
+      where('userId', '==', currentUser.uid || currentUser.id),
+      where('isAdmin', '==', true),
+      where('read', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      setHasUnreadMessages(snapshot.docs.length > 0);
+    }, (error) => {
+      console.error('Error listening to messages:', error);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -209,9 +235,18 @@ export default function HeaderClient() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 p-3 text-gray-300 hover:text-white hover:bg-orange-700 rounded-md transition-colors"
+                  className="relative flex items-center space-x-2 p-3 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
                 >
-                  <UserIcon className="h-6 w-6" />
+                  <div className="relative">
+                    <UserIcon className="h-6 w-6" />
+                    {/* Punto rojo elegante en esquina superior derecha del icono */}
+                    {hasUnreadMessages && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-gradient-to-r from-red-500 to-red-600 border border-white shadow-md"></span>
+                      </span>
+                    )}
+                  </div>
                   {currentUser && (
                     <span className="hidden sm:block text-sm">
                       {currentUser.firstName}
@@ -312,7 +347,7 @@ export default function HeaderClient() {
               {/* Cart */}
               <Link
                 href="/carrito"
-                className="relative p-3 text-gray-300 hover:text-white hover:bg-orange-700 rounded-md transition-colors"
+                className="relative p-3 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
               >
                 <ShoppingCartIcon className="h-8 w-8" />
                 {getTotalItems() > 0 && (

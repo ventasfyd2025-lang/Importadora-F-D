@@ -112,8 +112,8 @@ export function useUserAuth() {
       setUserProfile(profile);
       
       return userCredential.user;
-    } catch (error: any) {
-      setError(getErrorMessage(error.code));
+    } catch (error: unknown) {
+      setError(getErrorMessage((error as {code?: string}).code || 'unknown'));
       throw error;
     }
   };
@@ -123,8 +123,8 @@ export function useUserAuth() {
       setError(null);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       return userCredential.user;
-    } catch (error: any) {
-      setError(getErrorMessage(error.code));
+    } catch (error: unknown) {
+      setError(getErrorMessage((error as {code?: string}).code || 'unknown'));
       throw error;
     }
   };
@@ -134,7 +134,7 @@ export function useUserAuth() {
       await signOut(auth);
       setGuestUser(null);
       localStorage.removeItem('guestUser');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError('Error al cerrar sesión');
       throw error;
     }

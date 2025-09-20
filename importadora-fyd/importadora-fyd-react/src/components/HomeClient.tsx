@@ -1,5 +1,7 @@
 'use client';
 
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import ProductCard from '@/components/ProductCard';
 import MainBannerCarousel from '@/components/MainBannerCarousel';
 import OfferPopup from '@/components/OfferPopup';
@@ -10,11 +12,17 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSearchParams } from 'next/navigation';
 
 export default function HomeClient() {
-  const { loading, error, filterProducts, getProductsByFilter, products } = useProducts();
+  const searchParams = useSearchParams();
+  
+  // PRIORIDAD 1: Banner primero - config de banner con carga inmediata
   const { mainBannerConfig } = useConfig();
+  
+  // PRIORIDAD 2: Productos después - cargar en segundo plano
+  const { loading, error, filterProducts, getProductsByFilter, products } = useProducts();
+  
+  // PRIORIDAD 3: Otros datos al final
   const { popupConfig } = useOfferPopup();
   const { categories } = useCategories();
-  const searchParams = useSearchParams();
   
   
   const searchQuery = searchParams.get('search') || '';
@@ -66,17 +74,36 @@ export default function HomeClient() {
     );
   }
 
+  // Banner SIEMPRE visible primero - estilo PC Factory
+  const shouldShowBanner = !searchQuery && !filter;
+  
   return (
     <>
-      {/* Main Banner - Show on main page */}
-      {mainBannerConfig.active && !searchQuery && !filter && (
-        <MainBannerCarousel
-          products={products}
-          config={mainBannerConfig}
-        />
+      {/* PRIORIDAD 1: Banner aparece INMEDIATAMENTE - como PC Factory */}
+      {shouldShowBanner && (
+        <>
+          {/* Banner placeholder inmediato */}
+          {!mainBannerConfig || !mainBannerConfig.active || !mainBannerConfig.slides?.length ? (
+            <div className="relative w-full h-[400px] md:h-[500px] bg-gradient-to-br from-orange-500 via-orange-400 to-orange-600 flex items-center justify-center">
+              <div className="text-white text-center">
+                <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-2xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  Importadora F&D
+                </h1>
+                <p className="text-xl md:text-2xl font-medium drop-shadow-xl" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+                  Los mejores productos importados
+                </p>
+              </div>
+            </div>
+          ) : (
+            <MainBannerCarousel
+              products={[]} // No esperar productos, usar config únicamente
+              config={mainBannerConfig}
+            />
+          )}
+        </>
       )}
 
-      {/* Products Section */}
+      {/* PRIORIDAD 2: Productos cargan después en segundo plano */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
@@ -135,9 +162,23 @@ export default function HomeClient() {
 
           {/* Products Grid organized by categories */}
           {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Cargando productos...</span>
+            /* Skeleton elegante estilo PC Factory mientras cargan productos */
+            <div className="space-y-12">
+              <div className="animate-pulse">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="h-8 bg-gray-300 rounded w-48"></div>
+                  <div className="h-6 bg-gray-300 rounded w-20"></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-lg shadow-md p-4">
+                      <div className="h-48 bg-gray-300 rounded mb-4"></div>
+                      <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="h-6 bg-gray-300 rounded w-24"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : displayProducts.length > 0 ? (
             <>

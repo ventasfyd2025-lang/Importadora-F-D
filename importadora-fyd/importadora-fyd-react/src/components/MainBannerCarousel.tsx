@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Product } from '@/types';
 
 interface MainBannerCarouselProps {
@@ -25,31 +26,68 @@ export default function MainBannerCarousel({
 }: MainBannerCarouselProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [imagesLoaded, setImagesLoaded] = useState<Set<number>>(new Set());
   const router = useRouter();
 
-  // Create banner slides from config and products
+  // Create banner slides - INMEDIATO como PC Factory
   const createBannerSlides = () => {
-    if (products.length === 0 || !config.active) return [];
-    
-    const slides = [];
-
-    // Use config slides with specific products
-    for (let i = 0; i < config.slides.length; i++) {
-      const slide = config.slides[i];
-      const featuredProduct = products.find(p => p.id === slide.productId);
+    // CARGA INMEDIATA: usar config sin esperar productos
+    if (config?.active && config?.slides?.length) {
+      const configSlides = [];
       
-      if (featuredProduct && slide.imageUrl) {
-        slides.push({
-          featuredProduct: featuredProduct,
-          imageUrl: slide.imageUrl
-        });
+      for (let i = 0; i < config.slides.length; i++) {
+        const slide = config.slides[i];
+        
+        if (slide.imageUrl) {
+          // Producto inmediato sin esperar la lista completa
+          const featuredProduct = {
+            id: slide.productId || `banner-slide-${i}`,
+            nombre: 'Producto destacado',
+            precio: 0,
+            categoria: 'destacados',
+            stock: 1,
+            imagen: slide.imageUrl
+          };
+          
+          configSlides.push({
+            featuredProduct: featuredProduct,
+            imageUrl: slide.imageUrl
+          });
+        }
       }
+      
+      return configSlides;
     }
 
-    return slides;
+    return [];
   };
 
   const slides = createBannerSlides();
+
+  // Aggressive preload with highest priority
+  useEffect(() => {
+    if (slides.length > 0) {
+      // Preload first image with highest priority immediately
+      if (slides[0]?.imageUrl) {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = slides[0].imageUrl;
+        link.crossOrigin = 'anonymous';
+        document.head.appendChild(link);
+      }
+      
+      // Preload remaining images
+      slides.forEach((slide, index) => {
+        if (slide.imageUrl) {
+          const img = new window.Image();
+          img.onload = () => handleImageLoad(index);
+          img.loading = index === 0 ? 'eager' : 'lazy';
+          img.src = slide.imageUrl;
+        }
+      });
+    }
+  }, [slides.length]);
 
   useEffect(() => {
     if (isPlaying && slides.length > 1) {
@@ -60,11 +98,17 @@ export default function MainBannerCarousel({
     }
   }, [isPlaying, slides.length, interval]);
 
+  const handleImageLoad = (index: number) => {
+    setImagesLoaded(prev => new Set([...prev, index]));
+  };
+
   const handleProductImageClick = (productId: string) => {
     router.push(`/producto/${productId}`);
   };
 
-  if (slides.length === 0) return null;
+  if (slides.length === 0) {
+    return null;
+  }
 
   return (
     <section className="relative w-full bg-gray-900">
@@ -77,14 +121,24 @@ export default function MainBannerCarousel({
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            {/* Simple Product Image - Full Screen */}
+            {/* Optimized Product Image - Full Screen */}
             <div 
-              className="absolute inset-0 bg-cover bg-center cursor-pointer hover:scale-105 transition-transform duration-300"
-              style={{
-                backgroundImage: `url(${slide.imageUrl})`,
-              }}
+              className="absolute inset-0 cursor-pointer hover:scale-105 transition-transform duration-300"
               onClick={() => handleProductImageClick(slide.featuredProduct.id)}
-            />
+            >
+              <Image
+                src={slide.imageUrl}
+                alt={slide.featuredProduct.nombre}
+                fill
+                className="object-cover"
+                priority={index === 0} // Priority load for first image
+                quality={75} // Reducido para carga más rápida
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
+                onLoad={() => handleImageLoad(index)}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'low'}
+              />
+            </div>
           </div>
         ))}
       </div>

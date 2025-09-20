@@ -39,18 +39,16 @@ export function useConfig() {
     images: []
   });
 
-  const [mainBannerConfig, setMainBannerConfig] = useState<MainBannerConfig>({
-    active: false,
-    slides: []
-  });
+  // INICIALIZACIÓN INMEDIATA - no bloquear render
+  const [mainBannerConfig, setMainBannerConfig] = useState<MainBannerConfig | null>(null);
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Cambiado a false para render inmediato
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadConfig() {
       try {
-        setLoading(true);
+        // NO setLoading(true) - permite render inmediato
         setError(null);
 
         // Load logo configuration
