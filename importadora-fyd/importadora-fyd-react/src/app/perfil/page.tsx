@@ -111,40 +111,40 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-orange-100 p-3 rounded-full">
-                <UserIcon className="h-8 w-8 text-orange-600" />
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="bg-orange-100 p-2 sm:p-3 rounded-full">
+                <UserIcon className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
-                <p className="text-gray-600">Gestiona tu información personal</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mi Perfil</h1>
+                <p className="text-sm sm:text-base text-gray-600">Gestiona tu información personal</p>
               </div>
             </div>
             
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base"
               >
                 Editar Perfil
               </button>
             ) : (
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 text-sm sm:text-base"
                 >
                   {saving ? 'Guardando...' : 'Guardar'}
                 </button>
@@ -163,16 +163,16 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Información Personal */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <UserIcon className="h-5 w-5 mr-2 text-gray-600" />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6 flex items-center">
+              <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-gray-600" />
               Información Personal
             </h2>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nombre
@@ -183,10 +183,10 @@ export default function ProfilePage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                     />
                   ) : (
-                    <p className="text-gray-900">{userProfile?.firstName || 'No especificado'}</p>
+                    <p className="text-gray-900 text-sm sm:text-base">{userProfile?.firstName || 'No especificado'}</p>
                   )}
                 </div>
                 
@@ -200,10 +200,10 @@ export default function ProfilePage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                     />
                   ) : (
-                    <p className="text-gray-900">{userProfile?.lastName || 'No especificado'}</p>
+                    <p className="text-gray-900 text-sm sm:text-base">{userProfile?.lastName || 'No especificado'}</p>
                   )}
                 </div>
               </div>
@@ -213,7 +213,7 @@ export default function ProfilePage() {
                   <EnvelopeIcon className="h-4 w-4 mr-1" />
                   Email
                 </label>
-                <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg text-sm sm:text-base">
                   {userProfile?.email} (no se puede modificar)
                 </p>
               </div>
@@ -233,16 +233,16 @@ export default function ProfilePage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{userProfile?.phone || 'No especificado'}</p>
+                  <p className="text-gray-900 text-sm sm:text-base">{userProfile?.phone || 'No especificado'}</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Dirección */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <MapPinIcon className="h-5 w-5 mr-2 text-gray-600" />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6 flex items-center">
+              <MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-gray-600" />
               Dirección
             </h2>
 
@@ -258,14 +258,14 @@ export default function ProfilePage() {
                     value={formData.address.street}
                     onChange={handleChange}
                     placeholder="Calle Principal 123"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                   />
                 ) : (
-                  <p className="text-gray-900">{userProfile?.address?.street || 'No especificado'}</p>
+                  <p className="text-gray-900 text-sm sm:text-base">{userProfile?.address?.street || 'No especificado'}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Ciudad
@@ -277,10 +277,10 @@ export default function ProfilePage() {
                       value={formData.address.city}
                       onChange={handleChange}
                       placeholder="Santiago"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                     />
                   ) : (
-                    <p className="text-gray-900">{userProfile?.address?.city || 'No especificado'}</p>
+                    <p className="text-gray-900 text-sm sm:text-base">{userProfile?.address?.city || 'No especificado'}</p>
                   )}
                 </div>
 
@@ -293,7 +293,7 @@ export default function ProfilePage() {
                       name="address.region"
                       value={formData.address.region}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                     >
                       <option value="">Seleccionar región</option>
                       <option value="Metropolitana">Metropolitana</option>
@@ -314,7 +314,7 @@ export default function ProfilePage() {
                       <option value="Ñuble">Ñuble</option>
                     </select>
                   ) : (
-                    <p className="text-gray-900">{userProfile?.address?.region || 'No especificado'}</p>
+                    <p className="text-gray-900 text-sm sm:text-base">{userProfile?.address?.region || 'No especificado'}</p>
                   )}
                 </div>
               </div>
@@ -333,7 +333,7 @@ export default function ProfilePage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{userProfile?.address?.postalCode || 'No especificado'}</p>
+                  <p className="text-gray-900 text-sm sm:text-base">{userProfile?.address?.postalCode || 'No especificado'}</p>
                 )}
               </div>
             </div>
@@ -341,18 +341,18 @@ export default function ProfilePage() {
         </div>
 
         {/* Actions */}
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
+        <div className="mt-6 sm:mt-8 bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={() => router.push('/mis-pedidos')}
-              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
             >
               <span className="text-gray-700">Ver Mis Pedidos</span>
             </button>
             <button
               onClick={() => router.push('/')}
-              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base"
             >
               <span>Continuar Comprando</span>
             </button>
