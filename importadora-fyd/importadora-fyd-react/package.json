@@ -10,7 +10,11 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@mercadopago/sdk-react": "^1.0.6",
     "firebase": "^12.2.1",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
+    "mercadopago": "^2.9.0",
     "next": "15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0"

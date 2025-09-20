@@ -11,6 +11,7 @@ export interface Product {
   oferta?: boolean;
   activo?: boolean;
   fechaCreacion?: string;
+  envioGratis?: boolean;
 }
 
 export interface CartItem {

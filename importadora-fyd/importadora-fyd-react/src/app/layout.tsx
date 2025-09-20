@@ -31,6 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        <script src="https://sdk.mercadopago.com/js/v2" async></script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

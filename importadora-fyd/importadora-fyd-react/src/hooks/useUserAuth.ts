@@ -17,6 +17,7 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   phone?: string;
+  rut?: string;
   address?: {
     street: string;
     city: string;
@@ -32,6 +33,7 @@ export interface GuestUser {
   firstName: string;
   lastName: string;
   phone?: string;
+  rut?: string;
   address?: {
     street: string;
     city: string;

@@ -1,65 +1,62 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { seedProducts } from '@/utils/seedProducts';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, writeBatch } from 'firebase/firestore';
 
 export default function SeedPage() {
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('idle'); // idle, loading, success, error
 
-  const handleSeed = async () => {
-    setLoading(true);
-    setMessage('');
-    
-    const result = await seedProducts();
-    
-    if (result.success) {
-      setMessage('✅ Productos agregados exitosamente!');
-    } else {
-      setMessage(`❌ Error: ${result.error}`);
+  const updateProducts = async () => {
+    setStatus('loading');
+    try {
+      const productsCollection = collection(db, 'products');
+      const productsSnapshot = await getDocs(productsCollection);
+      
+      if (productsSnapshot.empty) {
+        setStatus('error');
+        console.error("No products found to update.");
+        return;
+      }
+
+      const batch = writeBatch(db);
+
+      productsSnapshot.forEach(doc => {
+        const productRef = doc.ref;
+        batch.update(productRef, { 
+          precio: 500,
+          envioGratis: true
+        });
+      });
+
+      await batch.commit();
+      setStatus('success');
+
+    } catch (error) {
+      console.error("Error updating products: ", error);
+      setStatus('error');
     }
-    
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            🌱 Poblar Base de Datos
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Haz clic en el botón para agregar productos de prueba a Firebase
-          </p>
-          
-          <button
-            onClick={handleSeed}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Agregando productos...' : 'Agregar Productos de Prueba'}
-          </button>
-          
-          {message && (
-            <div className={`mt-4 p-3 rounded-md ${
-              message.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-            }`}>
-              {message}
-            </div>
-          )}
-          
-          <div className="mt-6">
-            <Link 
-              href="/" 
-              className="text-blue-600 hover:text-blue-700 text-sm"
-            >
-              ← Volver al inicio
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="container mx-auto p-4 text-center">
+      <h1 className="text-2xl font-bold mb-4">Actualización de Productos</h1>
+      <p className="mb-4">Haz clic en el botón para actualizar todos los productos a un precio de 500 y con envío gratis.</p>
+      
+      <button 
+        onClick={updateProducts}
+        disabled={status === 'loading'}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-400"
+      >
+        {status === 'loading' ? 'Actualizando...' : 'Actualizar Productos'}
+      </button>
+
+      {status === 'success' && (
+        <p className="text-green-500 mt-4">¡Productos actualizados correctamente!</p>
+      )}
+      {status === 'error' && (
+        <p className="text-red-500 mt-4">Hubo un error al actualizar los productos. Revisa la consola.</p>
+      )}
     </div>
   );
 }

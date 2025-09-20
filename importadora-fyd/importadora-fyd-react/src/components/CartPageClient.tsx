@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useMercadoPago } from '@/hooks/useMercadoPago';
+import MercadoPagoWallet from '@/components/MercadoPagoWallet';
 import { MinusIcon, PlusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -12,6 +14,7 @@ import { db } from '@/lib/firebase';
 export default function CartPageClient() {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
   const { currentUser, userProfile, isRegistered } = useUserAuth();
+  const { createPreference, redirectToCheckout, loading: mpLoading, error: mpError } = useMercadoPago();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderCompleted, setOrderCompleted] = useState(false);
@@ -19,9 +22,12 @@ export default function CartPageClient() {
     name: '',
     email: '',
     phone: '',
+    rut: '',
     address: ''
   });
-  const [paymentMethod, setPaymentMethod] = useState('transferencia');
+  const [paymentMethod, setPaymentMethod] = useState('mercadopago');
+  const [useEmbeddedCheckout, setUseEmbeddedCheckout] = useState(false);
+  const [currentPreferenceId, setCurrentPreferenceId] = useState<string | null>(null);
 
   // Auto-populate user data when logged in
   useEffect(() => {
@@ -30,6 +36,7 @@ export default function CartPageClient() {
         name: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
         email: userProfile.email || currentUser?.email || '',
         phone: userProfile.phone || '',
+        rut: userProfile.rut || '',
         address: userProfile.address ? 
           `${userProfile.address.street || ''}, ${userProfile.address.city || ''}, ${userProfile.address.region || ''} ${userProfile.address.postalCode || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '') 
           : ''
@@ -40,6 +47,7 @@ export default function CartPageClient() {
         name: '',
         email: currentUser.email || '',
         phone: '',
+        rut: '',
         address: ''
       });
     }
@@ -69,51 +77,114 @@ export default function CartPageClient() {
       name: (formData.get('name') as string) || checkoutData.name,
       email: (formData.get('email') as string) || checkoutData.email,
       phone: (formData.get('phone') as string) || checkoutData.phone,
+      rut: (formData.get('rut') as string) || checkoutData.rut,
       address: (formData.get('address') as string) || checkoutData.address
     };
 
-    const orderData = {
-      customerName: finalData.name,
-      customerEmail: finalData.email,
-      customerPhone: finalData.phone,
-      shippingAddress: finalData.address,
-      userId: currentUser?.uid || finalData.email, // For linking with chat
-      paymentMethod: paymentMethod,
-      items: items.map(item => ({
-        productId: item.productId,
-        nombre: item.nombre,
-        precio: item.precio,
-        cantidad: item.cantidad,
-        imagen: item.imagen
-      })),
-      total: getTotalPrice() + 10000, // Adding shipping cost
-      status: 'pending' as const,
-      createdAt: new Date()
-    };
-
     try {
+      // Crear orden en Firebase primero
+      const orderData = {
+        customerName: finalData.name,
+        customerEmail: finalData.email,
+        customerPhone: finalData.phone,
+        shippingAddress: finalData.address,
+        userId: currentUser?.uid || finalData.email,
+        paymentMethod: paymentMethod,
+        items: items.map(item => ({
+          productId: item.productId,
+          nombre: item.nombre,
+          precio: item.precio,
+          cantidad: item.cantidad,
+          imagen: item.imagen
+        })),
+        total: getTotalPrice() + 0, // Removing shipping cost for testing
+        status: 'pending' as const,
+        createdAt: new Date()
+      };
+
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
       
-      // Crear mensaje de bienvenida automático
-      const paymentMessage = paymentMethod === 'transferencia' 
-        ? '\n\n💰 Método de pago: Transferencia Bancaria\n📱 Te enviaremos los datos bancarios por WhatsApp para completar el pago.'
-        : '\n\n💰 Método de pago: MercadoPago\n💳 Te contactaremos para procesar el pago con tarjeta.';
-      
-      await addDoc(collection(db, 'chat_messages'), {
-        orderId: orderRef.id,
-        userId: currentUser?.uid || finalData.email,
-        userEmail: finalData.email,
-        userName: 'Sistema FyD',
-        message: `¡Hola ${finalData.name}! 👋\n\nTu pedido #${orderRef.id.slice(-8).toUpperCase()} ha sido recibido exitosamente.${paymentMessage}\n\n✅ Revisaremos tu pedido y te confirmaremos todos los detalles pronto.\n💬 Si tienes alguna pregunta, no dudes en escribirnos aquí.\n📦 Te mantendremos informado sobre el estado de tu pedido.\n\n¡Gracias por elegir FyD!`,
-        isAdmin: true,
-        timestamp: new Date(),
-        read: false
-      });
-      
-      clearCart();
-      setOrderCompleted(true);
-      setIsCheckoutOpen(false);
+      if (paymentMethod === 'mercadopago') {
+        // Procesar con MercadoPago
+        const mpItems = items.map(item => ({
+          id: item.productId,
+          title: item.nombre,
+          description: `${item.nombre} - Producto de Importadora F&D`,
+          quantity: item.cantidad,
+          price: item.precio,
+          image: item.imagen
+        }));
+
+        // Envío gratis para testing
+        // mpItems.push({
+        //   id: 'shipping',
+        //   title: 'Envío',
+        //   description: 'Costo de envío',
+        //   quantity: 1,
+        //   price: 10000,
+        //   image: ''
+        // });
+
+        const userInfo = {
+          firstName: finalData.name.split(' ')[0] || '',
+          lastName: finalData.name.split(' ').slice(1).join(' ') || '',
+          email: finalData.email,
+          phone: finalData.phone,
+          rut: finalData.rut,
+          address: {
+            street: finalData.address,
+            postalCode: ''
+          }
+        };
+
+        console.log('🔄 Creando preferencia con datos:', { mpItems, userInfo, orderId: orderRef.id });
+        
+        const preference = await createPreference({
+          items: mpItems,
+          userInfo,
+          orderId: orderRef.id
+        });
+
+        console.log('📝 Respuesta de preferencia:', preference);
+
+        if (preference) {
+          console.log('🎯 Preference ID:', preference.preferenceId);
+          
+          if (useEmbeddedCheckout) {
+            // Usar Wallet Brick embebido
+            console.log('🎯 Iniciando Wallet Brick embebido');
+            setCurrentPreferenceId(preference.preferenceId);
+          } else {
+            // Usar redirección tradicional
+            const initPoint = preference.initPoint || preference.sandboxInitPoint;
+            console.log('🔗 Redirigiendo a:', initPoint);
+            redirectToCheckout(initPoint);
+          }
+        } else {
+          console.error('❌ No se recibió preferencia');
+          throw new Error('Error creando preferencia de pago');
+        }
+      } else {
+        // Método tradicional (transferencia)
+        const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n📱 Te enviaremos los datos bancarios por WhatsApp para completar el pago.';
+        
+        await addDoc(collection(db, 'chat_messages'), {
+          orderId: orderRef.id,
+          userId: currentUser?.uid || finalData.email,
+          userEmail: finalData.email,
+          userName: 'Sistema FyD',
+          message: `¡Hola ${finalData.name}! 👋\n\nTu pedido #${orderRef.id.slice(-8).toUpperCase()} ha sido recibido exitosamente.${paymentMessage}\n\n✅ Revisaremos tu pedido y te confirmaremos todos los detalles pronto.\n💬 Si tienes alguna pregunta, no dudes en escribirnos aquí.\n📦 Te mantendremos informado sobre el estado de tu pedido.\n\n¡Gracias por elegir FyD!`,
+          isAdmin: true,
+          timestamp: new Date(),
+          read: false
+        });
+        
+        clearCart();
+        setOrderCompleted(true);
+        setIsCheckoutOpen(false);
+      }
     } catch (error) {
+      console.error('Error procesando pedido:', error);
       alert('Error al procesar el pedido. Inténtalo de nuevo.');
     } finally {
       setIsProcessing(false);
@@ -380,6 +451,22 @@ export default function CartPageClient() {
                 </div>
 
                 <div>
+                  <label htmlFor="rut" className="block text-sm font-medium text-gray-700 mb-1">
+                    RUT *
+                  </label>
+                  <input
+                    type="text"
+                    id="rut"
+                    name="rut"
+                    required
+                    value={checkoutData.rut}
+                    onChange={(e) => setCheckoutData({...checkoutData, rut: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="12.345.678-9"
+                  />
+                </div>
+
+                <div>
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                     Dirección de envío *
                   </label>
@@ -404,6 +491,49 @@ export default function CartPageClient() {
                       <input
                         type="radio"
                         name="paymentMethod"
+                        value="mercadopago"
+                        checked={paymentMethod === 'mercadopago'}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">💳</span>
+                        <div>
+                          <div className="font-medium text-gray-900">MercadoPago</div>
+                          <div className="text-sm text-gray-500">Paga con tarjeta, efectivo o transferencia - Hasta 12 cuotas</div>
+                        </div>
+                      </div>
+                    </label>
+                    
+                    {paymentMethod === 'mercadopago' && (
+                      <div className="ml-8 mt-2 space-y-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="checkoutType"
+                            checked={!useEmbeddedCheckout}
+                            onChange={() => setUseEmbeddedCheckout(false)}
+                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">🔗 Redirección a MercadoPago (recomendado)</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="checkoutType"
+                            checked={useEmbeddedCheckout}
+                            onChange={() => setUseEmbeddedCheckout(true)}
+                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">🎯 Checkout embebido (experimental)</span>
+                        </label>
+                      </div>
+                    )}
+                    
+                    <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
                         value="transferencia"
                         checked={paymentMethod === 'transferencia'}
                         onChange={(e) => setPaymentMethod(e.target.value)}
@@ -418,32 +548,21 @@ export default function CartPageClient() {
                       </div>
                     </label>
 
-                    <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="mercadopago"
-                        checked={paymentMethod === 'mercadopago'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">💳</span>
-                        <div>
-                          <div className="font-medium text-gray-900">MercadoPago</div>
-                          <div className="text-sm text-gray-500">Paga con tarjeta de crédito/débito</div>
-                        </div>
-                      </div>
-                    </label>
                   </div>
                 </div>
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between text-lg font-semibold mb-4">
                     <span>Total a pagar:</span>
-                    <span>{formatPrice(getTotalPrice() + 10000)}</span>
+                    <span>{formatPrice(getTotalPrice() + 0)}</span>
                   </div>
                 </div>
+
+                {mpError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    Error: {mpError}
+                  </div>
+                )}
 
                 <div className="flex space-x-3">
                   <button
@@ -455,13 +574,66 @@ export default function CartPageClient() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isProcessing}
+                    disabled={isProcessing || mpLoading}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isProcessing ? 'Procesando...' : 'Confirmar pedido'}
+                    {isProcessing || mpLoading ? 'Procesando...' : paymentMethod === 'mercadopago' ? 'Pagar con MercadoPago' : 'Confirmar pedido'}
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MercadoPago Wallet Brick Modal */}
+      {currentPreferenceId && useEmbeddedCheckout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">Finalizar Pago</h3>
+                <button
+                  onClick={() => {
+                    setCurrentPreferenceId(null);
+                    setIsProcessing(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="sr-only">Cerrar</span>
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <div className="flex justify-between text-lg font-semibold">
+                  <span>Total:</span>
+                  <span>{formatPrice(getTotalPrice())}</span>
+                </div>
+              </div>
+
+              <MercadoPagoWallet
+                preferenceId={currentPreferenceId}
+                onSuccess={(data) => {
+                  console.log('✅ Pago exitoso:', data);
+                  clearCart();
+                  setOrderCompleted(true);
+                  setCurrentPreferenceId(null);
+                  setIsCheckoutOpen(false);
+                }}
+                onError={(error) => {
+                  console.error('❌ Error en pago:', error);
+                  setCurrentPreferenceId(null);
+                  setIsProcessing(false);
+                }}
+                onReady={() => {
+                  console.log('🎯 Wallet listo para usar');
+                  setIsProcessing(false);
+                }}
+                className="mt-4"
+              />
             </div>
           </div>
         </div>

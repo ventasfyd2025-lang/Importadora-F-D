@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
@@ -25,6 +25,7 @@ import { db, storage } from '@/lib/firebase';
 import { Product, Order } from '@/types';
 import { cleanAllData } from '@/scripts/cleanData';
 import AdminChatPopup from '@/components/AdminChatPopup';
+import SalesReportsComponent from '@/components/SalesReportsComponent';
 import { 
   ClockIcon,
   CheckCircleIcon,
@@ -282,38 +283,7 @@ export default function AdminPage() {
     }
   }, [user, authLoading, products]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Recalculate stats when orders change
-  useEffect(() => {
-    calculateStats();
-  }, [orders, products]);
-
-  const loadOrders = () => {
-    try {
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const ordersData: Order[] = [];
-        
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          ordersData.push({
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
-          } as Order);
-        });
-
-        setOrders(ordersData);
-      });
-
-      return unsubscribe;
-    } catch (error) {
-      console.error('Error loading orders:', error);
-    }
-  };
-
-  const calculateStats = () => {
+  const calculateStats = useCallback(() => {
     const totalProducts = products.length;
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
@@ -325,7 +295,12 @@ export default function AdminPage() {
       totalRevenue,
       pendingOrders
     });
-  };
+  }, [orders, products]);
+
+  // Recalculate stats when orders change
+  useEffect(() => {
+    calculateStats();
+  }, [calculateStats]);
 
   // Chat functions
   const loadChatMessages = () => {
@@ -394,9 +369,11 @@ export default function AdminPage() {
         imageUrl = await getDownloadURL(snapshot.ref);
       }
 
-      const productData = {
+      const priceAsNumber = parseInt(String(productForm.precio).replace(/\D/g, ''), 10) || 0;
+
+      const productData: Partial<Product> = {
         nombre: productForm.nombre,
-        precio: Number(productForm.precio),
+        precio: priceAsNumber,
         descripcion: productForm.descripcion,
         stock: Number(productForm.stock),
         categoria: productForm.categoria,
@@ -404,26 +381,32 @@ export default function AdminPage() {
         oferta: productForm.oferta,
         imagen: imageUrl,
         activo: true,
-        fechaCreacion: productForm.id ? undefined : new Date().toISOString()
       };
+
+      if (!productForm.id) {
+        productData.fechaCreacion = new Date().toISOString();
+      }
 
       if (productForm.id) {
         // Update existing product
         try {
-          await updateDoc(doc(db, 'products', productForm.id), productData);
-        } catch (firebaseError) {
-          // If Firebase fails, just update locally (for mock products)
+          const productRef = doc(db, 'products', productForm.id);
+          await updateDoc(productRef, productData);
+          alert('Producto actualizado exitosamente');
+          refetch(); // Refetch to show the new data
+        } catch (error) {
+          console.error("Error updating product in Firestore: ", error);
+          alert(`Error al actualizar el producto: ${error.message}`);
         }
-        
-        // Always update local state (for mock products)
-        updateProduct(productForm.id, productData);
-        alert('Producto actualizado exitosamente');
       } else {
         // Create new product
         try {
           await addDoc(collection(db, 'products'), productData);
-        } catch (firebaseError) {
-          // If Firebase fails, just update locally
+          alert('Producto creado exitosamente');
+          refetch(); // Refetch to get the new product with its ID
+        } catch (error) {
+          console.error("Error creating product in Firestore: ", error);
+          alert(`Error al crear el producto: ${error.message}`);
         }
       }
 
@@ -441,7 +424,6 @@ export default function AdminPage() {
       });
       setProductImage(null);
       setShowProductModal(false);
-      refetch();
     } catch (error) {
       alert('Error al guardar el producto');
     } finally {
@@ -467,15 +449,7 @@ export default function AdminPage() {
   const deleteProduct = async (id: string) => {
     if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
       try {
-        // Try Firebase first
-        try {
-          await deleteDoc(doc(db, 'products', id));
-        } catch (firebaseError) {
-          // If Firebase fails, it might be a mock product - just remove locally
-        }
-        
-        // Always remove from local state (for mock products)
-        removeProduct(id);
+        await removeProduct(id);
         setSelectedProducts(prev => prev.filter(pId => pId !== id));
         alert('Producto eliminado exitosamente');
       } catch (error) {
@@ -492,13 +466,7 @@ export default function AdminPage() {
     
     if (confirm(`¿Estás seguro de que deseas eliminar ${selectedProducts.length} producto(s)?`)) {
       try {
-        // Try Firebase for each product (silently fail if not in Firebase)
-        await Promise.allSettled(
-          selectedProducts.map(id => deleteDoc(doc(db, 'products', id)))
-        );
-        
-        // Always remove from local state (for mock products)
-        removeProducts(selectedProducts);
+        await removeProducts(selectedProducts);
         setSelectedProducts([]);
         alert(`${selectedProducts.length} producto(s) eliminado(s) exitosamente`);
       } catch (error) {
@@ -552,6 +520,17 @@ export default function AdminPage() {
       if (statusMessage && order.customerEmail) {
         // Try to find user by email to send notification
         await sendOrderNotification(orderId, order.customerEmail, order.customerName, statusMessage);
+      }
+
+      // Regenerar reporte diario cuando se entrega un pedido
+      if (newStatus === 'delivered') {
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const { generateDailyReportUtil } = await import('@/utils/reportUtils');
+          await generateDailyReportUtil(today);
+        } catch (error) {
+          console.error('Error regenerando reporte diario:', error);
+        }
       }
       
       loadOrders();
@@ -699,12 +678,7 @@ export default function AdminPage() {
                 Email
               </label>
               <input
-                type="email"
-                id="email"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
               />
             </div>
 
@@ -718,7 +692,7 @@ export default function AdminPage() {
                 value={loginForm.password}
                 onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
               />
             </div>
 
@@ -772,6 +746,7 @@ export default function AdminPage() {
               { id: 'dashboard', name: 'Dashboard', icon: '📊' },
               { id: 'products', name: 'Productos', icon: '📦' },
               { id: 'orders', name: 'Pedidos', icon: '🛒', badge: unreadCount > 0 ? unreadCount : null },
+              { id: 'reports', name: 'Reportes', icon: '📈' },
               { id: 'main-banner', name: 'Banner Principal', icon: '🏆' },
               { id: 'popup', name: 'Popup Ofertas', icon: '🎉' },
               { id: 'logo', name: 'Logo', icon: '🏪' },
@@ -946,7 +921,7 @@ export default function AdminPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
               >
                 <option value="all">Todas las categorías</option>
                 {categories.map((category) => (
@@ -1118,6 +1093,11 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <SalesReportsComponent />
         )}
 
         {/* Orders Tab */}
@@ -1345,7 +1325,7 @@ export default function AdminPage() {
                               newFiles[index] = file;
                               setBannerFiles(newFiles);
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                           />
                           {image && (
                             <div className="mt-2">
@@ -1487,7 +1467,7 @@ export default function AdminPage() {
                     value={popupForm.title}
                     onChange={(e) => setPopupForm({ ...popupForm, title: e.target.value })}
                     placeholder="¡Oferta Especial!"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
                 
@@ -1500,7 +1480,7 @@ export default function AdminPage() {
                     onChange={(e) => setPopupForm({ ...popupForm, description: e.target.value })}
                     placeholder="Descripción de la oferta..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
                 
@@ -1514,7 +1494,7 @@ export default function AdminPage() {
                     value={popupForm.buttonText}
                     onChange={(e) => setPopupForm({ ...popupForm, buttonText: e.target.value })}
                     placeholder="Ver Ofertas"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
                 
@@ -1527,11 +1507,7 @@ export default function AdminPage() {
                   {/* Search box */}
                   <div className="mb-3">
                     <input
-                      type="text"
-                      placeholder="Buscar productos..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                     />
                   </div>
                   
@@ -1606,9 +1582,8 @@ export default function AdminPage() {
                                 });
                               }
                             }}
-                            className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as any}
-                          />
-                          <label htmlFor={`popup-product-${product.id}`} className="ml-2 flex-1 text-sm text-gray-900 cursor-pointer">
+                            className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                                              />                          <label htmlFor={`popup-product-${product.id}`} className="ml-2 flex-1 text-sm text-gray-900 cursor-pointer">
                             <div className="flex items-center space-x-2">
                               {((product.images && product.images.length > 0) || product.imagen) && (
                                 <img 
@@ -1647,7 +1622,7 @@ export default function AdminPage() {
                     id="popup-active"
                     checked={popupForm.active}
                     onChange={(e) => setPopupForm({ ...popupForm, active: e.target.checked })}
-                    className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as any}
+                    className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                   <label htmlFor="popup-active" className="ml-2 block text-sm text-gray-900">
                     Popup Activo
@@ -1718,7 +1693,7 @@ export default function AdminPage() {
                     id="mainBannerActive"
                     checked={mainBannerForm.active}
                     onChange={(e) => setMainBannerForm({ ...mainBannerForm, active: e.target.checked })}
-                    className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as any}
+                    className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                   <label htmlFor="mainBannerActive" className="ml-2 block text-sm font-medium text-gray-700">
                     Banner Principal Activo
@@ -1811,7 +1786,7 @@ export default function AdminPage() {
                             onChange={(e) => {
                               setBannerSearchTerms({ ...bannerSearchTerms, [index]: e.target.value });
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 mb-2"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 mb-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                           />
                           
                           <select
@@ -1923,9 +1898,7 @@ export default function AdminPage() {
                   </label>
                   <input
                     type="text"
-                    value={logoForm.text}
-                    onChange={(e) => setLogoForm({ ...logoForm, text: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
                 
@@ -1938,7 +1911,7 @@ export default function AdminPage() {
                     value={logoForm.emoji}
                     onChange={(e) => setLogoForm({ ...logoForm, emoji: e.target.value })}
                     placeholder="🏪"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
                 
@@ -1950,7 +1923,7 @@ export default function AdminPage() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Si subes una imagen, se usará en lugar del emoji
@@ -2387,15 +2360,12 @@ export default function AdminPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Precio ($) *
                       </label>
-                      <input
-                        type="number"
-                        value={productForm.precio}
-                        onChange={(e) => setProductForm({ ...productForm, precio: Number(e.target.value) })}
-                        required
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
-                      />
+                  <input
+                    type="text"
+                    value={productForm.precio}
+                    onChange={(e) => setProductForm({ ...productForm, precio: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                  />
                     </div>
 
                     <div>
