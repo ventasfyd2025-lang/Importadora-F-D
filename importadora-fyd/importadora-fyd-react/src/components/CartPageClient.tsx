@@ -328,14 +328,14 @@ export default function CartPageClient() {
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-medium">{formatPrice(getTotalPrice())}</span>
               </div>
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span className="text-gray-600">Envío</span>
                 <span className="font-medium">{formatPrice(10000)}</span>
-              </div>
+              </div> */}
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>{formatPrice(getTotalPrice() + 10000)}</span>
+                  <span>{formatPrice(getTotalPrice())}</span>
                 </div>
               </div>
             </div>
