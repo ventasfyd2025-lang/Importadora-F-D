@@ -112,8 +112,8 @@ export default function MainBannerCarousel({
 
   return (
     <section className="relative w-full bg-gray-900">
-      {/* Main Carousel */}
-      <div className="relative h-[400px] md:h-[500px] overflow-hidden">
+      {/* Main Carousel - Responsive heights */}
+      <div className="relative h-[250px] sm:h-[350px] md:h-[400px] lg:h-[500px] overflow-hidden">
         {slides.map((slide, index) => (
           <div
             key={index}
@@ -143,31 +143,31 @@ export default function MainBannerCarousel({
         ))}
       </div>
 
-      {/* Controls */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-4">
+      {/* Controls - Responsive */}
+      <div className="absolute bottom-3 sm:bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 sm:space-x-4">
         {/* Play/Pause Button */}
         <button
           onClick={() => setIsPlaying(!isPlaying)}
-          className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 rounded-full hover:bg-opacity-30 transition-all duration-300"
+          className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-1.5 sm:p-2 rounded-full hover:bg-opacity-30 transition-all duration-300"
         >
           {isPlaying ? (
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           ) : (
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
             </svg>
           )}
         </button>
 
         {/* Slide Indicators */}
-        <div className="flex space-x-2">
+        <div className="flex space-x-1 sm:space-x-2">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                 index === currentSlide
                   ? 'bg-white scale-125'
                   : 'bg-white bg-opacity-50 hover:bg-opacity-75'
@@ -177,22 +177,22 @@ export default function MainBannerCarousel({
         </div>
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows - Hidden on mobile, visible on larger screens */}
       {slides.length > 1 && (
         <>
           <button
             onClick={() => setCurrentSlide(currentSlide === 0 ? slides.length - 1 : currentSlide - 1)}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-opacity-30 transition-all duration-300"
+            className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-opacity-30 transition-all duration-300"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <button
             onClick={() => setCurrentSlide(currentSlide === slides.length - 1 ? 0 : currentSlide + 1)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-opacity-30 transition-all duration-300"
+            className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-opacity-30 transition-all duration-300"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>

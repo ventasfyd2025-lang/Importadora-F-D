@@ -82,14 +82,14 @@ export default function HomeClient() {
       {/* PRIORIDAD 1: Banner aparece INMEDIATAMENTE - como PC Factory */}
       {shouldShowBanner && (
         <>
-          {/* Banner placeholder inmediato */}
+          {/* Banner placeholder inmediato - Totalmente responsive */}
           {!mainBannerConfig || !mainBannerConfig.active || !mainBannerConfig.slides?.length ? (
-            <div className="relative w-full h-[400px] md:h-[500px] bg-gradient-to-br from-orange-500 via-orange-400 to-orange-600 flex items-center justify-center">
-              <div className="text-white text-center">
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-2xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+            <div className="relative w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[500px] bg-gradient-to-br from-orange-500 via-orange-400 to-orange-600 flex items-center justify-center">
+              <div className="text-white text-center px-4 sm:px-6 lg:px-8">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-2 sm:mb-4 drop-shadow-2xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                   Importadora F&D
                 </h1>
-                <p className="text-xl md:text-2xl font-medium drop-shadow-xl" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-medium drop-shadow-xl" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
                   Los mejores productos importados
                 </p>
               </div>
@@ -104,18 +104,18 @@ export default function HomeClient() {
       )}
 
       {/* PRIORIDAD 2: Productos cargan después en segundo plano */}
-      <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-10">
-            <h2 className="text-3xl font-bold mb-6 sm:mb-0" style={{ color: '#333333' }}>
+          {/* Section Header - Responsive */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 lg:mb-10">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-0" style={{ color: '#333333' }}>
               {getPageTitle()}
             </h2>
             
-            {/* Filter Controls */}
-            <div className="flex flex-wrap gap-4">
+            {/* Filter Controls - Responsive */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
               <select 
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2"
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2"
                 style={{ focusRingColor: '#F16529' }}
                 value={sortBy}
                 onChange={(e) => {
@@ -137,7 +137,7 @@ export default function HomeClient() {
               </select>
 
               <select 
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2"
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2"
                 style={{ focusRingColor: '#F16529' }}
                 value={priceRange}
                 onChange={(e) => {
@@ -162,19 +162,19 @@ export default function HomeClient() {
 
           {/* Products Grid organized by categories */}
           {loading ? (
-            /* Skeleton elegante estilo PC Factory mientras cargan productos */
-            <div className="space-y-12">
+            /* Skeleton elegante estilo PC Factory mientras cargan productos - Responsive */
+            <div className="space-y-8 sm:space-y-12">
               <div className="animate-pulse">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="h-8 bg-gray-300 rounded w-48"></div>
-                  <div className="h-6 bg-gray-300 rounded w-20"></div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8">
+                  <div className="h-6 sm:h-8 bg-gray-300 rounded w-32 sm:w-48 mb-2 sm:mb-0"></div>
+                  <div className="h-5 sm:h-6 bg-gray-300 rounded w-16 sm:w-20"></div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-lg shadow-md p-4">
-                      <div className="h-48 bg-gray-300 rounded mb-4"></div>
-                      <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                      <div className="h-6 bg-gray-300 rounded w-24"></div>
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-lg shadow-md p-3 sm:p-4">
+                      <div className="h-32 sm:h-40 lg:h-48 bg-gray-300 rounded mb-3 sm:mb-4"></div>
+                      <div className="h-3 sm:h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="h-4 sm:h-6 bg-gray-300 rounded w-16 sm:w-24"></div>
                     </div>
                   ))}
                 </div>
@@ -219,8 +219,8 @@ export default function HomeClient() {
                           </svg>
                         </button>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {groupedByCategory[categoryName].slice(0, 8).map((product) => (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                        {groupedByCategory[categoryName].slice(0, 10).map((product) => (
                           <ProductCard key={product.id} product={product} />
                         ))}
                       </div>
@@ -231,7 +231,7 @@ export default function HomeClient() {
               ) : (
                 /* Standard grid for filtered results */
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
                     {displayProducts.map((product) => (
                       <ProductCard key={product.id} product={product} />
                     ))}

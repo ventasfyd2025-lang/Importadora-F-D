@@ -144,18 +144,18 @@ export default function CartPageClient() {
 
   if (items.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         <div className="text-center">
-          <ShoppingBagIcon className="h-24 w-24 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <ShoppingBagIcon className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
             Tu carrito está vacío
           </h1>
-          <p className="text-gray-600 mb-8">
+          <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
             ¡Agrega algunos productos para comenzar tu compra!
           </p>
           <Link
             href="/"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white font-medium text-sm sm:text-base rounded-md hover:bg-blue-700 transition-colors"
           >
             Explorar productos
           </Link>
@@ -165,58 +165,60 @@ export default function CartPageClient() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 lg:mb-8">
         Carrito de compras
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center space-x-4">
+            <div key={item.id} className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                 {/* Product Image */}
-                <div className="relative w-20 h-20 flex-shrink-0">
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                   {item.imagen ? (
                     <Image
                       src={item.imagen}
                       alt={item.nombre}
                       fill
                       className="object-cover rounded-md"
-                      sizes="80px"
+                      sizes="(max-width: 640px) 64px, 80px"
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                      <span className="text-gray-400 text-2xl">📦</span>
+                      <span className="text-gray-400 text-lg sm:text-2xl">📦</span>
                     </div>
                   )}
                 </div>
 
-                {/* Product Info */}
-                <div className="flex-1 min-w-0">
+                {/* Product Info - Takes full width on mobile */}
+                <div className="flex-1 min-w-0 sm:order-none order-1">
                   <Link
                     href={`/producto/${item.productId}`}
-                    className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                    className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors block"
                   >
                     {item.nombre}
                   </Link>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600 mt-1 text-sm sm:text-base">
                     {formatPrice(item.precio)} c/u
                   </p>
                 </div>
 
-                {/* Quantity Controls */}
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleQuantityChange(item.productId, item.cantidad - 1)}
-                    className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-                  >
-                    <MinusIcon className="h-4 w-4" />
-                  </button>
-                  <span className="px-3 py-1 min-w-[50px] text-center font-medium">
-                    {item.cantidad}
-                  </span>
+                {/* Mobile controls wrapper */}
+                <div className="flex sm:flex-col sm:space-y-2 items-center justify-between w-full sm:w-auto sm:order-none order-2">
+                  {/* Quantity Controls */}
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <button
+                      onClick={() => handleQuantityChange(item.productId, item.cantidad - 1)}
+                      className="p-1 sm:p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                    >
+                      <MinusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </button>
+                    <span className="px-2 py-1 sm:px-3 sm:py-1 min-w-[40px] sm:min-w-[50px] text-center font-medium text-sm sm:text-base">
+                      {item.cantidad}
+                    </span>
                   <button
                     onClick={() => handleQuantityChange(item.productId, item.cantidad + 1)}
                     className="p-1 rounded-md hover:bg-gray-100 transition-colors"

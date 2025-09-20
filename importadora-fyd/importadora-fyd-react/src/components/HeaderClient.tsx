@@ -86,26 +86,36 @@ export default function HeaderClient() {
   return (
     <>
       <header className="sticky top-0 z-50 shadow-lg" style={{ backgroundColor: '#F16529' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Left side - Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-3">
+            <div className="flex items-center flex-shrink-0">
+              <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
                 {logoConfig.image ? (
                   <img 
                     src={logoConfig.image} 
                     alt={logoConfig.text}
-                    className="h-12 w-12 object-cover rounded"
+                    className="h-8 w-8 sm:h-12 sm:w-12 object-cover rounded"
                   />
                 ) : (
-                  <div className="text-3xl">{logoConfig.emoji}</div>
+                  <div className="text-xl sm:text-3xl">{logoConfig.emoji}</div>
                 )}
-                <span className="text-2xl font-bold text-white">{logoConfig.text}</span>
+                <span className="text-lg sm:text-2xl font-bold text-white hidden sm:block">{logoConfig.text}</span>
               </Link>
             </div>
 
-            {/* Center - Categories + Search */}
-            <div className="flex items-center space-x-4 flex-1 max-w-4xl mx-8">
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-white hover:text-orange-100 focus:outline-none"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Desktop - Categories + Search */}
+            <div className="hidden md:flex items-center space-x-2 lg:space-x-4 flex-1 max-w-4xl mx-4 lg:mx-8">
               {/* Categories Menu */}
               <div className="relative" ref={categoriesDropdownRef}>
                 <button
@@ -230,25 +240,25 @@ export default function HeaderClient() {
             </div>
 
             {/* Right side - User Menu + Cart */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               {/* User Menu */}
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="relative flex items-center space-x-2 p-3 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
+                  className="relative flex items-center space-x-1 sm:space-x-2 p-2 sm:p-3 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
                 >
                   <div className="relative">
-                    <UserIcon className="h-6 w-6" />
+                    <UserIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                     {/* Punto rojo elegante en esquina superior derecha del icono */}
                     {hasUnreadMessages && (
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-gradient-to-r from-red-500 to-red-600 border border-white shadow-md"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-gradient-to-r from-red-500 to-red-600 border border-white shadow-md"></span>
                       </span>
                     )}
                   </div>
                   {currentUser && (
-                    <span className="hidden sm:block text-sm">
+                    <span className="hidden lg:block text-sm">
                       {currentUser.firstName}
                       {isGuest && <span className="text-xs ml-1">(Invitado)</span>}
                     </span>
@@ -347,11 +357,11 @@ export default function HeaderClient() {
               {/* Cart */}
               <Link
                 href="/carrito"
-                className="relative p-3 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
+                className="relative p-2 sm:p-3 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
               >
-                <ShoppingCartIcon className="h-8 w-8" />
+                <ShoppingCartIcon className="h-6 w-6 sm:h-8 sm:w-8" />
                 {getTotalItems() > 0 && (
-                  <span className="absolute -top-1 -right-1 text-white text-sm rounded-full h-6 w-6 flex items-center justify-center font-bold"
+                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 text-white text-xs sm:text-sm rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center font-bold"
                         style={{ backgroundColor: '#D64541' }}>
                     {getTotalItems()}
                   </span>
@@ -359,6 +369,74 @@ export default function HeaderClient() {
               </Link>
             </div>
           </div>
+
+          {/* Mobile Menu */}
+          {isMenuOpen && (
+            <div className="md:hidden border-t border-orange-600">
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                {/* Mobile Search */}
+                <form onSubmit={handleSearch} className="flex mb-3">
+                  <input
+                    type="text"
+                    placeholder="Buscar productos..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-2 text-white rounded-r-lg hover:opacity-90"
+                    style={{ backgroundColor: '#F16529' }}
+                  >
+                    <MagnifyingGlassIcon className="h-4 w-4" />
+                  </button>
+                </form>
+
+                {/* Mobile Categories */}
+                <div className="space-y-1">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.id}
+                      href={category.id === 'all' ? '/' : `/?category=${category.id}`}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                    >
+                      <span className="text-lg">{category.icon || '📦'}</span>
+                      <span className="font-medium">{category.name}</span>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Mobile Special Sections */}
+                <div className="pt-2 border-t border-orange-600 space-y-1">
+                  <Link
+                    href="/?filter=ofertas"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                  >
+                    <span className="text-lg">🔥</span>
+                    <span className="font-medium">Ofertas</span>
+                  </Link>
+                  <Link
+                    href="/?filter=nuevos"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                  >
+                    <span className="text-lg">✨</span>
+                    <span className="font-medium">Nuevos</span>
+                  </Link>
+                  <Link
+                    href="/?filter=popular"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                  >
+                    <span className="text-lg">⭐</span>
+                    <span className="font-medium">Más vendidos</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 

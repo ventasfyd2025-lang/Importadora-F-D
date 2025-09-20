@@ -74,7 +74,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 group border-2 flex flex-col h-full" 
          style={{ borderColor: '#E0E0E0' }}>
       <Link href={`/producto/${product.id}`}>
-        <div className="relative h-72">
+        <div className="relative h-40 sm:h-48 md:h-56 lg:h-64 xl:h-72">
           {(product.imagen || (product.images && product.images[0])) ? (
             <Image
               src={product.imagen || (product.images && product.images[0]) || ''}
@@ -89,11 +89,11 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
-          {/* Etiqueta de oferta en esquina */}
+          {/* Etiqueta de oferta en esquina - Responsive */}
           {product.oferta && (
-            <div className="absolute top-3 left-3">
+            <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
               <span 
-                className="text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg"
+                className="text-white text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full shadow-lg"
                 style={{ backgroundColor: '#D64541' }}
               >
                 OFERTA
@@ -102,8 +102,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
           
           {product.nuevo && (
-            <div className="absolute top-3 right-3">
-              <span className="text-white text-sm font-bold px-3 py-1 rounded-full" style={{ backgroundColor: '#28A745' }}>
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+              <span className="text-white text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full" style={{ backgroundColor: '#28A745' }}>
                 NUEVO
               </span>
             </div>
@@ -119,9 +119,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </Link>
 
-      <div className="p-6 flex flex-col flex-grow">
+      <div className="p-3 sm:p-4 lg:p-6 flex flex-col flex-grow">
         <Link href={`/producto/${product.id}`}>
-          <h3 className="text-xl font-semibold mb-4 line-clamp-2 hover:opacity-80 transition-opacity text-left"
+          <h3 className="text-sm sm:text-base lg:text-lg xl:text-xl font-semibold mb-2 sm:mb-3 lg:mb-4 line-clamp-2 hover:opacity-80 transition-opacity text-left"
               style={{ color: '#333333' }}>
 {product.nombre || product.name || 'Producto sin nombre'}
           </h3>
@@ -129,30 +129,30 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="flex-grow">
           {(product.descripcion || product.description) && (
-            <p className="text-gray-600 text-lg mb-5 line-clamp-2 text-left">
+            <p className="text-gray-600 text-xs sm:text-sm lg:text-base mb-2 sm:mb-3 lg:mb-5 line-clamp-2 text-left hidden sm:block">
               {product.descripcion || product.description}
             </p>
           )}
 
-          <div className="mb-5 text-left">
+          <div className="mb-3 sm:mb-4 lg:mb-5 text-left">
             {/* Precio tachado si hay oferta */}
             {originalPrice && (
-              <div className="text-xl line-through font-medium mb-2" style={{ color: '#D64541' }}>
+              <div className="text-sm sm:text-base lg:text-xl line-through font-medium mb-1 sm:mb-2" style={{ color: '#D64541' }}>
                 {formatPrice(originalPrice)}
               </div>
             )}
             
             {/* Precio final */}
-            <div className="text-3xl font-bold mb-2" style={{ color: '#28A745' }}>
+            <div className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold mb-1 sm:mb-2" style={{ color: '#28A745' }}>
               {formatPrice(currentPrice)}
             </div>
             
-            <div className="text-base text-gray-600">
+            <div className="text-xs sm:text-sm lg:text-base text-gray-600">
               IVA incluido
             </div>
             
             {product.stock <= 5 && product.stock > 0 && (
-              <p className="text-base mt-3" style={{ color: '#D64541' }}>
+              <p className="text-xs sm:text-sm lg:text-base mt-2 sm:mt-3" style={{ color: '#D64541' }}>
                 ¡Últimas {product.stock} unidades!
               </p>
             )}
@@ -163,15 +163,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.stock > 0 ? (
             <button
               onClick={handleAddToCart}
-              className="w-full py-4 px-5 rounded-lg font-bold text-lg text-white transition-all duration-200 flex items-center justify-center gap-3 hover:opacity-90 hover:scale-105 shadow-lg"
+              className="w-full py-2 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-5 rounded-lg font-bold text-xs sm:text-sm lg:text-lg text-white transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 lg:gap-3 hover:opacity-90 hover:scale-105 shadow-lg"
               style={{ backgroundColor: '#F16529' }}
             >
-              🛒 Agregar al Carrito
+              <span className="text-sm sm:text-base lg:text-lg">🛒</span>
+              <span className="hidden sm:inline">Agregar al Carrito</span>
+              <span className="sm:hidden">Agregar</span>
             </button>
           ) : (
             <button
               disabled
-              className="w-full py-4 px-5 rounded-lg font-bold text-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+              className="w-full py-2 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-5 rounded-lg font-bold text-xs sm:text-sm lg:text-lg bg-gray-300 text-gray-500 cursor-not-allowed"
             >
               Sin Stock
             </button>
