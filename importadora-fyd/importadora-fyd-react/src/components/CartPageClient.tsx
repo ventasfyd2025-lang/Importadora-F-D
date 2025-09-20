@@ -225,20 +225,21 @@ export default function CartPageClient() {
                     >
                       <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
-                </div>
+                  </div>
 
-                {/* Item Total */}
-                <div className="text-lg font-semibold text-gray-900 min-w-[100px] text-right">
-                  {formatPrice(item.precio * item.cantidad)}
-                </div>
+                  {/* Item Total */}
+                  <div className="text-lg font-semibold text-gray-900 min-w-[100px] text-right">
+                    {formatPrice(item.precio * item.cantidad)}
+                  </div>
 
-                {/* Remove Button */}
-                <button
-                  onClick={() => removeItem(item.productId)}
-                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </button>
+                  {/* Remove Button */}
+                  <button
+                    onClick={() => removeItem(item.productId)}
+                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
