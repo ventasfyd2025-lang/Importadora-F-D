@@ -90,7 +90,7 @@ export default function HeaderClient() {
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Left side - Logo */}
             <div className="flex items-center flex-shrink-0">
-              <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
+              <Link href="/" className="flex items-center space-x-1 sm:space-x-3">
                 {logoConfig.image ? (
                   <img 
                     src={logoConfig.image} 
@@ -104,8 +104,23 @@ export default function HeaderClient() {
               </Link>
             </div>
 
-            {/* Mobile menu button */}
-            <div className="md:hidden">
+            {/* Mobile: Right side with menu + cart + user */}
+            <div className="md:hidden flex items-center space-x-1">
+              {/* Cart - Mobile */}
+              <Link
+                href="/carrito"
+                className="relative p-2 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
+              >
+                <ShoppingCartIcon className="h-6 w-6" />
+                {getTotalItems() > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
+                        style={{ backgroundColor: '#D64541' }}>
+                    {getTotalItems()}
+                  </span>
+                )}
+              </Link>
+
+              {/* Menu button */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2 text-white hover:text-orange-100 focus:outline-none"
@@ -433,6 +448,76 @@ export default function HeaderClient() {
                     <span className="text-lg">⭐</span>
                     <span className="font-medium">Más vendidos</span>
                   </Link>
+                </div>
+
+                {/* Mobile User Section */}
+                <div className="pt-2 border-t border-orange-600 space-y-1">
+                  {currentUser ? (
+                    <>
+                      <div className="px-3 py-2">
+                        <p className="text-white font-medium text-sm">
+                          {currentUser.firstName} {currentUser.lastName}
+                          {isGuest && <span className="text-xs text-orange-200 block">Invitado</span>}
+                        </p>
+                        <p className="text-orange-200 text-xs">{currentUser.email}</p>
+                      </div>
+                      
+                      <Link
+                        href="/perfil"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                      >
+                        <UserIcon className="h-5 w-5" />
+                        <span className="font-medium">Mi Perfil</span>
+                        {hasUnreadMessages && (
+                          <span className="flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                          </span>
+                        )}
+                      </Link>
+                      
+                      <Link
+                        href="/mis-pedidos"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                      >
+                        <span className="text-lg">📦</span>
+                        <span className="font-medium">Mis Pedidos</span>
+                      </Link>
+                      
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsMenuOpen(false);
+                        }}
+                        className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md w-full text-left"
+                      >
+                        <span className="text-lg">🚪</span>
+                        <span className="font-medium">Cerrar Sesión</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                      >
+                        <UserIcon className="h-5 w-5" />
+                        <span className="font-medium">Iniciar Sesión</span>
+                      </Link>
+                      
+                      <Link
+                        href="/registro"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                      >
+                        <span className="text-lg">📝</span>
+                        <span className="font-medium">Registrarse</span>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
