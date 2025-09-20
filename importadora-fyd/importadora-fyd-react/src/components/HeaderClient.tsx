@@ -112,8 +112,22 @@ export default function HeaderClient() {
               </Link>
             </div>
 
-            {/* Mobile: Right side with cart only */}
-            <div className="md:hidden flex items-center">
+            {/* Mobile: Right side with user + cart */}
+            <div className="md:hidden flex items-center space-x-1">
+              {/* User - Mobile */}
+              <Link
+                href="/perfil"
+                className="relative p-2 text-white hover:text-orange-100 hover:bg-orange-700 rounded-md transition-colors"
+              >
+                <UserIcon className="h-6 w-6" />
+                {hasUnreadMessages && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                )}
+              </Link>
+
               {/* Cart - Mobile */}
               <Link
                 href="/carrito"
@@ -407,18 +421,54 @@ export default function HeaderClient() {
                   </button>
                 </form>
 
-                {/* Mobile Categories */}
+                {/* Mobile Categories with Subcategories */}
                 <div className="space-y-1">
                   {categories.map((category) => (
-                    <Link
-                      key={category.id}
-                      href={category.id === 'all' ? '/' : `/?category=${category.id}`}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
-                    >
-                      <span className="text-lg">{category.icon || '📦'}</span>
-                      <span className="font-medium">{category.name}</span>
-                    </Link>
+                    <div key={category.id}>
+                      {/* Main Category */}
+                      {category.subcategorias && category.subcategorias.length > 0 ? (
+                        <button
+                          onClick={() => toggleCategoryExpansion(category.id)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg">{category.icon || '📦'}</span>
+                            <span className="font-medium">{category.name}</span>
+                          </div>
+                          <span className="text-white">
+                            {expandedCategories.has(category.id) ? '−' : '+'}
+                          </span>
+                        </button>
+                      ) : (
+                        <Link
+                          href={category.id === 'all' ? '/' : `/?category=${category.id}`}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-orange-600 rounded-md"
+                        >
+                          <span className="text-lg">{category.icon || '📦'}</span>
+                          <span className="font-medium">{category.name}</span>
+                        </Link>
+                      )}
+                      
+                      {/* Subcategories */}
+                      {category.subcategorias && category.subcategorias.length > 0 && expandedCategories.has(category.id) && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {category.subcategorias
+                            .filter(sub => sub.activa)
+                            .map((subcategoria) => (
+                            <Link
+                              key={subcategoria.id}
+                              href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
+                              onClick={() => setIsMenuOpen(false)}
+                              className="flex items-center space-x-2 px-3 py-2 text-orange-200 hover:bg-orange-600 rounded-md text-sm"
+                            >
+                              <span>•</span>
+                              <span>{subcategoria.nombre}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
 
