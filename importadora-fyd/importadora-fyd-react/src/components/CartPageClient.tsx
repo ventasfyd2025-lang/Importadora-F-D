@@ -219,12 +219,12 @@ export default function CartPageClient() {
                     <span className="px-2 py-1 sm:px-3 sm:py-1 min-w-[40px] sm:min-w-[50px] text-center font-medium text-sm sm:text-base">
                       {item.cantidad}
                     </span>
-                  <button
-                    onClick={() => handleQuantityChange(item.productId, item.cantidad + 1)}
-                    className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                  </button>
+                    <button
+                      onClick={() => handleQuantityChange(item.productId, item.cantidad + 1)}
+                      className="p-1 sm:p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                    >
+                      <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </button>
                 </div>
 
                 {/* Item Total */}
