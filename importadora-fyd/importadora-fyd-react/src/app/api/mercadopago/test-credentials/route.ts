@@ -1,32 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { auth } from '@/lib/firebase-admin';
-
-async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return false;
-    }
-    
-    const token = authHeader.substring(7);
-    const decodedToken = await auth.verifyIdToken(token);
-    
-    return decodedToken.admin === true;
-  } catch (error) {
-    console.error('Error verificando token admin:', error);
-    return false;
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticación de admin
-    const isAdmin = await verifyAdminAuth(request);
-    if (!isAdmin) {
+    // Por seguridad, este endpoint está deshabilitado en producción
+    if (process.env.NODE_ENV === 'production') {
       return NextResponse.json({
-        error: 'Acceso no autorizado. Solo administradores pueden acceder a este endpoint.'
-      }, { status: 401 });
+        error: 'Endpoint no disponible en producción por seguridad.'
+      }, { status: 403 });
     }
     
     // Verificar que las variables de entorno estén configuradas
