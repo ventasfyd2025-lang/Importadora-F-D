@@ -1,0 +1,685 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
+import { useCategories } from '@/hooks/useCategories';
+import { useConfig } from '@/hooks/useConfig';
+import { useUserAuth } from '@/hooks/useUserAuth';
+import { useI18n } from '@/context/I18nContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { 
+  Bars3Icon, 
+  MagnifyingGlassIcon, 
+  ShoppingCartIcon, 
+  UserIcon, 
+  XMarkIcon 
+} from '@heroicons/react/24/outline';
+
+export default function UnifiedHeader() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [isDesktopCategoriesOpen, setIsDesktopCategoriesOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [categoriesLoadTimeout, setCategoriesLoadTimeout] = useState(false);
+  
+  const desktopCategoriesRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  const { getTotalItems } = useCart();
+  const { categories } = useCategories();
+
+  // Debug categories loading
+  useEffect(() => {
+    console.log('UnifiedHeader: Categories updated:', categories);
+  }, [categories]);
+  const { logoConfig } = useConfig();
+  const { currentUser, isRegistered, isGuest, logout } = useUserAuth();
+  const { t } = useI18n();
+
+  // Escuchar mensajes no leídos
+  useEffect(() => {
+    if (!currentUser) {
+      setHasUnreadMessages(false);
+      return;
+    }
+
+    const messagesQuery = query(
+      collection(db, 'chat_messages'),
+      where('userId', '==', currentUser.uid || currentUser.id),
+      where('isAdmin', '==', true),
+      where('read', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      setHasUnreadMessages(snapshot.docs.length > 0);
+    }, (error) => {
+      console.error('Error listening to messages:', error);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (desktopCategoriesRef.current && !desktopCategoriesRef.current.contains(event.target as Node)) {
+        setIsDesktopCategoriesOpen(false);
+        setExpandedCategories(new Set());
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+        setIsDesktopCategoriesOpen(false);
+        setIsUserMenuOpen(false);
+        setExpandedCategories(new Set());
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false);
+      } else {
+        setIsDesktopCategoriesOpen(false);
+        setExpandedCategories(new Set());
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Set timeout for categories loading
+  useEffect(() => {
+    if (isMobileMenuOpen && categories.length === 0) {
+      const timeout = setTimeout(() => {
+        setCategoriesLoadTimeout(true);
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    } else {
+      setCategoriesLoadTimeout(false);
+    }
+  }, [isMobileMenuOpen, categories.length]);
+
+  const toggleCategoryExpansion = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/?search=${encodeURIComponent(searchQuery)}`;
+    }
+  };
+
+  const handleCategoryNavigate = () => {
+    setIsMobileMenuOpen(false);
+    setIsDesktopCategoriesOpen(false);
+    setExpandedCategories(new Set());
+  };
+
+  const renderLogoBadge = () => {
+    if (logoConfig.image) {
+      return (
+        <img
+          src={logoConfig.image}
+          alt={logoConfig.text}
+          className="rounded-full object-cover shadow-sm"
+          style={{ height: '50px', width: '50px' }}
+        />
+      );
+    }
+
+    const fallbackText = logoConfig.emoji || logoConfig.text?.slice(0, 2)?.toUpperCase() || 'F&D';
+
+    return (
+      <span
+        className="flex items-center justify-center rounded-full font-semibold text-white shadow-sm"
+        style={{ height: '50px', width: '50px', fontSize: '1.2rem', backgroundColor: '#D95D22' }}
+      >
+        {fallbackText}
+      </span>
+    );
+  };
+
+  return (
+    <>
+      <header className="fixed inset-x-0 top-0 z-50 shadow-xl">
+        <div className="relative">
+          {/* Top Banner */}
+          <div className="text-[11px] uppercase tracking-[0.32em] text-white bg-gradient-to-r from-[#D95D22] to-[#E67E22]">
+            <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
+              <span className="font-medium">{t('header.welcome')}</span>
+              <div className="hidden gap-6 text-[11px] font-semibold sm:flex">
+                <span className="flex items-center gap-2 text-white/95 hover:text-white transition-colors">
+                  <span aria-hidden className="text-sm">🚚</span>
+                  {t('header.shipping')}
+                </span>
+                <span className="flex items-center gap-2 text-white/95 hover:text-white transition-colors">
+                  <span aria-hidden className="text-sm">🏬</span>
+                  {t('header.pickup')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Header */}
+          <div className="text-white backdrop-blur-sm" style={{ background: 'linear-gradient(to right, #D95D22, #E67E22)' }}>
+            <div className="mx-auto flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
+            
+            {/* Logo + Hamburger */}
+            <div className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-3" aria-label={logoConfig.text || 'Importadora F&D'}>
+                {renderLogoBadge()}
+                <div className="flex flex-col">
+                  <span className="text-lg font-semibold">{logoConfig.text || 'Importadora F&D'}</span>
+                  <span className="text-[11px] uppercase tracking-[0.28em] text-white/80">
+                    Tu tienda de confianza
+                  </span>
+                </div>
+              </Link>
+              
+              {/* Hamburger Menu Button - Prominente */}
+              <button
+                onClick={() => {
+                  console.log('UnifiedHeader: Hamburger clicked, current state:', isMobileMenuOpen);
+                  console.log('UnifiedHeader: Categories available:', categories.length);
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                  setIsDesktopCategoriesOpen(false);
+                  if (isMobileMenuOpen) {
+                    setExpandedCategories(new Set());
+                  }
+                }}
+                className="lg:hidden p-3 ml-3 rounded-xl hover:bg-white/30 transition-all duration-300 border-2 border-white/40 bg-white/20 shadow-lg hover:shadow-xl hover:scale-105 backdrop-blur-sm z-50"
+                aria-label="Menú de categorías"
+              >
+                {isMobileMenuOpen ? (
+                  <XMarkIcon className="h-7 w-7 text-white font-bold" />
+                ) : (
+                  <Bars3Icon className="h-7 w-7 text-white font-bold" />
+                )}
+              </button>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex flex-1 items-center max-w-3xl mx-8 gap-4">
+              <div className="relative" ref={desktopCategoriesRef}>
+                <button
+                  onClick={() => {
+                    setIsDesktopCategoriesOpen(!isDesktopCategoriesOpen);
+                    if (!isDesktopCategoriesOpen) {
+                      setExpandedCategories(new Set());
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-white/50 bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors duration-200 shadow-sm backdrop-blur-sm"
+                  aria-haspopup="true"
+                  aria-expanded={isDesktopCategoriesOpen}
+                >
+                  <Bars3Icon className="h-5 w-5" />
+                  <span>Categorías</span>
+                </button>
+
+                {isDesktopCategoriesOpen && (
+                  <div className="absolute left-0 top-full mt-3 w-[420px] rounded-2xl border border-orange-100 bg-white/95 shadow-[0_15px_45px_rgba(217,93,34,0.25)] backdrop-blur-sm z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-orange-50 to-white border-b border-orange-100">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-orange-600">
+                        <span className="text-base">🏷️</span>
+                        Todas las categorías
+                      </span>
+                      <span className="text-xs font-medium text-orange-500/70">{categories.length} disponibles</span>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto px-4 py-4 space-y-3">
+                      {categories.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#F16529' }}></div>
+                          <span className="mt-3 text-sm text-gray-600">
+                            {categoriesLoadTimeout ? 'Error al cargar categorías' : 'Cargando categorías...'}
+                          </span>
+                          {categoriesLoadTimeout && (
+                            <button
+                              onClick={() => window.location.reload()}
+                              className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                            >
+                              Reintentar
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {categories.map((category) => (
+                            <div key={category.id}>
+                              {category.subcategorias && category.subcategorias.length > 0 ? (
+                                <button
+                                  onClick={() => toggleCategoryExpansion(category.id)}
+                                  className="w-full group block text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <span className="text-lg">{category.icon || '📦'}</span>
+                                      <span>{category.name}</span>
+                                    </div>
+                                    <span className="text-orange-500">
+                                      {expandedCategories.has(category.id) ? '−' : '+'}
+                                    </span>
+                                  </div>
+                                </button>
+                              ) : (
+                                <Link
+                                  href={category.id === 'all' ? '/' : `/?category=${category.id}`}
+                                  onClick={() => handleCategoryNavigate()}
+                                  className="group block w-full text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <span className="text-lg">{category.icon || '📦'}</span>
+                                      <span>{category.name}</span>
+                                    </div>
+                                    <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                                  </div>
+                                </Link>
+                              )}
+
+                              {category.subcategorias && category.subcategorias.length > 0 && expandedCategories.has(category.id) && (
+                                <div className="ml-5 mt-2 space-y-1">
+                                  {category.subcategorias
+                                    .filter(sub => sub.activa)
+                                    .map((subcategoria) => (
+                                    <Link
+                                      key={subcategoria.id}
+                                      href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
+                                      onClick={() => handleCategoryNavigate()}
+                                      className="group block w-full text-left px-5 py-3 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                          <span>•</span>
+                                          <span>{subcategoria.nombre}</span>
+                                        </div>
+                                        <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                                      </div>
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+
+                          <div className="pt-4 border-t border-gray-200 space-y-2">
+                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2">Secciones especiales</div>
+
+                            <Link
+                              href="/?filter=ofertas"
+                              onClick={() => handleCategoryNavigate()}
+                              className="group block w-full text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-lg">🔥</span>
+                                  <span>Ofertas</span>
+                                </div>
+                                <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                              </div>
+                            </Link>
+
+                            <Link
+                              href="/?filter=nuevos"
+                              onClick={() => handleCategoryNavigate()}
+                              className="group block w-full text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-lg">✨</span>
+                                  <span>Nuevos</span>
+                                </div>
+                                <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                              </div>
+                            </Link>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={handleSearch} className="flex w-full">
+                <input
+                  type="text"
+                  placeholder="Buscar productos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm border-2 border-white/50 rounded-l-lg bg-white/10 text-white placeholder:text-white/70 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-transparent"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-white rounded-r-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  style={{ backgroundColor: '#D95D22' }}
+                >
+                  <MagnifyingGlassIcon className="h-5 w-5" />
+                </button>
+              </form>
+            </div>
+
+            {/* Right Side - User + Cart */}
+            <div className="flex items-center gap-2">
+              
+              {/* User Menu - Desktop */}
+              <div className="hidden lg:block relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="relative flex items-center space-x-2 p-3 text-white hover:text-orange-100 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <div className="relative">
+                    <UserIcon className="h-6 w-6" />
+                    {hasUnreadMessages && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-white"></span>
+                      </span>
+                    )}
+                  </div>
+                  {currentUser && (
+                    <span className="text-sm">
+                      {currentUser.firstName}
+                      {isGuest && <span className="text-xs ml-1">(Invitado)</span>}
+                    </span>
+                  )}
+                </button>
+
+                {/* User Dropdown */}
+                {isUserMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-white shadow-2xl rounded-lg z-50 border border-gray-200">
+                    {currentUser ? (
+                      <div>
+                        {/* User Info */}
+                        <div className="p-4 border-b border-gray-200">
+                          <p className="font-medium text-gray-900">
+                            {currentUser.firstName} {currentUser.lastName}
+                          </p>
+                          <p className="text-sm text-gray-600">{currentUser.email}</p>
+                          {isGuest && (
+                            <p className="text-xs text-orange-600 mt-1">Usuario Invitado</p>
+                          )}
+                        </div>
+                        
+                        {/* Menu Options */}
+                        <div className="py-2">
+                          {isRegistered && (
+                            <>
+                              <Link
+                                href="/perfil"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                              >
+                                Mi Perfil
+                              </Link>
+                              <Link
+                                href="/mis-pedidos"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                              >
+                                Mis Pedidos
+                              </Link>
+                            </>
+                          )}
+                          
+                          {isGuest && (
+                            <Link
+                              href="/registro"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="block px-4 py-2 text-orange-600 hover:bg-orange-50"
+                            >
+                              Crear Cuenta
+                            </Link>
+                          )}
+                          
+                          <button
+                            onClick={() => {
+                              logout();
+                              setIsUserMenuOpen(false);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50"
+                          >
+                            {isGuest ? 'Cambiar Usuario' : 'Cerrar Sesión'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4">
+                        <div className="space-y-2">
+                          <Link
+                            href="/login"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block w-full text-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+                          >
+                            Iniciar Sesión
+                          </Link>
+                          <Link
+                            href="/registro"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block w-full text-center px-4 py-2 border border-orange-500 text-orange-500 rounded-md hover:bg-orange-50 transition-colors"
+                          >
+                            Registrarse
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* User - Mobile */}
+              <Link
+                href="/perfil"
+                className="lg:hidden relative p-2 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
+              >
+                <UserIcon className="h-6 w-6" />
+                {hasUnreadMessages && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                )}
+              </Link>
+
+              {/* Cart */}
+              <Link
+                href="/carrito"
+                className="relative p-2 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
+              >
+                <ShoppingCartIcon className="h-6 w-6" />
+                {getTotalItems() > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
+                        style={{ backgroundColor: '#D64541' }}>
+                    {getTotalItems()}
+                  </span>
+                )}
+              </Link>
+            </div>
+          </div>
+
+          {/* Mobile Search */}
+          <div className="lg:hidden px-4 pb-4">
+            <form onSubmit={handleSearch} className="flex">
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-orange-500"
+              />
+              <button
+                type="submit"
+                className="px-3 py-2 text-white rounded-r-lg hover:opacity-90"
+                style={{ backgroundColor: '#D95D22' }}
+              >
+                <MagnifyingGlassIcon className="h-4 w-4" />
+              </button>
+            </form>
+          </div>
+
+          {/* Mobile Menu - Categorías reales */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden absolute left-0 right-0 top-full bg-white border-b shadow-2xl">
+              <div className="mx-auto max-w-7xl px-6 py-6 max-h-[calc(100vh-13rem)] overflow-y-auto">
+              <div className="space-y-3">
+                <div className="text-lg font-bold text-gray-800 mb-4 px-2 flex items-center gap-2">
+                  <span className="text-orange-500">🏷️</span>
+                  Categorías ({categories.length} encontradas)
+                </div>
+                
+                {categories.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#F16529' }}></div>
+                    <span className="ml-3 text-gray-600">
+                      {categoriesLoadTimeout ? 'Error al cargar categorías' : 'Cargando categorías...'}
+                    </span>
+                    {categoriesLoadTimeout && (
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                      >
+                        Reintentar
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {categories.map((category) => (
+                      <div key={category.id}>
+                        {/* Main Category */}
+                        {category.subcategorias && category.subcategorias.length > 0 ? (
+                          <button
+                            onClick={() => toggleCategoryExpansion(category.id)}
+                            className="w-full group block text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-lg">{category.icon || '📦'}</span>
+                                <span>{category.name}</span>
+                              </div>
+                              <span className="text-orange-500">
+                                {expandedCategories.has(category.id) ? '−' : '+'}
+                              </span>
+                            </div>
+                          </button>
+                        ) : (
+                          <Link
+                            href={category.id === 'all' ? '/' : `/?category=${category.id}`}
+                            onClick={handleCategoryNavigate}
+                            className="group block w-full text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-lg">{category.icon || '📦'}</span>
+                                <span>{category.name}</span>
+                              </div>
+                              <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                            </div>
+                          </Link>
+                        )}
+                        
+                        {/* Subcategories */}
+                        {category.subcategorias && category.subcategorias.length > 0 && expandedCategories.has(category.id) && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {category.subcategorias
+                              .filter(sub => sub.activa)
+                              .map((subcategoria) => (
+                              <Link
+                                key={subcategoria.id}
+                                href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
+                                onClick={handleCategoryNavigate}
+                                className="group block w-full text-left px-6 py-3 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <span>•</span>
+                                    <span>{subcategoria.nombre}</span>
+                                  </div>
+                                  <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {/* Secciones especiales */}
+                    <div className="pt-4 border-t border-gray-200 space-y-2">
+                      <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">Secciones especiales</div>
+                      
+                      <Link
+                        href="/?filter=ofertas"
+                        onClick={handleCategoryNavigate}
+                        className="group block w-full text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg">🔥</span>
+                            <span>Ofertas</span>
+                          </div>
+                          <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                        </div>
+                      </Link>
+                      
+                      <Link
+                        href="/?filter=nuevos"
+                        onClick={handleCategoryNavigate}
+                        className="group block w-full text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg">✨</span>
+                            <span>Nuevos</span>
+                          </div>
+                          <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                        </div>
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
+        </div>
+      </header>
+    </>
+  );
+}

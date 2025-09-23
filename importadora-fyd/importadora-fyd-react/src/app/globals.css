@@ -1,39 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FFFFFF;
+  --foreground: #333333;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Roboto', 'Open Sans', 'Helvetica Neue', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
+
 :root {
-  /* Colores principales del diseño */
-  --orange-primary: #F16529;
-  --red-discount: #D64541;
-  --green-price: #28A745;
-  --blue-link: #0074D9;
-  --white-bg: #FFFFFF;
-  --gray-light: #F5F5F5;
-  --gray-border: #E0E0E0;
-  --text-dark: #333333;
-  --white-text: #FFFFFF;
+  /* Paleta Importadora Muli */
+  --brand-primary: #F16529;
+  --brand-secondary: #E94E1B;
+  --brand-accent: #1E3A8A;
+  --brand-success: #2E7D32;
+  --brand-background: #FFFFFF;
+  --brand-surface: #F5F5F5;
+  --brand-text: #333333;
+  --brand-text-secondary: #666666;
+  --brand-border: #E0E0E0;
 }
 
 html {
-  font-size: 18px; /* Aumentamos tamaño base */
+  font-size: 16px; /* Tamaño base optimizado */
   scroll-behavior: smooth;
 }
 
 body {
-  background: var(--white-bg);
-  color: var(--text-dark);
-  font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--brand-background);
+  color: var(--brand-text);
+  font-family: 'Roboto', 'Open Sans', 'Helvetica Neue', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -65,6 +66,40 @@ body {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* Improved grid auto-fit utilities */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  .grid-auto-fit-sm {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .grid-auto-fit-lg {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  /* Better focus states */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+
+  /* Consistent card styling */
+  .card-modern {
+    @apply bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1;
+  }
+
+  /* Better button styles */
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:from-blue-700 hover:to-blue-800 hover:scale-105 shadow-lg hover:shadow-xl transform;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:bg-gray-200 hover:scale-105 shadow-sm hover:shadow-md transform;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
   }
 }
 

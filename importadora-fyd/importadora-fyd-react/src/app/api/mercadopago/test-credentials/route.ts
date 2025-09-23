@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { auth } from '@/lib/firebase-admin';
 
-export async function GET(_request: NextRequest) {
+async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
   try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return false;
+    }
+    
+    const token = authHeader.substring(7);
+    const decodedToken = await auth.verifyIdToken(token);
+    
+    return decodedToken.admin === true;
+  } catch (error) {
+    console.error('Error verificando token admin:', error);
+    return false;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    // Verificar autenticación de admin
+    const isAdmin = await verifyAdminAuth(request);
+    if (!isAdmin) {
+      return NextResponse.json({
+        error: 'Acceso no autorizado. Solo administradores pueden acceder a este endpoint.'
+      }, { status: 401 });
+    }
+    
     // Verificar que las variables de entorno estén configuradas
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
     const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
@@ -56,8 +82,6 @@ export async function GET(_request: NextRequest) {
         success: true,
         message: 'Credenciales válidas',
         isTestMode,
-        accessTokenPrefix: accessToken.substring(0, 20) + '...',
-        publicKeyPrefix: publicKey.substring(0, 20) + '...',
         preferenceCreated: true,
         sandboxInitPoint: result.sandbox_init_point,
         initPoint: result.init_point
@@ -69,11 +93,8 @@ export async function GET(_request: NextRequest) {
         success: false,
         message: 'Error creando preferencia de prueba',
         isTestMode,
-        accessTokenPrefix: accessToken.substring(0, 20) + '...',
-        publicKeyPrefix: publicKey.substring(0, 20) + '...',
         error: error.message,
-        status: error.status,
-        cause: error.cause
+        status: error.status
       }, { status: 400 });
     }
 

@@ -26,6 +26,7 @@ import { Product, Order } from '@/types';
 import { cleanAllData } from '@/scripts/cleanData';
 import AdminChatPopup from '@/components/AdminChatPopup';
 import SalesReportsComponent from '@/components/SalesReportsComponent';
+import { syncCategoriesToFirebase } from '@/utils/syncCategories';
 import { 
   ClockIcon,
   CheckCircleIcon,
@@ -71,20 +72,106 @@ export default function AdminPage() {
     active: true,
     slides: [
       { 
+        linkType: "product", // "product" o "category"
         productId: "1", 
+        categoryId: "",
         imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=400&fit=crop" 
       },
       { 
+        linkType: "product",
         productId: "2", 
+        categoryId: "",
         imageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=400&fit=crop" 
       },
       { 
+        linkType: "product",
         productId: "3", 
+        categoryId: "",
         imageUrl: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&h=400&fit=crop" 
       }
     ]
   });
   const [updatingMainBanner, setUpdatingMainBanner] = useState(false);
+  
+  // Homepage content management state
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState<{ [key: string]: boolean }>({});
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [homepageContent, setHomepageContent] = useState({
+    featuredProducts: [] as string[], // IDs de productos destacados
+    offerProducts: [] as string[], // IDs de productos en ofertas
+    promotionalSections: [
+      {
+        id: 'electronics',
+        title: 'Electrónicos',
+        description: 'Smartphones, laptops y más',
+        imageUrl: 'https://images.unsplash.com/photo-1563770660941-20978e870e26?w=800&h=600&fit=crop&crop=center',
+        linkType: 'category',
+        linkValue: 'tecnologia',
+        badgeText: 'HASTA 50% OFF',
+        position: 'large' // large, tall, normal, wide
+      },
+      {
+        id: 'fashion',
+        title: 'Moda',
+        description: 'Ropa y accesorios',
+        imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=700&fit=crop&crop=center',
+        linkType: 'category',
+        linkValue: 'moda',
+        badgeText: 'NUEVA COLECCIÓN',
+        position: 'tall'
+      },
+      {
+        id: 'home',
+        title: 'Electrohogar',
+        description: 'Cocina y limpieza',
+        imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=500&h=400&fit=crop&crop=center',
+        linkType: 'category',
+        linkValue: 'electrohogar',
+        badgeText: 'ENVÍO GRATIS',
+        position: 'normal'
+      },
+      {
+        id: 'fitness',
+        title: 'Fitness & Deportes',
+        description: 'Equipamiento deportivo y wellness',
+        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop&crop=center',
+        linkType: 'category',
+        linkValue: 'fitness',
+        badgeText: 'FITNESS 2025',
+        position: 'wide'
+      },
+      {
+        id: 'shoes',
+        title: 'Calzado',
+        description: 'Zapatos y sneakers',
+        imageUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&h=400&fit=crop&crop=center',
+        linkType: 'category',
+        linkValue: 'calzado',
+        badgeText: 'ÚLTIMAS TALLAS',
+        position: 'normal'
+      },
+      {
+        id: 'offers',
+        title: 'Ofertas',
+        description: 'Descuentos únicos',
+        imageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=500&h=400&fit=crop&crop=center',
+        linkType: 'filter',
+        linkValue: 'ofertas',
+        badgeText: '¡OFERTAS!',
+        position: 'normal'
+      },
+      {
+        id: 'promo-2',
+        title: 'Nuevos Productos',
+        description: 'Lo último en tendencias',
+        imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&h=400&fit=crop&crop=center',
+        linkType: 'category',
+        linkValue: 'nuevos'
+      }
+    ]
+  });
+  const [updatingHomepageContent, setUpdatingHomepageContent] = useState(false);
   
   // Product search for offers
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,13 +206,25 @@ export default function AdminPage() {
   // Logo management state
   const [logoForm, setLogoForm] = useState({
     text: 'Importadora F&D',
-    emoji: '🏪',
     image: ''
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [updatingLogo, setUpdatingLogo] = useState(false);
   
+  // Footer information state
+  const [footerForm, setFooterForm] = useState({
+    companyDescription: 'Tu tienda online de confianza con los mejores productos importados.',
+    phone: '+1 234 567 890',
+    email: 'info@importadorafyd.com',
+    address: 'Calle Principal 123, Ciudad',
+    facebookUrl: '#',
+    instagramUrl: '#',
+    whatsappUrl: '#'
+  });
+  const [updatingFooter, setUpdatingFooter] = useState(false);
+  
   // Category management state
+  const [syncingCategories, setSyncingCategories] = useState(false);
   const [categories, setCategories] = useState([
     { id: 'electronicos', name: 'Electrónicos', active: true },
     { id: 'hogar', name: 'Hogar', active: true },
@@ -192,15 +291,122 @@ export default function AdminPage() {
         const mainBannerData = mainBannerDoc.data();
         setMainBannerForm({
           active: mainBannerData.active !== undefined ? mainBannerData.active : true,
-          slides: mainBannerData.slides || [
-            { productId: "1" },
-            { productId: "2" },
-            { productId: "3" }
+          slides: (mainBannerData.slides || []).map((slide: any) => ({
+            linkType: slide.linkType || "product", // Compatibilidad con datos existentes
+            productId: slide.productId || "",
+            categoryId: slide.categoryId || "",
+            imageUrl: slide.imageUrl || ""
+          })) || [
+            { linkType: "product", productId: "1", categoryId: "", imageUrl: "" },
+            { linkType: "product", productId: "2", categoryId: "", imageUrl: "" },
+            { linkType: "product", productId: "3", categoryId: "", imageUrl: "" }
           ]
         });
       }
     } catch (error) {
       // Error loading main banner config, keep defaults
+    }
+  };
+
+  const loadHomepageContent = async () => {
+    try {
+      const homepageDoc = await getDoc(doc(db, 'config', 'homepage-content'));
+      if (homepageDoc.exists()) {
+        const homepageData = homepageDoc.data();
+        setHomepageContent({
+          featuredProducts: homepageData.featuredProducts || [],
+          offerProducts: homepageData.offerProducts || [],
+          promotionalSections: homepageData.promotionalSections || homepageContent.promotionalSections
+        });
+      } else {
+        // Si no existe configuración, crear una automáticamente
+        console.log('No homepage config found, creating default...');
+        await setDoc(doc(db, 'config', 'homepage-content'), homepageContent);
+        console.log('Default homepage config created automatically');
+      }
+    } catch (error) {
+      console.error('Error loading homepage content:', error);
+    }
+  };
+
+  const saveHomepageContent = async (showAlert = true) => {
+    try {
+      await setDoc(doc(db, 'config', 'homepage-content'), homepageContent);
+      if (showAlert) {
+        alert('✅ Contenido guardado! Ve a la página principal para ver los cambios.');
+      }
+      console.log('Homepage content saved:', homepageContent);
+    } catch (error) {
+      console.error('Error saving homepage content:', error);
+      if (showAlert) {
+        alert('❌ Error al guardar el contenido de la página');
+      }
+    }
+  };
+
+  // Función para guardar automáticamente cuando cambian los datos
+  const updateSection = (index: number, updatedSection: any) => {
+    const updatedSections = [...homepageContent.promotionalSections];
+    updatedSections[index] = updatedSection;
+    const newContent = { ...homepageContent, promotionalSections: updatedSections };
+    setHomepageContent(newContent);
+    
+    // Mostrar indicador de guardado
+    setIsAutoSaving(true);
+    
+    // Guardar automáticamente después de un pequeño delay
+    setTimeout(async () => {
+      try {
+        await setDoc(doc(db, 'config', 'homepage-content'), newContent);
+        console.log('✅ Auto-saved homepage content');
+      } catch (error) {
+        console.error('❌ Error auto-saving:', error);
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 1000);
+  };
+
+  // Función para subir imagen
+  const uploadImage = async (file: File, sectionId: string): Promise<string> => {
+    setUploadingImages(prev => ({ ...prev, [sectionId]: true }));
+    
+    try {
+      const timestamp = Date.now();
+      const fileName = `homepage-promotions/${sectionId}-${timestamp}-${file.name}`;
+      const storageRef = ref(storage, fileName);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      console.log('✅ Image uploaded successfully:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('❌ Error uploading image:', error);
+      throw error;
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [sectionId]: false }));
+    }
+  };
+
+  // Función para manejar cambio de archivo
+  const handleImageUpload = async (file: File, index: number, section: any) => {
+    try {
+      const imageUrl = await uploadImage(file, section.id);
+      updateSection(index, { ...section, imageUrl });
+    } catch (error) {
+      alert('❌ Error al subir la imagen. Intenta de nuevo.');
+    }
+  };
+
+  const initializeDefaultContent = async () => {
+    try {
+      await setDoc(doc(db, 'config', 'homepage-content'), homepageContent);
+      alert('✅ Contenido inicial configurado!');
+      console.log('Default homepage content initialized');
+    } catch (error) {
+      console.error('Error initializing content:', error);
+      alert('❌ Error al inicializar contenido');
     }
   };
 
@@ -268,7 +474,12 @@ export default function AdminPage() {
       loadBannerConfig();
       loadPopupConfig();
       loadMainBannerConfig();
+      loadHomepageContent();
       loadLogoConfig();
+      
+      // Cargar categorías disponibles desde productos
+      const uniqueCategories = [...new Set(products.map(p => p.categoria).filter(Boolean))];
+      setAvailableCategories(uniqueCategories);
       
       // Load orders with real-time updates
       const unsubscribeOrders = loadOrders();
@@ -301,6 +512,31 @@ export default function AdminPage() {
   useEffect(() => {
     calculateStats();
   }, [calculateStats]);
+
+  // Orders functions
+  const loadOrders = () => {
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData: Order[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        ordersData.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date()
+        } as Order);
+      });
+      
+      setOrders(ordersData);
+    });
+
+    return unsubscribe;
+  };
 
   // Chat functions
   const loadChatMessages = () => {
@@ -526,8 +762,9 @@ export default function AdminPage() {
       if (newStatus === 'delivered') {
         try {
           const today = new Date().toISOString().split('T')[0];
-          const { generateDailyReportUtil } = await import('@/utils/reportUtils');
-          await generateDailyReportUtil(today);
+          // const { generateDailyReportUtil } = await import('@/utils/reportUtils');
+          // await generateDailyReportUtil(today);
+          console.log('Reporte diario deshabilitado temporalmente');
         } catch (error) {
           console.error('Error regenerando reporte diario:', error);
         }
@@ -678,6 +915,11 @@ export default function AdminPage() {
                 Email
               </label>
               <input
+                type="email"
+                id="email"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
               />
             </div>
@@ -742,16 +984,19 @@ export default function AdminPage() {
             Panel de Administración
           </h1>
           <nav className="flex flex-wrap gap-3">
-            {[
-              { id: 'dashboard', name: 'Dashboard', icon: '📊' },
-              { id: 'products', name: 'Productos', icon: '📦' },
-              { id: 'orders', name: 'Pedidos', icon: '🛒', badge: unreadCount > 0 ? unreadCount : null },
-              { id: 'reports', name: 'Reportes', icon: '📈' },
-              { id: 'main-banner', name: 'Banner Principal', icon: '🏆' },
-              { id: 'popup', name: 'Popup Ofertas', icon: '🎉' },
-              { id: 'logo', name: 'Logo', icon: '🏪' },
-              { id: 'categories', name: 'Categorías', icon: '🏷️' }
-            ].map((tab) => (
+                          {[
+                { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+                { id: 'products', name: 'Productos', icon: '📦' },
+                { id: 'orders', name: 'Pedidos', icon: '🛒', badge: unreadCount > 0 ? unreadCount : null },
+                { id: 'reports', name: 'Reportes', icon: '📈' },
+                { id: 'main-banner', name: 'Banners', icon: '🏆' },
+                { id: 'product-layout', name: 'Layout Productos', icon: '🔲' },
+                { id: 'popup', name: 'Popup Ofertas', icon: '🎉' },
+                { id: 'logo', name: 'Logo', icon: '🏪' },
+                { id: 'categories', name: 'Categorías', icon: '🏷️' },
+                { id: 'homepage-content', name: 'Contenido Página', icon: '🎨' },
+                { id: 'footer', name: 'Información', icon: '📋' }
+              ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -1679,10 +1924,158 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
+        {/* Product Layout Tab */}
+        {activeTab === 'product-layout' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">🔲 Configuración del Layout de Productos</h2>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <div className="text-yellow-500 text-xl mr-3">⚠️</div>
+                <div>
+                  <h3 className="text-yellow-800 font-semibold mb-2">¿Qué hace esta pestaña?</h3>
+                  <ul className="text-yellow-700 text-sm space-y-1">
+                    <li>• <strong>Layout Masonería:</strong> Controla cómo se muestran los productos en cuadrícula</li>
+                    <li>• <strong>Tamaños Dinámicos:</strong> Los productos aparecen en diferentes tamaños para crear variedad visual</li>
+                    <li>• <strong>Posiciones Automáticas:</strong> El sistema alterna entre pequeño, vertical, grande y horizontal</li>
+                    <li>• <strong>Actualmente:</strong> Esta funcionalidad está en modo automático y no requiere configuración manual</li>
+                  </ul>
+                  <div className="mt-3 p-3 bg-yellow-100 rounded border">
+                    <p className="text-yellow-800 text-sm font-medium">
+                      💡 <strong>Tip:</strong> Ve a "Contenido Página" para editar las secciones promocionales que sí son editables.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa de Patrones de Productos</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Así se ven los productos en la página principal con el sistema de layout automático:
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Pequeño (Small)</h4>
+                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-32 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">Producto pequeño</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 4 productos</p>
+                    </div>
+                    
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Vertical (Medium)</h4>
+                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-48 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">Producto vertical</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 4 productos (índice múltiplo de 4)</p>
+                    </div>
+                    
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Grande (Large)</h4>
+                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-64 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">Producto grande</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 12 productos (índice múltiplo de 12)</p>
+                    </div>
+                    
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Horizontal</h4>
+                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-32 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">Producto horizontal</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 6 productos (índice múltiplo de 6)</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Secciones de Productos</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Configura las secciones que aparecerán en la página principal.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Productos Destacados</h4>
+                        <p className="text-sm text-gray-500">Primera sección en la página principal</p>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          defaultChecked
+                          className="h-4 w-4 text-orange-500 rounded"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Los Más Vendidos</h4>
+                        <p className="text-sm text-gray-500">Productos con mejor desempeño</p>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          defaultChecked
+                          className="h-4 w-4 text-orange-500 rounded"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Novedades</h4>
+                        <p className="text-sm text-gray-500">Productos recién llegados</p>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          defaultChecked
+                          className="h-4 w-4 text-orange-500 rounded"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Electrónica</h4>
+                        <p className="text-sm text-gray-500">Categoría de electrónicos</p>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          defaultChecked
+                          className="h-4 w-4 text-orange-500 rounded"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-4">
+                  <button
+                    className="text-white font-medium py-2 px-4 rounded-md transition-colors" 
+                    style={{ backgroundColor: '#F16529' }} 
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} 
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                  >
+                    Guardar Configuración
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Banner Tab */}
         {activeTab === 'main-banner' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Configuración del Banner Principal</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Gestión de Banners</h2>
             
             <div className="bg-white rounded-lg shadow-md p-6">
               <form className="space-y-6">
@@ -1777,8 +2170,59 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Buscar Producto para Redirección
+                            Tipo de Enlace
                           </label>
+                          <select
+                            value={slide.linkType || "product"}
+                            onChange={(e) => {
+                              const newSlides = [...mainBannerForm.slides];
+                              newSlides[index] = { 
+                                ...newSlides[index], 
+                                linkType: e.target.value,
+                                productId: e.target.value === "product" ? newSlides[index].productId : "",
+                                categoryId: e.target.value === "category" ? newSlides[index].categoryId : ""
+                              };
+                              setMainBannerForm({ ...mainBannerForm, slides: newSlides });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 mb-4" style={{ '--tw-ring-color': '#F16529' } as any}
+                          >
+                            <option value="product">Producto Específico</option>
+                            <option value="category">Categoría (múltiples productos en promo)</option>
+                          </select>
+                        </div>
+
+                        {slide.linkType === "category" && (
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Seleccionar Categoría
+                            </label>
+                            <select
+                              value={slide.categoryId || ""}
+                              onChange={(e) => {
+                                const newSlides = [...mainBannerForm.slides];
+                                newSlides[index] = { ...newSlides[index], categoryId: e.target.value };
+                                setMainBannerForm({ ...mainBannerForm, slides: newSlides });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                            >
+                              <option value="">Selecciona una categoría</option>
+                              {categories.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.icon || '📦'} {category.name || category.nombre}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              El banner redirigirá a todos los productos de esta categoría
+                            </p>
+                          </div>
+                        )}
+
+                        {slide.linkType === "product" && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Buscar Producto para Redirección
+                            </label>
                           <input
                             type="text"
                             placeholder="Buscar producto..."
@@ -1812,25 +2256,44 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                                 </option>
                               ))}
                           </select>
-                        </div>
-                        
-                        {(() => {
-                          const selectedProduct = products.find(p => p.id === slide.productId);
-                          return selectedProduct && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center space-x-3">
-                              <img 
-                                src={selectedProduct.imagen || selectedProduct.image || ''} 
-                                alt={selectedProduct.nombre || selectedProduct.name || 'Producto'}
-                                className="w-16 h-16 object-cover rounded"
-                              />
-                              <div>
-                                <h5 className="font-medium text-gray-900">
-                                  {selectedProduct.nombre || selectedProduct.name}
-                                </h5>
-                                <p className="text-sm text-gray-600">
-                                  ${(selectedProduct.precio || selectedProduct.price || 0).toLocaleString()}
-                                </p>
+                          
+                          {(() => {
+                            const selectedProduct = products.find(p => p.id === slide.productId);
+                            return selectedProduct && (
+                              <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center space-x-3">
+                                <img 
+                                  src={selectedProduct.imagen || selectedProduct.image || ''} 
+                                  alt={selectedProduct.nombre || selectedProduct.name || 'Producto'}
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                                <div>
+                                  <h5 className="font-medium text-gray-900">
+                                    {selectedProduct.nombre || selectedProduct.name}
+                                  </h5>
+                                  <p className="text-sm text-gray-600">
+                                    ${(selectedProduct.precio || selectedProduct.price || 0).toLocaleString()}
+                                  </p>
+                                </div>
                               </div>
+                            );
+                          })()}
+                        </div>
+                        )}
+                        
+                        {slide.linkType === "category" && (() => {
+                          const selectedCategory = categories.find(c => c.id === slide.categoryId);
+                          const categoryProducts = products.filter(p => p.categoria === slide.categoryId);
+                          return selectedCategory && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <span className="text-2xl">{selectedCategory.icon || '📦'}</span>
+                                <h5 className="font-medium text-gray-900">
+                                  {selectedCategory.name || selectedCategory.nombre}
+                                </h5>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {categoryProducts.length} productos en esta categoría
+                              </p>
                             </div>
                           );
                         })()}
@@ -1842,7 +2305,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   <button
                     type="button"
                     onClick={() => {
-                      const newSlides = [...mainBannerForm.slides, { productId: "", imageUrl: "" }];
+                      const newSlides = [...mainBannerForm.slides, { linkType: "product", productId: "", categoryId: "", imageUrl: "" }];
                       setMainBannerForm({ ...mainBannerForm, slides: newSlides });
                     }}
                     className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-orange-500 hover:text-orange-600 transition-colors"
@@ -1898,19 +2361,9 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Emoji del Logo
-                  </label>
-                  <input
-                    type="text"
-                    value={logoForm.emoji}
-                    onChange={(e) => setLogoForm({ ...logoForm, emoji: e.target.value })}
-                    placeholder="🏪"
+                    value={logoForm.text}
+                    onChange={(e) => setLogoForm({ ...logoForm, text: e.target.value })}
+                    placeholder="Importadora F&D"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
@@ -1954,21 +2407,29 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         logoImageUrl = await getDownloadURL(snapshot.ref);
                       }
 
+                      // Update form state with new image URL
+                      const updatedLogoForm = {
+                        ...logoForm,
+                        image: logoImageUrl
+                      };
+                      setLogoForm(updatedLogoForm);
+
                       try {
                         // Try to save logo configuration to Firebase
                         await setDoc(doc(db, 'config', 'logo'), {
-                          emoji: logoForm.emoji,
-                          text: logoForm.text,
-                          image: logoImageUrl,
+                          text: updatedLogoForm.text,
+                          image: updatedLogoForm.image,
                           updatedAt: new Date().toISOString()
                         });
                       } catch (firebaseError) {
                         // If Firebase fails (no auth), just update local state
+                        console.log('Firebase save failed, continuing with local state');
                       }
 
-                      alert('Logo actualizado exitosamente (modo local)');
+                      alert('Logo actualizado exitosamente');
                       setLogoFile(null);
                     } catch (error) {
+                      console.error('Error updating logo:', error);
                       alert('Error al actualizar logo');
                     } finally {
                       setUpdatingLogo(false);
@@ -1989,7 +2450,9 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                     {logoForm.image ? (
                       <img src={logoForm.image} alt="Logo" className="h-8 w-8 object-contain" />
                     ) : (
-                      <div className="text-2xl">{logoForm.emoji}</div>
+                      <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                        Sin logo
+                      </div>
                     )}
                     <span className="text-xl font-bold text-gray-900">{logoForm.text}</span>
                   </div>
@@ -2005,14 +2468,14 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Gestión de Categorías</h2>
               <button
-                onClick={() => {
-                  setCategoryForm({ id: '', name: '', active: true });
-                  setShowCategoryModal(true);
-                }}
-                className="text-white px-4 py-2 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
-              >
-                ➕ Agregar Categoría
-              </button>
+                  onClick={() => {
+                    setCategoryForm({ id: '', name: '', active: true });
+                    setShowCategoryModal(true);
+                  }}
+                  className="text-white px-4 py-2 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                >
+                  ➕ Agregar Categoría
+                </button>
             </div>
 
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -2471,6 +2934,518 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Homepage Content Tab */}
+        {activeTab === 'homepage-content' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">📝 Editar Contenido de la Página Principal</h2>
+            
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <div className="text-green-500 text-xl mr-3">✨</div>
+                <div>
+                  <h3 className="text-green-800 font-semibold mb-2">🚀 ¡Súper fácil! Solo selecciona y se guarda automáticamente</h3>
+                  <ul className="text-green-700 text-sm space-y-1">
+                    <li>• <strong>📁 Subir imágenes:</strong> Haz clic en "Elegir archivo" para subir directamente desde tu computadora</li>
+                    <li>• <strong>🎯 Seleccionar enlaces:</strong> Listas desplegables con categorías y productos existentes</li>
+                    <li>• <strong>⚡ Guardado automático:</strong> Se guarda automáticamente al cambiar cualquier opción</li>
+                    <li>• <strong>👁️ Ver cambios:</strong> Abre la página principal para ver los resultados al instante</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {/* Promotional Sections */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">🎨 Secciones Promocionales de la Página Principal</h3>
+                <div className="flex items-center gap-3">
+                  {isAutoSaving ? (
+                    <div className="flex items-center text-orange-600 text-sm">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                      Guardando...
+                    </div>
+                  ) : (
+                    <div className="text-green-600 text-sm flex items-center">
+                      ✅ Guardado automático activo
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {homepageContent.promotionalSections.map((section, index) => (
+                  <div key={section.id} className="border border-gray-200 rounded-lg p-4 hover:border-orange-300 transition-colors">
+                    <div className="space-y-4">
+                      {/* Section Header */}
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium text-gray-900">
+                          {section.position === 'large' ? '🔲 Grande (2x2)' : 
+                           section.position === 'tall' ? '📱 Alto (1x2)' :
+                           section.position === 'wide' ? '📺 Ancho (2x1)' : '⬜ Normal (1x1)'}
+                        </h4>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {section.linkType === 'category' ? '📁 Categoría' :
+                           section.linkType === 'product' ? '📦 Producto' :
+                           section.linkType === 'filter' ? '🔍 Filtro' : '🔗 URL'}
+                        </span>
+                      </div>
+                      
+                      {/* Image Preview */}
+                      <div className="relative h-32 bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={section.imageUrl}
+                          alt={section.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">{section.badgeText}</span>
+                        </div>
+                        <div className="absolute top-2 right-2 bg-white bg-opacity-90 text-xs text-gray-700 px-2 py-1 rounded">
+                          Vista previa
+                        </div>
+                      </div>
+                      
+                      {/* Title and Description */}
+                      <div>
+                        <input
+                          type="text"
+                          value={section.title}
+                          onChange={(e) => {
+                            updateSection(index, { ...section, title: e.target.value });
+                          }}
+                          className="w-full font-semibold text-gray-900 border-0 border-b border-gray-300 bg-transparent pb-1 focus:border-orange-500 focus:outline-none"
+                          placeholder="Título de la sección"
+                        />
+                        <input
+                          type="text"
+                          value={section.description}
+                          onChange={(e) => {
+                            updateSection(index, { ...section, description: e.target.value });
+                          }}
+                          className="w-full text-sm text-gray-600 mt-1 border-0 border-b border-gray-300 bg-transparent pb-1 focus:border-orange-500 focus:outline-none"
+                          placeholder="Descripción de la sección"
+                        />
+                      </div>
+                      
+                      {/* Badge Text */}
+                      <input
+                        type="text"
+                        value={section.badgeText}
+                        onChange={(e) => {
+                          updateSection(index, { ...section, badgeText: e.target.value });
+                        }}
+                        placeholder="Texto del badge (ej: OFERTA, NUEVO)"
+                        className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                      />
+                      
+                      {/* Image Upload */}
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageUpload(file, index, section);
+                            }
+                          }}
+                          className="flex-1 text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                        />
+                        {uploadingImages[section.id] && (
+                          <div className="flex items-center text-orange-600 text-xs">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600 mr-1"></div>
+                            Subiendo...
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Link Configuration */}
+                      <div className="space-y-2">
+                        <select
+                          value={section.linkType}
+                          onChange={(e) => {
+                            updateSection(index, { ...section, linkType: e.target.value as any });
+                          }}
+                          className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                        >
+                          <option value="category">Categoría</option>
+                          <option value="product">Producto</option>
+                          <option value="filter">Filtro</option>
+                          <option value="url">URL personalizada</option>
+                        </select>
+                        
+                        {section.linkType === 'category' ? (
+                          <select
+                            value={section.linkValue}
+                            onChange={(e) => {
+                              updateSection(index, { ...section, linkValue: e.target.value });
+                            }}
+                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                          >
+                            <option value="">Selecciona una categoría</option>
+                            {availableCategories.map(cat => (
+                              <option key={cat} value={cat.toLowerCase()}>{cat}</option>
+                            ))}
+                          </select>
+                        ) : section.linkType === 'product' ? (
+                          <select
+                            value={section.linkValue}
+                            onChange={(e) => {
+                              updateSection(index, { ...section, linkValue: e.target.value });
+                            }}
+                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                          >
+                            <option value="">Selecciona un producto</option>
+                            {products.slice(0, 20).map(product => (
+                              <option key={product.id} value={product.id}>
+                                {product.nombre} - ${product.precio}
+                              </option>
+                            ))}
+                          </select>
+                        ) : section.linkType === 'filter' ? (
+                          <select
+                            value={section.linkValue}
+                            onChange={(e) => {
+                              updateSection(index, { ...section, linkValue: e.target.value });
+                            }}
+                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                          >
+                            <option value="">Selecciona un filtro</option>
+                            <option value="ofertas">Ofertas</option>
+                            <option value="nuevos">Nuevos</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="url"
+                            value={section.linkValue}
+                            onChange={(e) => {
+                              updateSection(index, { ...section, linkValue: e.target.value });
+                            }}
+                            placeholder="https://ejemplo.com"
+                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Position */}
+                      <select
+                        value={section.position}
+                        onChange={(e) => {
+                          updateSection(index, { ...section, position: e.target.value });
+                        }}
+                        className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                      >
+                        <option value="large">Grande (2x2)</option>
+                        <option value="tall">Alto (1x2)</option>
+                        <option value="wide">Ancho (2x1)</option>
+                        <option value="normal">Normal (1x1)</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-6 flex flex-wrap gap-4 justify-center">
+                <a
+                  href="/"
+                  target="_blank"
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold shadow-lg flex items-center gap-2"
+                >
+                  👁️ Ver Página Principal (Nueva pestaña)
+                </a>
+                <button
+                  onClick={() => saveHomepageContent()}
+                  className="px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  💾 Forzar Guardado
+                </button>
+                <button
+                  onClick={() => loadHomepageContent()}
+                  className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  🔄 Recargar
+                </button>
+              </div>
+            </div>
+            
+            {/* Featured Products Selection */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">⭐ Productos Destacados</h3>
+                <div className="text-sm text-green-600">
+                  {homepageContent.featuredProducts.length} seleccionados
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-blue-700 text-sm">
+                  💡 <strong>Tip:</strong> Los productos que selecciones aquí aparecerán en una sección especial "⭐ Productos Destacados" en la página principal.
+                </p>
+              </div>
+              
+              {products.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-6xl mb-4">📦</div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No hay productos disponibles</h4>
+                  <p className="text-gray-600 mb-4">
+                    Primero necesitas crear productos para poder destacarlos
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('products')}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    ➕ Ir a crear productos
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
+                  {products.map((product) => {
+                  const isSelected = homepageContent.featuredProducts.includes(product.id);
+                  return (
+                    <div 
+                      key={product.id} 
+                      className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                        isSelected 
+                          ? 'border-orange-300 bg-orange-50 shadow-md' 
+                          : 'border-gray-200 hover:border-orange-200'
+                      }`}
+                      onClick={() => {
+                        const newFeaturedProducts = isSelected
+                          ? homepageContent.featuredProducts.filter(id => id !== product.id)
+                          : [...homepageContent.featuredProducts, product.id];
+                        
+                        const newContent = { ...homepageContent, featuredProducts: newFeaturedProducts };
+                        setHomepageContent(newContent);
+                        
+                        // Auto-save
+                        setTimeout(async () => {
+                          setIsAutoSaving(true);
+                          try {
+                            await setDoc(doc(db, 'config', 'homepage-content'), newContent);
+                            console.log('✅ Auto-saved featured products');
+                          } catch (error) {
+                            console.error('❌ Error auto-saving:', error);
+                          } finally {
+                            setIsAutoSaving(false);
+                          }
+                        }, 500);
+                      }}
+                    >
+                      <div className="relative h-24 bg-gray-100 rounded mb-2">
+                        {product.imagen ? (
+                          <img
+                            src={product.imagen}
+                            alt={product.nombre}
+                            className="w-full h-full object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">📦</div>
+                        )}
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                            ✓
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">{product.nombre}</h4>
+                      <div className="text-xs text-gray-600">${product.precio}</div>
+                      <div className={`text-xs mt-1 font-medium ${isSelected ? 'text-orange-600' : 'text-gray-500'}`}>
+                        {isSelected ? '⭐ Destacado' : 'Hacer clic para destacar'}
+                      </div>
+                    </div>
+                  );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Footer Information Tab */}
+        {activeTab === 'footer' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Información del Footer</h2>
+              
+              <form className="space-y-6">
+                {/* Company Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción de la Empresa
+                  </label>
+                  <textarea
+                    value={footerForm.companyDescription}
+                    onChange={(e) => setFooterForm({ ...footerForm, companyDescription: e.target.value })}
+                    placeholder="Tu tienda online de confianza con los mejores productos importados."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                  />
+                </div>
+
+                {/* Contact Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📞 Teléfono
+                    </label>
+                    <input
+                      type="text"
+                      value={footerForm.phone}
+                      onChange={(e) => setFooterForm({ ...footerForm, phone: e.target.value })}
+                      placeholder="+1 234 567 890"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📧 Email
+                    </label>
+                    <input
+                      type="email"
+                      value={footerForm.email}
+                      onChange={(e) => setFooterForm({ ...footerForm, email: e.target.value })}
+                      placeholder="info@importadorafyd.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📍 Dirección
+                  </label>
+                  <input
+                    type="text"
+                    value={footerForm.address}
+                    onChange={(e) => setFooterForm({ ...footerForm, address: e.target.value })}
+                    placeholder="Calle Principal 123, Ciudad"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                  />
+                </div>
+
+                {/* Social Media Links */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Redes Sociales</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        📘 Facebook URL
+                      </label>
+                      <input
+                        type="url"
+                        value={footerForm.facebookUrl}
+                        onChange={(e) => setFooterForm({ ...footerForm, facebookUrl: e.target.value })}
+                        placeholder="https://facebook.com/tu-pagina"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        📷 Instagram URL
+                      </label>
+                      <input
+                        type="url"
+                        value={footerForm.instagramUrl}
+                        onChange={(e) => setFooterForm({ ...footerForm, instagramUrl: e.target.value })}
+                        placeholder="https://instagram.com/tu-cuenta"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        💬 WhatsApp URL
+                      </label>
+                      <input
+                        type="url"
+                        value={footerForm.whatsappUrl}
+                        onChange={(e) => setFooterForm({ ...footerForm, whatsappUrl: e.target.value })}
+                        placeholder="https://wa.me/tu-numero"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      setUpdatingFooter(true);
+                      
+                      // Try to save footer configuration to Firebase
+                      await setDoc(doc(db, 'config', 'footer'), {
+                        companyDescription: footerForm.companyDescription,
+                        phone: footerForm.phone,
+                        email: footerForm.email,
+                        address: footerForm.address,
+                        facebookUrl: footerForm.facebookUrl,
+                        instagramUrl: footerForm.instagramUrl,
+                        whatsappUrl: footerForm.whatsappUrl,
+                        updatedAt: new Date().toISOString()
+                      });
+                      
+                      alert('Información del footer actualizada exitosamente');
+                    } catch (error) {
+                      console.error('Error updating footer:', error);
+                      alert('Error al actualizar la información del footer');
+                    } finally {
+                      setUpdatingFooter(false);
+                    }
+                  }}
+                  disabled={updatingFooter}
+                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#F16529' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                >
+                  {updatingFooter ? 'Actualizando...' : 'Actualizar Información'}
+                </button>
+              </form>
+              
+              {/* Preview */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa del Footer:</h3>
+                <div className="bg-orange-500 text-white p-6 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">Importadora F&D</h4>
+                      <p className="text-gray-300 text-sm">{footerForm.companyDescription}</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">Contacto</h4>
+                      <div className="space-y-1 text-gray-300 text-sm">
+                        <p>📞 {footerForm.phone}</p>
+                        <p>📧 {footerForm.email}</p>
+                        <p>📍 {footerForm.address}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">Síguenos</h4>
+                      <div className="flex space-x-4">
+                        <span className="text-2xl cursor-pointer">📘</span>
+                        <span className="text-2xl cursor-pointer">📷</span>
+                        <span className="text-2xl cursor-pointer">💬</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

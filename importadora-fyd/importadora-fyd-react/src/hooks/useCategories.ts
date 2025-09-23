@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mockProducts } from '@/data/mockProducts';
 
 export interface Category {
   id: string;
@@ -22,7 +23,10 @@ const defaultCategories: Category[] = [
 
 // Icon mapping for common categories
 const categoryIcons: Record<string, string> = {
-  'electronicos': '💻',
+  'calzado': '👟',
+  'tecnología': '💻',
+  'electro hogar': '🏠',
+  'moda': '👕',
   'hogar': '🏠',
   'ropa': '👕',
   'deportes': '🏃‍♂️',
@@ -34,6 +38,24 @@ const categoryIcons: Record<string, string> = {
   'musica': '🎵',
   'automovil': '🚗',
   'jardin': '🌱'
+};
+
+// Generate categories from mock products
+const generateCategoriesFromProducts = (): Category[] => {
+  const uniqueCategories = [...new Set(mockProducts.map(p => p.categoria))];
+  const productCategories: Category[] = uniqueCategories
+    .filter(cat => cat)
+    .map((category, index) => ({
+      id: category.toLowerCase().replace(/\s+/g, '-'),
+      name: category,
+      active: true,
+      icon: categoryIcons[category.toLowerCase()] || '📦'
+    }));
+  
+  return [
+    defaultCategories[0], // "Todos los productos"
+    ...productCategories
+  ];
 };
 
 export function useCategories() {
@@ -51,38 +73,47 @@ export function useCategories() {
         const unsubscribe = onSnapshot(
           collection(db, 'categorias'),
           (snapshot) => {
-            const firebaseCategories: Category[] = [];
-            
-            snapshot.forEach((doc) => {
-              const data = doc.data();
-              firebaseCategories.push({
-                id: doc.id,
-                name: data.name || data.nombre || doc.id,
-                active: data.active !== undefined ? data.active : true,
-                icon: categoryIcons[doc.id] || '📦',
-                subcategorias: data.subcategorias || []
+            // If we have categories in Firebase, use them
+            if (!snapshot.empty) {
+              const firebaseCategories: Category[] = [];
+              
+              snapshot.forEach((doc) => {
+                const data = doc.data();
+                firebaseCategories.push({
+                  id: doc.id,
+                  name: data.name || data.nombre || doc.id,
+                  active: data.active !== undefined ? data.active : true,
+                  icon: categoryIcons[doc.id] || '📦',
+                  subcategorias: data.subcategorias || []
+                });
               });
-            });
 
-            // Filter only active categories and sort them
-            const activeCategories = firebaseCategories
-              .filter(cat => cat.active)
-              .sort((a, b) => a.name.localeCompare(b.name));
+              // Filter only active categories and sort them
+              const activeCategories = firebaseCategories
+                .filter(cat => cat.active)
+                .sort((a, b) => a.name.localeCompare(b.name));
 
-            // Always include "Todos los productos" at the beginning
-            const allCategories = [
-              defaultCategories[0], // "Todos los productos"
-              ...activeCategories
-            ];
+              // Always include "Todos los productos" at the beginning
+              const allCategories = [
+                defaultCategories[0], // "Todos los productos"
+                ...activeCategories
+              ];
 
-            setCategories(allCategories);
+              setCategories(allCategories);
+            } else {
+              // If no categories in Firebase, generate from mock products
+              const generatedCategories = generateCategoriesFromProducts();
+              setCategories(generatedCategories);
+            }
+            
             setLoading(false);
           },
           (error) => {
             console.error('Error loading categories:', error);
-            // Fallback to default categories on error
-            setCategories(defaultCategories);
-            setError('Error al cargar categorías');
+            // Fallback to generated categories from products on error
+            const generatedCategories = generateCategoriesFromProducts();
+            setCategories(generatedCategories);
+            setError('Error al cargar categorías, usando categorías generadas');
             setLoading(false);
           }
         );
@@ -91,8 +122,10 @@ export function useCategories() {
         return unsubscribe;
       } catch (error) {
         console.error('Error setting up categories listener:', error);
-        setCategories(defaultCategories);
-        setError('Error al cargar categorías');
+        // Fallback to generated categories from products
+        const generatedCategories = generateCategoriesFromProducts();
+        setCategories(generatedCategories);
+        setError('Error al cargar categorías, usando categorías generadas');
         setLoading(false);
         return () => {}; // Return empty cleanup function
       }
@@ -111,32 +144,43 @@ export function useCategories() {
   const refetch = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'categorias'));
-      const firebaseCategories: Category[] = [];
       
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        firebaseCategories.push({
-          id: doc.id,
-          name: data.name || data.nombre || doc.id,
-          active: data.active !== undefined ? data.active : true,
-          icon: categoryIcons[doc.id] || '📦',
-          subcategorias: data.subcategorias || []
+      // If we have categories in Firebase, use them
+      if (!snapshot.empty) {
+        const firebaseCategories: Category[] = [];
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          firebaseCategories.push({
+            id: doc.id,
+            name: data.name || data.nombre || doc.id,
+            active: data.active !== undefined ? data.active : true,
+            icon: categoryIcons[doc.id] || '📦',
+            subcategorias: data.subcategorias || []
+          });
         });
-      });
 
-      const activeCategories = firebaseCategories
-        .filter(cat => cat.active)
-        .sort((a, b) => a.name.localeCompare(b.name));
+        const activeCategories = firebaseCategories
+          .filter(cat => cat.active)
+          .sort((a, b) => a.name.localeCompare(b.name));
 
-      const allCategories = [
-        defaultCategories[0],
-        ...activeCategories
-      ];
+        const allCategories = [
+          defaultCategories[0],
+          ...activeCategories
+        ];
 
-      setCategories(allCategories);
+        setCategories(allCategories);
+      } else {
+        // If no categories in Firebase, generate from mock products
+        const generatedCategories = generateCategoriesFromProducts();
+        setCategories(generatedCategories);
+      }
     } catch (error) {
       console.error('Error refetching categories:', error);
-      setError('Error al recargar categorías');
+      // Fallback to generated categories from products
+      const generatedCategories = generateCategoriesFromProducts();
+      setCategories(generatedCategories);
+      setError('Error al recargar categorías, usando categorías generadas');
     }
   };
 

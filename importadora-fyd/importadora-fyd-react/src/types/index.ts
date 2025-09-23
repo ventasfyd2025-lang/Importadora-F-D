@@ -12,6 +12,11 @@ export interface Product {
   activo?: boolean;
   fechaCreacion?: string;
   envioGratis?: boolean;
+  // Additional fields for enhanced display
+  precioOriginal?: number;
+  rating?: number;
+  reviews?: number;
+  marca?: string;
 }
 
 export interface CartItem {

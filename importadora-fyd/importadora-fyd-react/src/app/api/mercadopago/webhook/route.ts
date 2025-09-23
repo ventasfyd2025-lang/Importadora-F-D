@@ -22,10 +22,20 @@ function validateWebhookSignature(request: NextRequest, body: string): boolean {
       return false;
     }
 
-    // Extraer timestamp de la firma
-    const ts = signature.split(',').find(part => part.startsWith('ts='))?.split('=')[1];
-    if (!ts) {
-      console.log('❌ Timestamp no encontrado en firma');
+    // Extraer los componentes de la firma
+    const signatureParts = signature.split(',');
+    const ts = signatureParts.find(part => part.startsWith('ts='))?.split('=')[1];
+    const v1Hash = signatureParts.find(part => part.startsWith('v1='))?.split('=')[1];
+    
+    if (!ts || !v1Hash) {
+      console.log('❌ Timestamp o hash no encontrado en firma');
+      return false;
+    }
+
+    // Validar que el webhook secret esté configurado
+    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error('❌ MERCADOPAGO_WEBHOOK_SECRET no configurado');
       return false;
     }
 
@@ -33,19 +43,23 @@ function validateWebhookSignature(request: NextRequest, body: string): boolean {
     const dataId = JSON.parse(body).data?.id;
     const template = `id:${dataId};request-id:${requestId};ts:${ts};`;
     
-    console.log('🔍 Validando firma con template:', template);
-
-    // Para desarrollo, saltamos la validación por ahora
-    if (process.env.NODE_ENV === 'development') {
-      console.log('⚠️ Modo desarrollo: saltando validación de firma');
-      return true;
-    }
-
-    // En producción, aquí validarías con el secret
-    // const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-    // const hash = crypto.createHmac('sha256', secret).update(template).digest('hex');
+    // Calcular el HMAC SHA256
+    const expectedHash = crypto.createHmac('sha256', secret).update(template).digest('hex');
     
-    return true;
+    // Comparar hashes de forma segura
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(expectedHash, 'hex'),
+      Buffer.from(v1Hash, 'hex')
+    );
+    
+    if (!isValid) {
+      console.log('❌ Firma webhook inválida');
+      console.log('Template:', template);
+      console.log('Expected:', expectedHash);
+      console.log('Received:', v1Hash);
+    }
+    
+    return isValid;
   } catch (error) {
     console.error('❌ Error validando firma webhook:', error);
     return false;

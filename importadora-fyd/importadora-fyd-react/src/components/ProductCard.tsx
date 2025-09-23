@@ -10,9 +10,11 @@ import { useUserAuth } from '@/hooks/useUserAuth';
 
 interface ProductCardProps {
   product: Product;
+  customHeight?: string;
+  isSpecial?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, customHeight, isSpecial = false }: ProductCardProps) {
   const { addItem } = useCart();
   const { currentUser, loading } = useUserAuth();
   const router = useRouter();
@@ -70,116 +72,108 @@ export default function ProductCard({ product }: ProductCardProps) {
   const currentPrice = product.precio || product.price || 0;
   const originalPrice = product.precioOriginal || product.originalPrice || (product.oferta ? Math.round(currentPrice * 1.3) : null);
 
+  // Determine image height based on whether custom height is provided
+  const imageHeight = customHeight 
+    ? (isSpecial ? 'h-48 sm:h-56 lg:h-64' : 'h-36 sm:h-40 lg:h-48')
+    : 'h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56';
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 group border-2 flex flex-col h-full" 
-         style={{ borderColor: '#E0E0E0' }}>
-      <Link href={`/producto/${product.id}`}>
-        <div className="relative h-40 sm:h-48 md:h-56 lg:h-64 xl:h-72">
-          {(product.imagen || (product.images && product.images[0])) ? (
-            <Image
-              src={product.imagen || (product.images && product.images[0]) || ''}
-              alt={product.nombre || product.name || 'Producto'}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F4F4F4' }}>
-              <span className="text-gray-400 text-5xl">📦</span>
-            </div>
-          )}
+    <Link href={`/producto/${product.id}`} className="block h-full">
+      <div className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-100 flex flex-col overflow-hidden ${customHeight || 'h-full'} hover:-translate-y-1 cursor-pointer`}>
+      <div className={`relative ${imageHeight}`}>
+        {(product.imagen || (product.images && product.images[0])) ? (
+          <Image
+            src={product.imagen || (product.images && product.images[0]) || ''}
+            alt={product.nombre || product.name || 'Producto'}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F4F4F4' }}>
+            <span className="text-gray-400 text-5xl">📦</span>
+          </div>
+        )}
 
-          {/* Etiqueta de oferta en esquina - Responsive */}
-          {product.oferta && (
-            <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
-              <span 
-                className="text-white text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full shadow-lg"
-                style={{ backgroundColor: '#D64541' }}
-              >
-                OFERTA
-              </span>
-            </div>
-          )}
-          
-          {product.nuevo && (
-            <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-              <span className="text-white text-xs sm:text-sm font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full" style={{ backgroundColor: '#28A745' }}>
-                NUEVO
-              </span>
-            </div>
-          )}
+        {/* Etiqueta de oferta en esquina - Responsive */}
+        {product.oferta && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg backdrop-blur-sm">
+              OFERTA
+            </span>
+          </div>
+        )}
+        
+        {product.nuevo && (
+          <div className="absolute top-2 right-2 z-10">
+            <span className="bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg backdrop-blur-sm">
+              NUEVO
+            </span>
+          </div>
+        )}
 
-          {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <span className="text-white px-4 py-2 rounded-lg font-medium" style={{ backgroundColor: '#D64541' }}>
-                Sin Stock
-              </span>
-            </div>
-          )}
-        </div>
-      </Link>
+        {product.stock === 0 && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <span className="text-white px-3 py-1 rounded-lg font-medium text-sm" style={{ backgroundColor: '#D64541' }}>
+              Sin Stock
+            </span>
+          </div>
+        )}
+      </div>
 
-      <div className="p-3 sm:p-4 lg:p-6 flex flex-col flex-grow">
-        <Link href={`/producto/${product.id}`}>
-          <h3 className="text-sm sm:text-base lg:text-lg xl:text-xl font-semibold mb-2 sm:mb-3 lg:mb-4 line-clamp-2 hover:opacity-80 transition-opacity text-left"
-              style={{ color: '#333333' }}>
-{product.nombre || product.name || 'Producto sin nombre'}
+      <div className="p-3 flex flex-col flex-grow justify-between">
+        <div className="flex-grow space-y-2">
+          <h3 className="text-sm font-semibold line-clamp-2 text-left leading-tight" style={{ color: '#333333' }}>
+            {product.nombre || product.name || 'Producto sin nombre'}
           </h3>
-        </Link>
 
-        <div className="flex-grow">
-          {(product.descripcion || product.description) && (
-            <p className="text-gray-600 text-xs sm:text-sm lg:text-base mb-2 sm:mb-3 lg:mb-5 line-clamp-2 text-left hidden sm:block">
-              {product.descripcion || product.description}
-            </p>
-          )}
-
-          <div className="mb-3 sm:mb-4 lg:mb-5 text-left">
+          <div className="space-y-2">
             {/* Precio tachado si hay oferta */}
             {originalPrice && (
-              <div className="text-sm sm:text-base lg:text-xl line-through font-medium mb-1 sm:mb-2" style={{ color: '#D64541' }}>
+              <div className="text-sm line-through text-gray-400">
                 {formatPrice(originalPrice)}
               </div>
             )}
             
-            {/* Precio final */}
-            <div className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold mb-1 sm:mb-2" style={{ color: '#28A745' }}>
+            {/* Precio final - Más prominente */}
+            <div className="text-xl font-bold text-gray-900">
               {formatPrice(currentPrice)}
             </div>
             
-            <div className="text-xs sm:text-sm lg:text-base text-gray-600">
-              IVA incluido
-            </div>
-            
             {product.stock <= 5 && product.stock > 0 && (
-              <p className="text-xs sm:text-sm lg:text-base mt-2 sm:mt-3" style={{ color: '#D64541' }}>
-                ¡Últimas {product.stock} unidades!
+              <p className="text-xs" style={{ color: '#D64541' }}>
+                ¡Últimas {product.stock}!
               </p>
             )}
           </div>
         </div>
 
-        <div className="mt-auto">
+        <div className="mt-4">
           {product.stock > 0 ? (
             <button
-              onClick={handleAddToCart}
-              className="w-full py-2 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-5 rounded-lg font-bold text-xs sm:text-sm lg:text-lg text-white transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 lg:gap-3 hover:opacity-90 hover:scale-105 shadow-lg"
-              style={{ backgroundColor: '#F16529' }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddToCart(e);
+              }}
+              style={{ padding: '8px 12px', fontSize: '12px', backgroundColor: '#1d4ed8' }}
+              className="w-full text-white font-medium rounded-md transition-all duration-300 flex items-center justify-center gap-1 shadow-sm hover:shadow-md hover:bg-blue-800"
             >
-              <span className="text-sm sm:text-base lg:text-lg">🛒</span>
-              <span className="hidden sm:inline">Agregar al Carrito</span>
-              <span className="sm:hidden">Agregar</span>
+              <span>🛒</span>
+              <span>Agregar al Carrito</span>
             </button>
           ) : (
             <button
               disabled
-              className="w-full py-2 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-5 rounded-lg font-bold text-xs sm:text-sm lg:text-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+              style={{ padding: '8px 12px', fontSize: '12px' }}
+              className="w-full rounded-md font-medium bg-gray-200 text-gray-500 cursor-not-allowed"
             >
               Sin Stock
             </button>
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   );
 }

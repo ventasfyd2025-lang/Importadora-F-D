@@ -2,7 +2,9 @@
 
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
+import MasonryProductGrid from '@/components/MasonryProductGrid';
 import MainBannerCarousel from '@/components/MainBannerCarousel';
 import OfferPopup from '@/components/OfferPopup';
 import { useProducts } from '@/hooks/useProducts';
@@ -103,6 +105,149 @@ export default function HomeClient() {
         </>
       )}
 
+      {/* PRIORIDAD 1.5: Layouts Pinterest de categorías promocionales - solo en página principal */}
+      {shouldShowBanner && (
+        <section className="py-8 sm:py-12 lg:py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-gray-900 text-center bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                🔥 Promociones por Categoría
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                
+                {/* Promoción grande - Electrónicos */}
+                <Link href="/?category=tecnologia" className="col-span-2 row-span-2 group">
+                  <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 flex flex-col h-full cursor-pointer">
+                    <div className="relative flex-1 min-h-[350px]">
+                      <div className="bg-gradient-to-br from-blue-50 to-purple-100 h-full w-full overflow-hidden">
+                        <img
+                          src="https://images.unsplash.com/photo-1563770660941-20978e870e26?w=800&h=600&fit=crop&crop=center"
+                          alt="Electrónicos y Tecnología"
+                          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                      <span className="absolute top-6 left-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-lg font-bold px-4 py-3 rounded-full shadow-lg">
+                        HASTA 50% OFF
+                      </span>
+                      <div className="absolute bottom-6 left-6 text-white">
+                        <h3 className="text-3xl font-bold mb-2">Electrónicos</h3>
+                        <p className="text-lg opacity-90">Smartphones, laptops y más</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Promoción alta - Moda */}
+                <Link href="/?category=moda" className="row-span-2 group">
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                    <div className="relative flex-1 min-h-[300px]">
+                      <div className="bg-gradient-to-br from-pink-50 to-red-100 h-full w-full overflow-hidden">
+                        <img
+                          src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=700&fit=crop&crop=center"
+                          alt="Moda y Ropa"
+                          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                      <span className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 to-red-600 text-white text-sm font-bold px-3 py-2 rounded-full shadow-lg">
+                        NUEVA COLECCIÓN
+                      </span>
+                      <div className="absolute bottom-4 left-4 text-white">
+                        <h3 className="text-2xl font-bold mb-2">Moda</h3>
+                        <p className="text-sm opacity-90">Ropa y accesorios</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Promociones normales */}
+                <Link href="/?category=electrohogar" className="group">
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                    <div className="relative h-32">
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-100 h-full w-full overflow-hidden">
+                        <img
+                          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop&crop=center"
+                          alt="Electrohogar"
+                          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                      <div className="absolute bottom-2 left-2 text-white">
+                        <h3 className="text-lg font-bold">Electrohogar</h3>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/?category=calzado" className="group">
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                    <div className="relative h-32">
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-100 h-full w-full overflow-hidden">
+                        <img
+                          src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=300&fit=crop&crop=center"
+                          alt="Calzado"
+                          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                      <div className="absolute bottom-2 left-2 text-white">
+                        <h3 className="text-lg font-bold">Calzado</h3>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/?category=fitness" className="group">
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                    <div className="relative h-32">
+                      <div className="bg-gradient-to-br from-red-50 to-rose-100 h-full w-full overflow-hidden">
+                        <img
+                          src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop&crop=center"
+                          alt="Fitness"
+                          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                      <div className="absolute bottom-2 left-2 text-white">
+                        <h3 className="text-lg font-bold">Fitness</h3>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/?filter=ofertas" className="group">
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                    <div className="relative h-32">
+                      <div className="bg-gradient-to-br from-red-500 to-red-600 h-full w-full overflow-hidden flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <div className="text-4xl mb-2">🔥</div>
+                          <h3 className="text-lg font-bold">OFERTAS</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/?filter=nuevos" className="group">
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+                    <div className="relative h-32">
+                      <div className="bg-gradient-to-br from-green-500 to-green-600 h-full w-full overflow-hidden flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <div className="text-4xl mb-2">✨</div>
+                          <h3 className="text-lg font-bold">NUEVOS</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* PRIORIDAD 2: Productos cargan después en segundo plano */}
       <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -169,7 +314,7 @@ export default function HomeClient() {
                   <div className="h-6 sm:h-8 bg-gray-300 rounded w-32 sm:w-48 mb-2 sm:mb-0"></div>
                   <div className="h-5 sm:h-6 bg-gray-300 rounded w-16 sm:w-20"></div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                   {[...Array(10)].map((_, i) => (
                     <div key={i} className="bg-white rounded-lg shadow-md p-3 sm:p-4">
                       <div className="h-32 sm:h-40 lg:h-48 bg-gray-300 rounded mb-3 sm:mb-4"></div>
@@ -194,48 +339,25 @@ export default function HomeClient() {
                   
                   const sortedCategories = Object.keys(groupedByCategory).sort();
                   
-                  return sortedCategories.map(categoryName => {
-                    // Find the category to get its icon
-                    const categoryInfo = categories.find(cat => cat.id === categoryName || cat.name.toLowerCase() === categoryName.toLowerCase());
-                    const categoryIcon = categoryInfo?.icon || '📦';
-                    const displayName = categoryInfo?.name || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
-                    
-                    return (
-                    <div key={categoryName} className="mb-16">
-                      <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl font-bold" style={{ color: '#F16529' }}>
-                          {categoryIcon} {displayName}
-                        </h2>
-                        <button
-                          onClick={() => {
-                            window.location.href = `/?category=${categoryName}`;
-                          }}
-                          className="font-medium flex items-center hover:opacity-80 transition-opacity"
-                          style={{ color: '#0074D9' }}
-                        >
-                          Ver todos
-                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-                        {groupedByCategory[categoryName].slice(0, 10).map((product) => (
-                          <ProductCard key={product.id} product={product} />
-                        ))}
-                      </div>
-                    </div>
+                  return (
+                    <>
+                      {sortedCategories.map(categoryName => {
+                        // Find the category to get its icon
+                        const categoryInfo = categories.find(cat => cat.id === categoryName || cat.name.toLowerCase() === categoryName.toLowerCase());
+                        const categoryIcon = categoryInfo?.icon || '📦';
+                        const displayName = categoryInfo?.name || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+                        
+                        return (
+                          <MasonryProductGrid key={categoryName} products={groupedByCategory[categoryName]} />
+                        );
+                      })}
+                    </>
                   );
-                  });
                 })()
               ) : (
-                /* Standard grid for filtered results */
+                /* Masonry grid for filtered results */
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-                    {displayProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+                  <MasonryProductGrid products={displayProducts} />
                   
                   <div className="text-center mt-8 text-gray-600">
                     Mostrando {displayProducts.length} productos

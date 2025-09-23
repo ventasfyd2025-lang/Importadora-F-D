@@ -34,16 +34,19 @@ const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
   options: {
     timeout: 5000,
-    idempotencyKey: 'unique-key',
   }
 });
-
-const preference = new Preference(client);
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as RequestBody;
     const { items, userInfo, orderId } = body;
+
+    // Generate unique idempotency key for this request
+    const idempotencyKey = orderId ? `order_${orderId}` : `temp_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    
+    // Create preference instance with unique idempotency key
+    const preference = new Preference(client);
 
 
     // Validar que tenemos los datos necesarios
@@ -68,25 +71,11 @@ export async function POST(request: NextRequest) {
     // Obtener la URL base correcta
     const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     
-    // Configurar preferencia simplificada para credenciales de prueba
+    // Configurar preferencia simplificada
     const preferenceData = {
       items: mpItems,
       payer: {
-        name: userInfo?.firstName || '',
-        surname: userInfo?.lastName || '.',
-        email: userInfo?.email,
-        phone: {
-          area_code: '56',
-          number: userInfo?.phone?.replace(/[^0-9]/g, '') || ''
-        },
-        identification: {
-          type: 'RUT',
-          number: userInfo?.rut?.replace(/[^0-9kK]/g, '') || ''
-        },
-        address: {
-          street_name: userInfo?.address?.street || '',
-          zip_code: userInfo?.address?.postalCode || ''
-        }
+        email: userInfo?.email || ''
       },
       back_urls: {
         success: `${baseUrl}/checkout/success`,
@@ -95,7 +84,8 @@ export async function POST(request: NextRequest) {
       },
       external_reference: orderId || `order_${Date.now()}`,
       notification_url: `${baseUrl}/api/mercadopago/webhook`,
-      statement_descriptor: 'IMPORTADORA F&D'
+      statement_descriptor: 'IMPORTADORA F&D',
+      auto_return: 'approved'
     };
 
 
@@ -109,8 +99,13 @@ export async function POST(request: NextRequest) {
       successUrl: `${baseUrl}/checkout/success`
     });
 
-    // Crear preferencia en MercadoPago
-    const response = await preference.create({ body: preferenceData });
+    // Crear preferencia en MercadoPago con idempotency key único
+    const response = await preference.create({ 
+      body: preferenceData,
+      requestOptions: {
+        idempotencyKey: idempotencyKey
+      }
+    });
 
     console.log('✅ Preferencia creada exitosamente:', {
       preferenceId: response.id,

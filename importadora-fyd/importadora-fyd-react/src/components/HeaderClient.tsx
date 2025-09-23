@@ -17,7 +17,7 @@ export default function HeaderClient() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
   const { getTotalItems } = useCart();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { categories } = useCategories();
   const { logoConfig } = useConfig();
   const { currentUser, isRegistered, isGuest, logout } = useUserAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -31,9 +31,10 @@ export default function HeaderClient() {
       return;
     }
 
+    const userId = 'uid' in currentUser ? currentUser.uid : currentUser.id;
     const messagesQuery = query(
       collection(db, 'chat_messages'),
-      where('userId', '==', currentUser.uid || currentUser.id),
+      where('userId', '==', userId),
       where('isAdmin', '==', true),
       where('read', '==', false)
     );
@@ -86,34 +87,35 @@ export default function HeaderClient() {
   return (
     <>
       <header className="sticky top-0 z-50 shadow-lg" style={{ backgroundColor: '#F16529' }}>
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Left side - Logo + Menu button (mobile) */}
+        <div className="relative max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between" style={{ height: '100px' }}>
+            {/* Left side - Logo + Menu button (mobile) - Updated */}
             <div className="flex items-center flex-shrink-0">
-              {/* Menu button - Mobile only, next to logo */}
+              {/* Menu button - More prominent */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 mr-1 text-white hover:text-orange-100 focus:outline-none"
+                className="lg:hidden p-3 mr-2 text-white hover:text-orange-100 focus:outline-none bg-orange-600 hover:bg-orange-700 rounded-lg shadow-md border border-orange-500 z-50"
               >
-                <Bars3Icon className="h-6 w-6" />
+                <Bars3Icon className="h-7 w-7" />
               </button>
 
-              <Link href="/" className="flex items-center space-x-1 sm:space-x-3">
+              <Link href="/" className="flex items-center space-x-2 sm:space-x-4">
                 {logoConfig.image ? (
                   <img 
                     src={logoConfig.image} 
                     alt={logoConfig.text}
-                    className="h-8 w-8 sm:h-12 sm:w-12 object-cover rounded"
+                    className="object-cover rounded"
+                    style={{ height: '80px', width: '80px' }}
                   />
                 ) : (
-                  <div className="text-xl sm:text-3xl">{logoConfig.emoji}</div>
+                  <div className="text-2xl sm:text-4xl md:text-5xl">{logoConfig.emoji}</div>
                 )}
-                <span className="text-sm sm:text-lg md:text-2xl font-bold text-white block">{logoConfig.text}</span>
+                <span className="font-bold text-white block" style={{ fontSize: '1.5rem' }}>{logoConfig.text}</span>
               </Link>
             </div>
 
             {/* Mobile: Right side with user + cart */}
-            <div className="md:hidden flex items-center space-x-1">
+            <div className="lg:hidden flex items-center space-x-1">
               {/* User - Mobile */}
               <Link
                 href="/perfil"
@@ -144,7 +146,7 @@ export default function HeaderClient() {
             </div>
 
             {/* Desktop - Categories + Search */}
-            <div className="hidden md:flex items-center space-x-2 lg:space-x-4 flex-1 max-w-4xl mx-4 lg:mx-8">
+            <div className="hidden lg:flex items-center space-x-2 lg:space-x-4 flex-1 max-w-4xl mx-4 lg:mx-8">
               {/* Categories Menu */}
               <div className="relative" ref={categoriesDropdownRef}>
                 <button
@@ -269,7 +271,7 @@ export default function HeaderClient() {
             </div>
 
             {/* Right side - User Menu + Cart - Hidden on mobile */}
-            <div className="hidden md:flex items-center space-x-1 sm:space-x-2">
+            <div className="hidden lg:flex items-center space-x-1 sm:space-x-2">
               {/* User Menu */}
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -401,8 +403,8 @@ export default function HeaderClient() {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-            <div className="md:hidden border-t border-orange-600">
-              <div className="px-2 pt-2 pb-3 space-y-1">
+            <div className="lg:hidden border-t border-orange-600 absolute top-full left-0 right-0 bg-[#F16529] z-50">
+              <div className="px-2 pt-2 pb-3 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
                 {/* Mobile Search */}
                 <form onSubmit={handleSearch} className="flex mb-3">
                   <input

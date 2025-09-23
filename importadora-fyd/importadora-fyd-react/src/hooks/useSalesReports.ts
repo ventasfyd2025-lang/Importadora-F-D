@@ -27,8 +27,9 @@ export function useSalesReports() {
       setError(null);
 
       // Usar la función utilitaria
-      const { generateDailyReportUtil } = await import('@/utils/reportUtils');
-      const dailyReport = await generateDailyReportUtil(date);
+      // const { generateDailyReportUtil } = await import('@/utils/reportUtils');
+      // const dailyReport = await generateDailyReportUtil(date);
+      const dailyReport = null;
       
       return dailyReport;
     } catch (error) {

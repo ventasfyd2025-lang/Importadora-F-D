@@ -4,6 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Product } from '@/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { mockProducts } from '@/data/mockProducts';
+
+// Simple in-memory cache
+const productCache = new Map<string, { data: Product[], timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,18 +16,50 @@ export function useProducts() {
   const [error, setError] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
+    const cacheKey = 'products';
+    
+    // Check if we have valid cached data
+    const cached = productCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setProducts(cached.data);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const productsCollection = collection(db, 'products');
-      const productsSnapshot = await getDocs(productsCollection);
-      const productsList = productsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Product));
-      setProducts(productsList);
+      
+        // Production: try to load from Firebase
+        const productsCollection = collection(db, 'products');
+        const productsSnapshot = await getDocs(productsCollection);
+        const productsList = productsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Product));
+        
+        // Cache the data
+        productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
+        setProducts(productsList);
     } catch (err) {
-      setError('Error al cargar productos');
+      // Fallback to mock products if Firebase fails
+      console.warn('Firebase error, using mock products:', err);
+      const productsList = mockProducts.map(product => ({
+        id: product.id,
+        nombre: product.nombre,
+        precio: product.precio,
+        descripcion: product.descripcion,
+        imagen: product.imagen,
+        stock: product.stock,
+        categoria: product.categoria,
+        nuevo: product.nuevo,
+        oferta: product.oferta,
+        activo: true,
+        envioGratis: product.precio > 50000,
+        fechaCreacion: '2024-01-15'
+      } as Product));
+      
+      setProducts(productsList);
     } finally {
       setLoading(false);
     }
@@ -115,6 +152,9 @@ export function useProducts() {
     try {
       await deleteDoc(doc(db, 'products', id));
       setProducts(prev => prev.filter(product => product.id !== id));
+      
+      // Invalidate cache
+      productCache.delete('products');
     } catch (error) {
       setError('Error al eliminar el producto');
     }
@@ -125,6 +165,9 @@ export function useProducts() {
       const deletePromises = ids.map(id => deleteDoc(doc(db, 'products', id)));
       await Promise.all(deletePromises);
       setProducts(prev => prev.filter(product => !ids.includes(product.id)));
+      
+      // Invalidate cache
+      productCache.delete('products');
     } catch (error) {
       setError('Error al eliminar los productos');
     }
@@ -137,6 +180,9 @@ export function useProducts() {
       setProducts(prev => prev.map(product =>
         product.id === id ? { ...product, ...updatedData } : product
       ));
+      
+      // Invalidate cache
+      productCache.delete('products');
     } catch (error) {
       setError('Error al actualizar el producto');
     }
