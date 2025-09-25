@@ -1,5 +1,5 @@
-import HeaderWrapper from './HeaderWrapper';
+import UnifiedHeader from './UnifiedHeader';
 
 export default function Header() {
-  return <HeaderWrapper />;
+  return <UnifiedHeader />;
 }

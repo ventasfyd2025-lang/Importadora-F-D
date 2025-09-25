@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import Layout from '@/components/Layout';
 import { UserIcon, MapPinIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {
@@ -14,6 +15,7 @@ export default function ProfilePage() {
     firstName: '',
     lastName: '',
     phone: '',
+    rut: '',
     address: {
       street: '',
       city: '',
@@ -35,6 +37,7 @@ export default function ProfilePage() {
         firstName: userProfile.firstName || '',
         lastName: userProfile.lastName || '',
         phone: userProfile.phone || '',
+        rut: userProfile.rut || '',
         address: {
           street: userProfile.address?.street || '',
           city: userProfile.address?.city || '',
@@ -87,6 +90,7 @@ export default function ProfilePage() {
         firstName: userProfile.firstName || '',
         lastName: userProfile.lastName || '',
         phone: userProfile.phone || '',
+        rut: userProfile.rut || '',
         address: {
           street: userProfile.address?.street || '',
           city: userProfile.address?.city || '',
@@ -111,7 +115,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+    <Layout>
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
@@ -230,10 +235,28 @@ export default function ProfilePage() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+56 9 1234 5678"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
                   />
                 ) : (
                   <p className="text-gray-900 text-sm sm:text-base">{userProfile?.phone || 'No especificado'}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  RUT
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="rut"
+                    value={formData.rut}
+                    onChange={handleChange}
+                    placeholder="12.345.678-9"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
+                  />
+                ) : (
+                  <p className="text-gray-900 text-sm sm:text-base">{userProfile?.rut || 'No especificado'}</p>
                 )}
               </div>
             </div>
@@ -359,6 +382,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }

@@ -2,70 +2,125 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useConfig } from '@/hooks/useConfig';
+import { useFooterConfig } from '@/hooks/useFooterConfig';
 
 export default function Footer() {
-  const { logoConfig } = useConfig();
-  
+  const { footerConfig, loading } = useFooterConfig();
+
+  if (loading) {
+    return (
+      <footer className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-4 bg-white/20 rounded w-1/3 mb-4"></div>
+            <div className="h-3 bg-white/20 rounded w-2/3"></div>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
-    <footer className="text-white" style={{ backgroundColor: '#F16529' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Company Info */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">{logoConfig.text}</h3>
-            <p className="text-gray-300 mb-4">
-              Tu tienda online de confianza con los mejores productos importados.
+          <div className="lg:col-span-1">
+            <h3 className="text-xl font-bold mb-3">{footerConfig.companyName}</h3>
+            <p className="text-white/90 text-sm leading-relaxed">
+              {footerConfig.description}
             </p>
           </div>
 
           {/* Contact Info */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Contacto</h3>
-            <div className="space-y-2 text-gray-300">
-              <p className="flex items-center">
-                <span className="mr-2">📞</span>
-                +1 234 567 890
-              </p>
-              <p className="flex items-center">
-                <span className="mr-2">📧</span>
-                info@importadorafyd.com
-              </p>
-              <p className="flex items-center">
-                <span className="mr-2">📍</span>
-                Calle Principal 123, Ciudad
-              </p>
+          {footerConfig.showContactInfo && (
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Contacto</h4>
+              <div className="space-y-3 text-sm">
+                <p className="flex items-center text-white/90">
+                  <span className="mr-3">📞</span>
+                  {footerConfig.contact.phone}
+                </p>
+                <p className="flex items-center text-white/90">
+                  <span className="mr-3">📧</span>
+                  {footerConfig.contact.email}
+                </p>
+                <p className="flex items-center text-white/90">
+                  <span className="mr-3">📍</span>
+                  {footerConfig.contact.address}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Social Links */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Síguenos</h3>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                <span className="text-2xl">📘</span>
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                <span className="text-2xl">📷</span>
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                <span className="text-2xl">💬</span>
-              </a>
+          {/* Social Media */}
+          {footerConfig.showSocialMedia && (
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Síguenos</h4>
+              <div className="flex space-x-4">
+                {footerConfig.socialMedia.facebook !== '#' && (
+                  <a
+                    href={footerConfig.socialMedia.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                    aria-label="Facebook"
+                  >
+                    <span className="text-xl">📘</span>
+                  </a>
+                )}
+                {footerConfig.socialMedia.instagram !== '#' && (
+                  <a
+                    href={footerConfig.socialMedia.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                    aria-label="Instagram"
+                  >
+                    <span className="text-xl">📷</span>
+                  </a>
+                )}
+                {footerConfig.socialMedia.whatsapp !== '#' && (
+                  <a
+                    href={footerConfig.socialMedia.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                    aria-label="WhatsApp"
+                  >
+                    <span className="text-xl">💬</span>
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="border-t mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
-          <p className="text-gray-400 text-sm">
-            &copy; 2024 {logoConfig.text}. Todos los derechos reservados.
+        {/* Bottom Bar */}
+        <div className="border-t border-white/20 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center text-sm">
+          <p className="text-white/80">
+            &copy; {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
           </p>
-          <Link 
-            href="/admin" 
-            className="text-xs mt-2 sm:mt-0 transition-colors hover:opacity-80"
-            style={{ color: '#0074D9' }}
-          >
-            Admin
-          </Link>
+          <div className="flex space-x-4 mt-4 sm:mt-0">
+            <Link
+              href="/legal/terminos"
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              Términos
+            </Link>
+            <Link
+              href="/legal/privacidad"
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              Privacidad
+            </Link>
+            <Link
+              href="/admin"
+              className="text-white/50 hover:text-white/70 transition-colors text-xs"
+            >
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

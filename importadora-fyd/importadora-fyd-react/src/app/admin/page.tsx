@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
+import { useFooterConfig } from '@/hooks/useFooterConfig';
 import { 
   collection, 
   getDocs, 
@@ -39,6 +40,7 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, loading: authLoading, login, logout } = useAuth();
   const { products, refetch, removeProduct, removeProducts, updateProduct } = useProducts();
+  const { footerConfig, updateFooterConfig, loading: footerLoading } = useFooterConfig();
   
   const [activeTab, setActiveTab] = useState('dashboard');
   
@@ -211,17 +213,32 @@ export default function AdminPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [updatingLogo, setUpdatingLogo] = useState(false);
   
-  // Footer information state
+  // Footer information state - synced with useFooterConfig hook
   const [footerForm, setFooterForm] = useState({
-    companyDescription: 'Tu tienda online de confianza con los mejores productos importados.',
-    phone: '+1 234 567 890',
-    email: 'info@importadorafyd.com',
-    address: 'Calle Principal 123, Ciudad',
-    facebookUrl: '#',
-    instagramUrl: '#',
-    whatsappUrl: '#'
+    companyDescription: '',
+    phone: '',
+    email: '',
+    address: '',
+    facebookUrl: '',
+    instagramUrl: '',
+    whatsappUrl: ''
   });
   const [updatingFooter, setUpdatingFooter] = useState(false);
+
+  // Sync footer form with hook data
+  useEffect(() => {
+    if (footerConfig && !footerLoading) {
+      setFooterForm({
+        companyDescription: footerConfig.description || '',
+        phone: footerConfig.contact.phone || '',
+        email: footerConfig.contact.email || '',
+        address: footerConfig.contact.address || '',
+        facebookUrl: footerConfig.socialMedia.facebook || '',
+        instagramUrl: footerConfig.socialMedia.instagram || '',
+        whatsappUrl: footerConfig.socialMedia.whatsapp || ''
+      });
+    }
+  }, [footerConfig, footerLoading]);
   
   // Category management state
   const [syncingCategories, setSyncingCategories] = useState(false);
@@ -3386,19 +3403,22 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   onClick={async () => {
                     try {
                       setUpdatingFooter(true);
-                      
-                      // Try to save footer configuration to Firebase
-                      await setDoc(doc(db, 'config', 'footer'), {
-                        companyDescription: footerForm.companyDescription,
-                        phone: footerForm.phone,
-                        email: footerForm.email,
-                        address: footerForm.address,
-                        facebookUrl: footerForm.facebookUrl,
-                        instagramUrl: footerForm.instagramUrl,
-                        whatsappUrl: footerForm.whatsappUrl,
-                        updatedAt: new Date().toISOString()
+
+                      // Update footer configuration using the hook
+                      await updateFooterConfig({
+                        description: footerForm.companyDescription,
+                        contact: {
+                          phone: footerForm.phone,
+                          email: footerForm.email,
+                          address: footerForm.address
+                        },
+                        socialMedia: {
+                          facebook: footerForm.facebookUrl,
+                          instagram: footerForm.instagramUrl,
+                          whatsapp: footerForm.whatsappUrl
+                        }
                       });
-                      
+
                       alert('Información del footer actualizada exitosamente');
                     } catch (error) {
                       console.error('Error updating footer:', error);

@@ -158,7 +158,7 @@ export default function UnifiedHeader() {
           src={logoConfig.image}
           alt={logoConfig.text}
           className="rounded-full object-cover shadow-sm"
-          style={{ height: '50px', width: '50px' }}
+          style={{ height: '70px', width: '70px' }}
         />
       );
     }
@@ -168,7 +168,7 @@ export default function UnifiedHeader() {
     return (
       <span
         className="flex items-center justify-center rounded-full font-semibold text-white shadow-sm"
-        style={{ height: '50px', width: '50px', fontSize: '1.2rem', backgroundColor: '#D95D22' }}
+        style={{ height: '70px', width: '70px', fontSize: '1.5rem', backgroundColor: '#D95D22' }}
       >
         {fallbackText}
       </span>
@@ -200,43 +200,10 @@ export default function UnifiedHeader() {
           <div className="text-white backdrop-blur-sm" style={{ background: 'linear-gradient(to right, #D95D22, #E67E22)' }}>
             <div className="mx-auto flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
             
-            {/* Logo + Hamburger */}
+            {/* Logo + Desktop Categories + Mobile Hamburger */}
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-3" aria-label={logoConfig.text || 'Importadora F&D'}>
-                {renderLogoBadge()}
-                <div className="flex flex-col">
-                  <span className="text-lg font-semibold">{logoConfig.text || 'Importadora F&D'}</span>
-                  <span className="text-[11px] uppercase tracking-[0.28em] text-white/80">
-                    Tu tienda de confianza
-                  </span>
-                </div>
-              </Link>
-              
-              {/* Hamburger Menu Button - Prominente */}
-              <button
-                onClick={() => {
-                  console.log('UnifiedHeader: Hamburger clicked, current state:', isMobileMenuOpen);
-                  console.log('UnifiedHeader: Categories available:', categories.length);
-                  setIsMobileMenuOpen(!isMobileMenuOpen);
-                  setIsDesktopCategoriesOpen(false);
-                  if (isMobileMenuOpen) {
-                    setExpandedCategories(new Set());
-                  }
-                }}
-                className="lg:hidden p-3 ml-3 rounded-xl hover:bg-white/30 transition-all duration-300 border-2 border-white/40 bg-white/20 shadow-lg hover:shadow-xl hover:scale-105 backdrop-blur-sm z-50"
-                aria-label="Menú de categorías"
-              >
-                {isMobileMenuOpen ? (
-                  <XMarkIcon className="h-7 w-7 text-white font-bold" />
-                ) : (
-                  <Bars3Icon className="h-7 w-7 text-white font-bold" />
-                )}
-              </button>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex flex-1 items-center max-w-3xl mx-8 gap-4">
-              <div className="relative" ref={desktopCategoriesRef}>
+              {/* Desktop Categories Button - Left of logo and smaller */}
+              <div className="hidden lg:block relative" ref={desktopCategoriesRef}>
                 <button
                   onClick={() => {
                     setIsDesktopCategoriesOpen(!isDesktopCategoriesOpen);
@@ -244,11 +211,12 @@ export default function UnifiedHeader() {
                       setExpandedCategories(new Set());
                     }
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-white/50 bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors duration-200 shadow-sm backdrop-blur-sm"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-white font-semibold text-sm hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-lg backdrop-blur-sm border border-orange-400/50"
+                  style={{ backgroundColor: '#D95D22' }}
                   aria-haspopup="true"
                   aria-expanded={isDesktopCategoriesOpen}
                 >
-                  <Bars3Icon className="h-5 w-5" />
+                  <Bars3Icon className="h-3.5 w-3.5" />
                   <span>Categorías</span>
                 </button>
 
@@ -285,7 +253,7 @@ export default function UnifiedHeader() {
                               {category.subcategorias && category.subcategorias.length > 0 ? (
                                 <button
                                   onClick={() => toggleCategoryExpansion(category.id)}
-                                  className="w-full group block text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                                  className="w-full group block text-left px-4 py-1 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium text-sm border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
                                 >
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
@@ -301,7 +269,7 @@ export default function UnifiedHeader() {
                                 <Link
                                   href={category.id === 'all' ? '/' : `/?category=${category.id}`}
                                   onClick={() => handleCategoryNavigate()}
-                                  className="group block w-full text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                                  className="group block w-full text-left px-4 py-1 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium text-sm border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
                                 >
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
@@ -322,7 +290,7 @@ export default function UnifiedHeader() {
                                       key={subcategoria.id}
                                       href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
                                       onClick={() => handleCategoryNavigate()}
-                                      className="group block w-full text-left px-5 py-3 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
+                                      className="group block w-full text-left px-4 py-0.5 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-md transition-all duration-300 font-normal text-xs border border-gray-50 shadow-sm hover:shadow-md hover:border-orange-200"
                                     >
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center space-x-2">
@@ -344,7 +312,7 @@ export default function UnifiedHeader() {
                             <Link
                               href="/?filter=ofertas"
                               onClick={() => handleCategoryNavigate()}
-                              className="group block w-full text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                              className="group block w-full text-left px-4 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
@@ -358,7 +326,7 @@ export default function UnifiedHeader() {
                             <Link
                               href="/?filter=nuevos"
                               onClick={() => handleCategoryNavigate()}
-                              className="group block w-full text-left px-5 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200"
+                              className="group block w-full text-left px-4 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
@@ -376,6 +344,41 @@ export default function UnifiedHeader() {
                 )}
               </div>
 
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-3" aria-label={logoConfig.text || 'Importadora F&D'}>
+                {renderLogoBadge()}
+                <div className="flex flex-col">
+                  <span className="text-lg font-semibold">{logoConfig.text || 'Importadora F&D'}</span>
+                  <span className="text-[11px] uppercase tracking-[0.28em] text-white/80">
+                    Tu tienda de confianza
+                  </span>
+                </div>
+              </Link>
+
+              {/* Mobile Hamburger Menu Button */}
+              <button
+                onClick={() => {
+                  console.log('UnifiedHeader: Hamburger clicked, current state:', isMobileMenuOpen);
+                  console.log('UnifiedHeader: Categories available:', categories.length);
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                  setIsDesktopCategoriesOpen(false);
+                  if (isMobileMenuOpen) {
+                    setExpandedCategories(new Set());
+                  }
+                }}
+                className="lg:hidden p-3 ml-3 rounded-xl hover:bg-white/20 transition-all duration-300 border-2 border-white/60 bg-white/30 shadow-lg hover:shadow-xl hover:scale-105 backdrop-blur-sm z-50"
+                aria-label="Menú de categorías"
+              >
+                {isMobileMenuOpen ? (
+                  <XMarkIcon className="h-7 w-7 text-white font-bold" />
+                ) : (
+                  <Bars3Icon className="h-7 w-7 text-white font-bold" />
+                )}
+              </button>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex flex-1 items-center max-w-3xl mx-8 gap-4">
               <form onSubmit={handleSearch} className="flex w-full">
                 <input
                   type="text"
@@ -585,7 +588,7 @@ export default function UnifiedHeader() {
                         {category.subcategorias && category.subcategorias.length > 0 ? (
                           <button
                             onClick={() => toggleCategoryExpansion(category.id)}
-                            className="w-full group block text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                            className="w-full group block text-left px-4 py-1.5 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium text-sm border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-3">
@@ -601,7 +604,7 @@ export default function UnifiedHeader() {
                           <Link
                             href={category.id === 'all' ? '/' : `/?category=${category.id}`}
                             onClick={handleCategoryNavigate}
-                            className="group block w-full text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                            className="group block w-full text-left px-4 py-1.5 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium text-sm border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-3">
@@ -623,7 +626,7 @@ export default function UnifiedHeader() {
                                 key={subcategoria.id}
                                 href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
                                 onClick={handleCategoryNavigate}
-                                className="group block w-full text-left px-6 py-3 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
+                                className="group block w-full text-left px-4 py-0.5 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-md transition-all duration-300 font-normal text-xs border border-gray-50 shadow-sm hover:shadow-md hover:border-orange-200"
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-2">
@@ -646,7 +649,7 @@ export default function UnifiedHeader() {
                       <Link
                         href="/?filter=ofertas"
                         onClick={handleCategoryNavigate}
-                        className="group block w-full text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                        className="group block w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
@@ -660,7 +663,7 @@ export default function UnifiedHeader() {
                       <Link
                         href="/?filter=nuevos"
                         onClick={handleCategoryNavigate}
-                        className="group block w-full text-left px-6 py-4 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-xl transition-all duration-300 font-semibold border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
+                        className="group block w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">

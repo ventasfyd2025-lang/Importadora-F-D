@@ -14,6 +14,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     phone: '',
+    rut: '',
     address: {
       street: '',
       city: '',
@@ -66,6 +67,10 @@ export default function RegisterPage() {
       setError('El teléfono es requerido');
       return false;
     }
+    if (!formData.rut.trim()) {
+      setError('El RUT es requerido');
+      return false;
+    }
     if (!formData.address.street.trim()) {
       setError('La dirección es requerida');
       return false;
@@ -103,11 +108,12 @@ export default function RegisterPage() {
 
     try {
       await register(
-        formData.email, 
-        formData.password, 
-        formData.firstName, 
+        formData.email,
+        formData.password,
+        formData.firstName,
         formData.lastName,
         formData.phone,
+        formData.rut,
         formData.address
       );
       router.push('/');
@@ -257,21 +263,41 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Teléfono
-              </label>
-              <div className="mt-1">
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                  placeholder="+56 9 XXXX XXXX"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Teléfono
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                    placeholder="+56 9 XXXX XXXX"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="rut" className="block text-sm font-medium text-gray-700">
+                  RUT
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="rut"
+                    name="rut"
+                    type="text"
+                    required
+                    value={formData.rut}
+                    onChange={handleChange}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                    placeholder="12.345.678-9"
+                  />
+                </div>
               </div>
             </div>
 
