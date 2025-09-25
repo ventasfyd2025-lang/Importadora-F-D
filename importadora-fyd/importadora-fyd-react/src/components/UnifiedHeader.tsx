@@ -152,13 +152,19 @@ export default function UnifiedHeader() {
   };
 
   const renderLogoBadge = () => {
+    // TAMAÑO FIJO para evitar layout shift - SIEMPRE el mismo tamaño
+    const containerClass = "flex items-center justify-center rounded-full shadow-sm w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14";
+
     if (logoConfig.image) {
       return (
-        <img
-          src={logoConfig.image}
-          alt={logoConfig.text}
-          className="rounded-full object-cover shadow-sm w-12 h-12 sm:w-16 sm:h-16 lg:w-[70px] lg:h-[70px]"
-        />
+        <div className={containerClass} style={{ backgroundColor: '#D95D22' }}>
+          <img
+            src={logoConfig.image}
+            alt={logoConfig.text}
+            className="rounded-full object-cover w-full h-full"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+          />
+        </div>
       );
     }
 
@@ -166,7 +172,7 @@ export default function UnifiedHeader() {
 
     return (
       <span
-        className="flex items-center justify-center rounded-full font-semibold text-white shadow-sm w-12 h-12 sm:w-16 sm:h-16 lg:w-[70px] lg:h-[70px] text-sm sm:text-lg lg:text-2xl"
+        className={`${containerClass} font-semibold text-white text-xs sm:text-sm lg:text-base`}
         style={{ backgroundColor: '#D95D22' }}
       >
         {fallbackText}
