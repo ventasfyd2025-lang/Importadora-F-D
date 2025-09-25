@@ -294,7 +294,7 @@ export default function RetailHomepage() {
     return (
       <div
         className="min-h-screen"
-        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '16rem' }}
+        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '18rem' }}
       >
         <UnifiedHeader />
         
@@ -352,7 +352,7 @@ export default function RetailHomepage() {
     return (
       <div
         className="min-h-screen"
-        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '16rem' }}
+        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '18rem' }}
       >
         <UnifiedHeader />
         
@@ -457,7 +457,7 @@ export default function RetailHomepage() {
       >
         <UnifiedHeader />
         
-        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-44 sm:pt-32 lg:pt-36">
+        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-20 sm:pt-32 lg:pt-36">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {getFilterTitle()}
@@ -581,7 +581,7 @@ export default function RetailHomepage() {
     >
       <UnifiedHeader />
       
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-44 sm:pt-32 lg:pt-36">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-20 sm:pt-32 lg:pt-36">
         {/* Hero Banner Carousel */}
         {bannerSlides.length > 0 ? (
           <BannerCarousel banners={bannerSlides} autoPlay={true} autoPlayInterval={5000} />
