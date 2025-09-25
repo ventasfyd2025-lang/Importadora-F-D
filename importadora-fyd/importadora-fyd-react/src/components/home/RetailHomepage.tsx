@@ -204,12 +204,10 @@ export default function RetailHomepage() {
   const { getTotalItems, addItem } = useCart();
   const { currentUser } = useUserAuth();
   const { homepageConfig, loading: homepageLoading } = useHomepageConfig();
+  const [notification, setNotification] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
   
-  // Debug logs
-  useEffect(() => {
-    console.log('🏠 Homepage loaded, config:', homepageConfig);
-    console.log('📊 Promotional sections count:', homepageConfig.promotionalSections.length);
-  }, [homepageConfig]);
+  // Debug logs - removed for production
   
   // Get filter parameters
   const category = searchParams.get('category') || '';
@@ -363,10 +361,19 @@ export default function RetailHomepage() {
             <h2 className="text-xl font-bold text-red-800 mb-2">Error al cargar productos</h2>
             <p className="text-red-600">{productsError}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setRetryCount(prev => prev + 1);
+                // Force component re-render by updating state
+                setTimeout(() => {
+                  if (retryCount < 3) {
+                    window.location.reload();
+                  }
+                }, 100);
+              }}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              disabled={retryCount >= 3}
             >
-              Reintentar
+              {retryCount >= 3 ? 'Máximo de intentos alcanzado' : 'Reintentar'}
             </button>
           </div>
         </main>
@@ -450,7 +457,7 @@ export default function RetailHomepage() {
       >
         <UnifiedHeader />
         
-        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-36 lg:pt-36">
+        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-28 sm:pt-32 lg:pt-36">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {getFilterTitle()}
@@ -486,6 +493,7 @@ export default function RetailHomepage() {
                       <img
                         src={product.imagen}
                         alt={product.nombre}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
@@ -517,35 +525,34 @@ export default function RetailHomepage() {
                         {formatPrice(product.precio)}
                       </div>
                       {product.stock > 0 ? (
-                        <span className="text-sm text-green-600 font-medium">
-                          En stock
+                        <span className="text-sm text-green-600 font-medium" aria-label={`En stock, ${product.stock} unidades disponibles`}>
+                          ✅ En stock
                         </span>
                       ) : (
-                        <span className="text-sm text-red-600 font-medium">
-                          Sin stock
+                        <span className="text-sm text-red-600 font-medium" aria-label="Producto sin stock">
+                          ❌ Sin stock
                         </span>
                       )}
                     </div>
                     
-                    <button 
+                    <button
                       onClick={() => {
-                        addItem(
-                          product.id,
-                          product.nombre || 'Producto',
-                          product.precio || 0,
-                          product.imagen || undefined
-                        );
-                        // Mostrar notificación
-                        const notification = document.createElement('div');
-                        notification.textContent = 'Producto agregado al carrito';
-                        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-50 transition-all duration-300';
-                        document.body.appendChild(notification);
-                        setTimeout(() => notification.remove(), 3000);
+                        if (product && product.id && product.nombre && product.precio > 0) {
+                          addItem(
+                            product.id,
+                            product.nombre || 'Producto',
+                            product.precio || 0,
+                            product.imagen || undefined
+                          );
+                          setNotification('Producto agregado al carrito');
+                          setTimeout(() => setNotification(''), 3000);
+                        }
                       }}
                       disabled={product.stock <= 0}
+                      aria-label={product.stock > 0 ? `Agregar ${product.nombre} al carrito` : 'Producto sin stock'}
                       className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
                     >
-                      <span>🛒</span>
+                      <span aria-hidden="true">🛒</span>
                       <span>{product.stock > 0 ? 'Agregar al Carrito' : 'Sin Stock'}</span>
                     </button>
                   </div>
@@ -554,8 +561,15 @@ export default function RetailHomepage() {
             </div>
           )}
         </main>
-        
+
         <Footer />
+
+        {/* Notification */}
+        {notification && (
+          <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-50 transition-all duration-300">
+            {notification}
+          </div>
+        )}
       </div>
     );
   }
@@ -567,7 +581,7 @@ export default function RetailHomepage() {
     >
       <UnifiedHeader />
       
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-36 lg:pt-36">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 pt-28 sm:pt-32 lg:pt-36">
         {/* Hero Banner Carousel */}
         {bannerSlides.length > 0 ? (
           <BannerCarousel banners={bannerSlides} autoPlay={true} autoPlayInterval={5000} />
@@ -580,7 +594,7 @@ export default function RetailHomepage() {
           <h2 className="text-3xl font-bold text-gray-900 text-center bg-gradient-to-r from-[#D95D22] to-[#E67E22] bg-clip-text text-transparent">
             🔥 Promociones por Categoría
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
             {homepageConfig.promotionalSections.map((section) => {
               // Generate link based on section configuration
               const getLink = () => {
@@ -616,13 +630,13 @@ export default function RetailHomepage() {
               const getHeightClasses = () => {
                 switch (section.position) {
                   case 'large':
-                    return 'min-h-[350px]';
+                    return 'min-h-[200px] sm:min-h-[250px] lg:min-h-[350px]';
                   case 'tall':
-                    return 'min-h-[300px]';
+                    return 'min-h-[180px] sm:min-h-[220px] lg:min-h-[300px]';
                   case 'wide':
-                    return 'h-44';
+                    return 'h-32 sm:h-36 lg:h-44';
                   default:
-                    return 'h-52';
+                    return 'h-36 sm:h-44 lg:h-52';
                 }
               };
 
@@ -634,18 +648,19 @@ export default function RetailHomepage() {
                         <img
                           src={section.imageUrl}
                           alt={section.title}
+                          loading="lazy"
                           className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                         />
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                      <span className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-600 text-white text-sm font-bold px-3 py-2 rounded-full shadow-lg">
+                      <span className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1 sm:py-2 rounded-full shadow-lg">
                         {section.badgeText}
                       </span>
-                      <div className="absolute bottom-3 left-3 text-white">
-                        <h3 className={`font-bold ${section.position === 'large' ? 'text-3xl mb-2' : section.position === 'tall' ? 'text-2xl mb-2' : 'text-lg'}`}>
+                      <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white">
+                        <h3 className={`font-bold ${section.position === 'large' ? 'text-lg sm:text-2xl lg:text-3xl mb-1 sm:mb-2' : section.position === 'tall' ? 'text-base sm:text-xl lg:text-2xl mb-1 sm:mb-2' : 'text-sm sm:text-base lg:text-lg'}`}>
                           {section.title}
                         </h3>
-                        <p className={`opacity-90 ${section.position === 'large' ? 'text-lg' : 'text-sm'}`}>
+                        <p className={`opacity-90 ${section.position === 'large' ? 'text-sm sm:text-base lg:text-lg' : 'text-xs sm:text-sm'}`}>
                           {section.description}
                         </p>
                       </div>
@@ -711,6 +726,7 @@ export default function RetailHomepage() {
                       <img
                         src={product.imagen}
                         alt={product.nombre}
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -742,9 +758,24 @@ export default function RetailHomepage() {
                     </div>
                     
                     {/* Button */}
-                    <button className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105">
-                      <span>🛒</span>
-                      <span>Agregar al Carrito</span>
+                    <button
+                      onClick={() => {
+                        if (product && product.id && product.nombre && product.precio > 0) {
+                          addItem(
+                            product.id,
+                            product.nombre || 'Producto',
+                            product.precio || 0,
+                            product.imagen || undefined
+                          );
+                          setNotification('Producto agregado al carrito');
+                          setTimeout(() => setNotification(''), 3000);
+                        }
+                      }}
+                      disabled={product.stock <= 0}
+                      aria-label={product.stock > 0 ? `Agregar ${product.nombre} al carrito` : 'Producto sin stock'}
+                      className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105">
+                      <span aria-hidden="true">🛒</span>
+                      <span>{product.stock > 0 ? 'Agregar al Carrito' : 'Sin Stock'}</span>
                     </button>
                   </div>
                 </div>
@@ -783,6 +814,7 @@ export default function RetailHomepage() {
                       <img
                         src={product.imagen}
                         alt={product.nombre}
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -814,9 +846,24 @@ export default function RetailHomepage() {
                     </div>
                     
                     {/* Button */}
-                    <button className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105">
-                      <span>🛒</span>
-                      <span>Agregar al Carrito</span>
+                    <button
+                      onClick={() => {
+                        if (product && product.id && product.nombre && product.precio > 0) {
+                          addItem(
+                            product.id,
+                            product.nombre || 'Producto',
+                            product.precio || 0,
+                            product.imagen || undefined
+                          );
+                          setNotification('Producto agregado al carrito');
+                          setTimeout(() => setNotification(''), 3000);
+                        }
+                      }}
+                      disabled={product.stock <= 0}
+                      aria-label={product.stock > 0 ? `Agregar ${product.nombre} al carrito` : 'Producto sin stock'}
+                      className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105">
+                      <span aria-hidden="true">🛒</span>
+                      <span>{product.stock > 0 ? 'Agregar al Carrito' : 'Sin Stock'}</span>
                     </button>
                   </div>
                 </div>
@@ -827,7 +874,14 @@ export default function RetailHomepage() {
       </main>
       
       <Footer />
-      
+
+      {/* Notification */}
+      {notification && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-50 transition-all duration-300">
+          {notification}
+        </div>
+      )}
+
       {/* Structured Data */}
       <script
         type="application/ld+json"

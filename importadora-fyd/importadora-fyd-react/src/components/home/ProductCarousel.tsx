@@ -27,14 +27,14 @@ const formatPrice = (price: number) => {
 const ProductCard = memo(({ product }: { product: Product }) => {
   const { t } = useI18n();
   const { addItem } = useCart();
-  
-  const discountPercentage = product.oferta && product.precioOriginal 
+
+  const discountPercentage = product.oferta && product.precioOriginal
     ? Math.round(((product.precioOriginal - product.precio) / product.precioOriginal) * 100)
     : 0;
 
   return (
-    <div className="group relative flex bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 h-full focus-within:ring-2 focus-within:ring-[#D95D22] focus-within:ring-offset-2 hover:-translate-y-1">
-      <div className="relative w-2/5 flex-shrink-0">
+    <div className="group relative flex flex-col sm:flex-row bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 h-full focus-within:ring-2 focus-within:ring-[#D95D22] focus-within:ring-offset-2 hover:-translate-y-1">
+      <div className="relative w-full sm:w-2/5 flex-shrink-0">
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full overflow-hidden">
           {product.imagen ? (
             <img
@@ -48,27 +48,27 @@ const ProductCard = memo(({ product }: { product: Product }) => {
             </div>
           )}
         </div>
-        
+
         {discountPercentage > 0 && (
           <span className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
             -{discountPercentage}%
           </span>
         )}
-        
+
         {product.nuevo && (
           <span className="absolute top-2 right-2 bg-gradient-to-r from-[#D95D22] to-[#E67E22] text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
             {t('productCard.new')}
           </span>
         )}
       </div>
-      
-      <div className="flex-1 p-4 flex flex-col">
+
+      <div className="flex-1 p-3 sm:p-4 flex flex-col min-h-0">
         <div className="flex-grow">
           <div className="text-xs text-orange-500 uppercase tracking-wide font-semibold mb-1">{product.categoria}</div>
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3">{product.nombre}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-2 sm:mb-3">{product.nombre}</h3>
         </div>
-        
-        <div className="space-y-2">
+
+        <div className="space-y-2 mt-auto">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               {discountPercentage > 0 && product.precioOriginal && (
@@ -76,13 +76,13 @@ const ProductCard = memo(({ product }: { product: Product }) => {
                   {formatPrice(product.precioOriginal)}
                 </span>
               )}
-              <span className="text-xl font-bold text-gray-900">
+              <span className="text-lg sm:text-xl font-bold text-gray-900">
                 {formatPrice(product.precio)}
               </span>
             </div>
           </div>
-          
-          <div className="flex items-center justify-between">
+
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               {[0, 1, 2, 3, 4].map((rating) => (
                 <StarIcon
@@ -96,7 +96,7 @@ const ProductCard = memo(({ product }: { product: Product }) => {
               </span>
             </div>
           </div>
-          
+
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -114,10 +114,11 @@ const ProductCard = memo(({ product }: { product: Product }) => {
               document.body.appendChild(notification);
               setTimeout(() => notification.remove(), 3000);
             }}
-            className="w-full text-center text-sm bg-blue-700 hover:bg-blue-800 text-white py-3 px-4 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
+            className="w-full text-center text-xs sm:text-sm bg-blue-700 hover:bg-blue-800 text-white py-2 sm:py-3 px-2 sm:px-4 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-1 sm:gap-2"
           >
             <span>🛒</span>
-            <span>Agregar al Carrito</span>
+            <span className="hidden xs:inline sm:hidden md:inline">Agregar al Carrito</span>
+            <span className="xs:hidden sm:inline md:hidden">Agregar</span>
           </button>
         </div>
       </div>
