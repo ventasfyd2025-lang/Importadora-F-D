@@ -67,7 +67,7 @@ const BannerCarousel = memo(({
   if (banners.length === 0) {
     return (
       <div
-        className="relative w-full h-64 sm:h-72 md:h-80 lg:h-96 bg-gradient-to-r from-orange-400 to-pink-500 rounded-2xl overflow-hidden"
+        className="relative w-full h-72 sm:h-80 md:h-96 lg:h-[28rem] bg-gradient-to-r from-orange-400 to-pink-500 rounded-2xl overflow-hidden"
         role="region"
         aria-label={t('common.banner')}
       >
@@ -94,7 +94,7 @@ const BannerCarousel = memo(({
       aria-label={t('common.banner')}
     >
       {/* Banner Slides */}
-      <div className="relative h-64 sm:h-72 md:h-80 lg:h-96">
+      <div className="relative h-72 sm:h-80 md:h-96 lg:h-[28rem]">
         {banners.map((banner, index) => (
           <div 
             key={banner.id}
