@@ -157,8 +157,7 @@ export default function UnifiedHeader() {
         <img
           src={logoConfig.image}
           alt={logoConfig.text}
-          className="rounded-full object-cover shadow-sm"
-          style={{ height: '70px', width: '70px' }}
+          className="rounded-full object-cover shadow-sm w-12 h-12 sm:w-16 sm:h-16 lg:w-[70px] lg:h-[70px]"
         />
       );
     }
@@ -167,8 +166,8 @@ export default function UnifiedHeader() {
 
     return (
       <span
-        className="flex items-center justify-center rounded-full font-semibold text-white shadow-sm"
-        style={{ height: '70px', width: '70px', fontSize: '1.5rem', backgroundColor: '#D95D22' }}
+        className="flex items-center justify-center rounded-full font-semibold text-white shadow-sm w-12 h-12 sm:w-16 sm:h-16 lg:w-[70px] lg:h-[70px] text-sm sm:text-lg lg:text-2xl"
+        style={{ backgroundColor: '#D95D22' }}
       >
         {fallbackText}
       </span>

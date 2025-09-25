@@ -294,7 +294,7 @@ export default function RetailHomepage() {
     return (
       <div
         className="min-h-screen"
-        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '18rem' }}
+        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '8rem' }}
       >
         <UnifiedHeader />
         
@@ -352,7 +352,7 @@ export default function RetailHomepage() {
     return (
       <div
         className="min-h-screen"
-        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '18rem' }}
+        style={{ backgroundColor: palette.background, color: palette.neutralText, paddingTop: '8rem' }}
       >
         <UnifiedHeader />
         
