@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useFooterConfig } from '@/hooks/useFooterConfig';
+import { useLayoutPatterns, DEFAULT_LAYOUT_PATTERNS } from '@/hooks/useLayoutPatterns';
 import { 
   collection, 
   getDocs, 
@@ -23,23 +25,347 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { Product, Order } from '@/types';
+import optimizeImageFile from '@/utils/imageProcessing';
+import MainBannerCarousel from '@/components/MainBannerCarousel';
+import { defaultMiddleBanners } from '@/components/home/bannerData';
 import { cleanAllData } from '@/scripts/cleanData';
 import AdminChatPopup from '@/components/AdminChatPopup';
 import SalesReportsComponent from '@/components/SalesReportsComponent';
-import { syncCategoriesToFirebase } from '@/utils/syncCategories';
+// import { syncCategoriesToFirebase } from '@/utils/syncCategories'; // Unused import
+import type { LayoutPatternsConfig, LayoutPatternVariant, LayoutPatternSpan, LayoutPatternRule, Product } from '@/types';
+import type { Order } from '@/types';
 import { 
   ClockIcon,
   CheckCircleIcon,
   TruckIcon,
   CreditCardIcon,
-  CubeIcon
+  CubeIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
+
+const LAYOUT_VARIANT_ORDER: LayoutPatternVariant[] = ['large', 'horizontal', 'vertical', 'small'];
+
+type CategoryOption = {
+  id: string;
+  name: string;
+};
+
+type PopupSize = '1x1' | '2x1' | '2x2' | '3x1' | '3x3' | '6x4' | '6x6';
+
+const POPUP_SIZE_PRESETS: Record<PopupSize, { width: number; height: number; label: string }> = {
+  '1x1': { width: 320, height: 320, label: '1x1 · Cuadrado compacto' },
+  '2x1': { width: 560, height: 280, label: '2x1 · Banner horizontal' },
+  '2x2': { width: 480, height: 480, label: '2x2 · Cuadrado mediano' },
+  '3x1': { width: 720, height: 240, label: '3x1 · Súper horizontal' },
+  '3x3': { width: 640, height: 640, label: '3x3 · Cuadrado grande' },
+  '6x4': { width: 960, height: 640, label: '6x4 · Rectángulo destacado' },
+  '6x6': { width: 960, height: 960, label: '6x6 · Hero cuadrado' },
+};
+
+const POPUP_LEGACY_SIZE_MAP: Record<string, PopupSize> = {
+  small: '1x1',
+  medium: '2x2',
+  large: '6x6',
+};
+
+const isPopupSize = (value: unknown): value is PopupSize =>
+  typeof value === 'string' && Object.hasOwn(POPUP_SIZE_PRESETS, value);
+
+const POPUP_PREVIEW_POSITION_CLASSES: Record<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center', string> = {
+  'top-left': 'top-4 left-4',
+  'top-right': 'top-4 right-4',
+  'bottom-left': 'bottom-4 left-4',
+  'bottom-right': 'bottom-4 right-4',
+  'center': 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
+};
+
+const LAYOUT_VARIANT_META: Record<LayoutPatternVariant, {
+  title: string;
+  description: string;
+  icon: string;
+  spanOptions: Array<{ value: LayoutPatternSpan; label: string }>;
+}> = {
+  large: {
+    title: 'Bloque Hero (2x2)',
+    description: 'Destaca productos premium ocupando más espacio en la grilla.',
+    icon: '🧱',
+    spanOptions: [
+      { value: '2x2', label: 'Grande 2x2' },
+      { value: '2x1', label: 'Horizontal 2x1' },
+    ],
+  },
+  horizontal: {
+    title: 'Banner Horizontal',
+    description: 'Ideal para promociones o productos que necesitan más ancho visual.',
+    icon: '🪟',
+    spanOptions: [
+      { value: '2x1', label: 'Horizontal 2x1' },
+      { value: '1x1', label: 'Normal 1x1' },
+      { value: '2x2', label: 'Hero 2x2' },
+    ],
+  },
+  vertical: {
+    title: 'Bloque Vertical',
+    description: 'Resalta productos con fotografías verticales o descripciones largas.',
+    icon: '📏',
+    spanOptions: [
+      { value: '1x2', label: 'Vertical 1x2' },
+      { value: '1x1', label: 'Normal 1x1' },
+      { value: '2x2', label: 'Hero 2x2' },
+    ],
+  },
+  small: {
+    title: 'Bloque Compacto',
+    description: 'Introduce variedad con bloques más pequeños y ritmo visual.',
+    icon: '🔹',
+    spanOptions: [
+      { value: '1x1', label: 'Normal 1x1' },
+      { value: '2x1', label: 'Horizontal 2x1' },
+    ],
+  },
+};
+
+const cloneLayoutPatterns = (config: LayoutPatternsConfig): LayoutPatternsConfig => ({
+  rules: LAYOUT_VARIANT_ORDER.map((variant) => {
+    const match = config.rules.find((rule) => rule.variant === variant);
+    return match ? { ...match } : getDefaultLayoutRule(variant);
+  }),
+  updatedAt: config.updatedAt,
+});
+
+type PromotionalSectionState = {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkType: 'category' | 'product' | 'filter' | 'url';
+  linkValue: string;
+  badgeText: string;
+  position: 'large' | 'tall' | 'wide' | 'normal';
+  selectedProducts?: string[];
+};
+
+type MiddleBannerState = {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  ctaText: string;
+  ctaLink: string;
+  badgeText: string;
+};
+
+type HomepageContentState = {
+  featuredProducts: string[];
+  offerProducts: string[];
+  promotionalSections: PromotionalSectionState[];
+  middleBanners: MiddleBannerState[];
+};
+
+const clonePromotionalSection = (section: PromotionalSectionState): PromotionalSectionState => ({
+  ...section,
+  selectedProducts: Array.isArray(section.selectedProducts) ? [...section.selectedProducts] : [],
+});
+
+const cloneMiddleBanner = (banner: MiddleBannerState): MiddleBannerState => ({
+  ...banner,
+});
+
+const DEFAULT_PROMOTIONAL_SECTIONS: PromotionalSectionState[] = [
+  {
+    id: 'electronics',
+    title: 'Electrónicos',
+    description: 'Smartphones, laptops y más',
+    imageUrl: 'https://images.unsplash.com/photo-1563770660941-20978e870e26?w=800&h=600&fit=crop&crop=center',
+    linkType: 'category' as const,
+    linkValue: 'tecnologia',
+    badgeText: 'HASTA 50% OFF',
+    position: 'large' as const,
+    selectedProducts: [],
+  },
+  {
+    id: 'fashion',
+    title: 'Moda',
+    description: 'Ropa y accesorios',
+    imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=700&fit=crop&crop=center',
+    linkType: 'category' as const,
+    linkValue: 'moda',
+    badgeText: 'NUEVA COLECCIÓN',
+    position: 'tall' as const,
+    selectedProducts: [],
+  },
+  {
+    id: 'home',
+    title: 'Electrohogar',
+    description: 'Cocina y limpieza',
+    imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=500&h=400&fit=crop&crop=center',
+    linkType: 'category' as const,
+    linkValue: 'hogar',
+    badgeText: 'OFERTAS',
+    position: 'wide' as const,
+    selectedProducts: [],
+  },
+  {
+    id: 'sports',
+    title: 'Deportes',
+    description: 'Equipamiento deportivo',
+    imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&h=400&fit=crop&crop=center',
+    linkType: 'category' as const,
+    linkValue: 'deportes',
+    badgeText: 'FITNESS',
+    position: 'normal' as const,
+    selectedProducts: [],
+  },
+].map(clonePromotionalSection);
+
+const DEFAULT_MIDDLE_BANNERS: MiddleBannerState[] = defaultMiddleBanners.map((banner) => cloneMiddleBanner(banner));
+
+const MIDDLE_BANNER_LINK_OPTIONS = [
+  { label: 'Inicio', value: '/' },
+  { label: 'Productos en oferta', value: '/?filter=ofertas' },
+  { label: 'Productos nuevos', value: '/?filter=nuevos' },
+  { label: 'Contacto', value: '/contacto' },
+  { label: 'Carrito', value: '/carrito' },
+];
+
+const DEFAULT_CATEGORY_OPTIONS: CategoryOption[] = [
+  { id: 'electronicos', name: 'Electrónicos' },
+  { id: 'hogar', name: 'Hogar' },
+  { id: 'ropa', name: 'Ropa' },
+  { id: 'deportes', name: 'Deportes' },
+];
+
+const normalizePromotionalSections = (raw: unknown): PromotionalSectionState[] => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return DEFAULT_PROMOTIONAL_SECTIONS.map(clonePromotionalSection);
+  }
+
+  return raw.map((entry, index) => {
+    const fallback = DEFAULT_PROMOTIONAL_SECTIONS[index] ?? DEFAULT_PROMOTIONAL_SECTIONS[0];
+    const section = (entry && typeof entry === 'object') ? entry as Record<string, unknown> : {};
+
+    const selectedProducts = Array.isArray(section.selectedProducts)
+      ? section.selectedProducts.filter((id): id is string => typeof id === 'string')
+      : fallback.selectedProducts ?? [];
+
+    const linkType = section.linkType;
+    const position = section.position;
+
+    return {
+      id: typeof section.id === 'string' && section.id.trim() ? section.id : fallback.id || `section-${index}`,
+      title: typeof section.title === 'string' ? section.title : fallback.title,
+      description: typeof section.description === 'string' ? section.description : fallback.description,
+      imageUrl: typeof section.imageUrl === 'string' && section.imageUrl ? section.imageUrl : fallback.imageUrl,
+      linkType:
+        linkType === 'product' || linkType === 'filter' || linkType === 'url' || linkType === 'category'
+          ? linkType
+          : fallback.linkType ?? 'category',
+      linkValue: typeof section.linkValue === 'string' ? section.linkValue : fallback.linkValue ?? '',
+      badgeText: typeof section.badgeText === 'string' ? section.badgeText : fallback.badgeText ?? '',
+      position:
+        position === 'large' || position === 'tall' || position === 'wide' || position === 'normal'
+          ? position
+          : fallback.position ?? 'normal',
+      selectedProducts,
+    };
+  }).map(clonePromotionalSection);
+};
+
+const normalizeMiddleBanners = (raw: unknown): MiddleBannerState[] => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return DEFAULT_MIDDLE_BANNERS.map(cloneMiddleBanner);
+  }
+
+  return raw.map((entry, index) => {
+    const fallback = DEFAULT_MIDDLE_BANNERS[index] ?? DEFAULT_MIDDLE_BANNERS[0];
+    const banner = (entry && typeof entry === 'object') ? entry as Record<string, unknown> : {};
+
+    return {
+      id: typeof banner.id === 'string' && banner.id.trim() ? banner.id : fallback.id || `middle-${index}`,
+      title: typeof banner.title === 'string' ? banner.title : fallback.title,
+      subtitle: typeof banner.subtitle === 'string' ? banner.subtitle : fallback.subtitle,
+      imageUrl: typeof banner.imageUrl === 'string' && banner.imageUrl ? banner.imageUrl : fallback.imageUrl,
+      ctaText: typeof banner.ctaText === 'string' ? banner.ctaText : fallback.ctaText,
+      ctaLink: typeof banner.ctaLink === 'string' ? banner.ctaLink : fallback.ctaLink,
+      badgeText: typeof banner.badgeText === 'string' ? banner.badgeText : fallback.badgeText,
+    };
+  }).map(cloneMiddleBanner);
+};
+
+const prettifyCategoryName = (value: string): string => {
+  const cleaned = value
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return value;
+  return cleaned
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const normalizeCategoryOption = (input: unknown): CategoryOption | null => {
+  if (!input) return null;
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    const id = trimmed.toLowerCase();
+    return {
+      id,
+      name: prettifyCategoryName(trimmed),
+    };
+  }
+
+  if (typeof input === 'object') {
+    const data = input as Record<string, unknown>;
+    const rawId = data.id ?? data.slug ?? data.value ?? data.name ?? data.nombre;
+    if (typeof rawId !== 'string') return null;
+    const id = rawId.trim().toLowerCase();
+    if (!id) return null;
+    const rawName = data.name ?? data.nombre ?? data.title ?? rawId;
+    const name = typeof rawName === 'string' && rawName.trim().length > 0
+      ? rawName as string
+      : prettifyCategoryName(rawId as string);
+    return {
+      id,
+      name: typeof name === 'string' ? name : prettifyCategoryName(id),
+    };
+  }
+
+  return null;
+};
+
+const mergeCategoryOptions = (
+  existing: CategoryOption[],
+  incoming: CategoryOption[],
+): CategoryOption[] => {
+  const map = new Map<string, CategoryOption>();
+  const append = (option: CategoryOption) => {
+    if (!option.id) return;
+    const current = map.get(option.id);
+    if (!current || (!current.name && option.name)) {
+      map.set(option.id, option);
+    } else if (option.name && current.name && option.name.length > current.name.length) {
+      map.set(option.id, option);
+    }
+  };
+
+  existing.forEach(append);
+  incoming.forEach(append);
+
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'es-CL'));
+};
+
+function getDefaultLayoutRule(variant: LayoutPatternVariant) {
+  const match = DEFAULT_LAYOUT_PATTERNS.rules.find((rule) => rule.variant === variant);
+  return match ? { ...match } : { variant, enabled: false, interval: 4, span: '1x1' as LayoutPatternSpan };
+}
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading: authLoading, login, logout } = useAuth();
-  const { products, refetch, removeProduct, removeProducts, updateProduct } = useProducts();
+  const { products, refetch, removeProduct, removeProducts } = useProducts();
   const { footerConfig, updateFooterConfig, loading: footerLoading } = useFooterConfig();
   
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -65,28 +391,35 @@ export default function AdminPage() {
     buttonText: 'Ver Ofertas',
     buttonLink: '/popup-ofertas',
     active: false,
-    selectedProducts: [] as string[]
+    size: '2x2' as PopupSize,
+    position: 'bottom-right' as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center',
+    mediaUrl: '',
+    isVideo: false,
+    popupType: 'category' as 'category' | 'information'
   });
   const [updatingPopup, setUpdatingPopup] = useState(false);
+  const [popupImageUploading, setPopupImageUploading] = useState(false);
+
+  // Temporary function for products (not used in simplified popup)
 
   // Main banner management state
   const [mainBannerForm, setMainBannerForm] = useState({
     active: true,
     slides: [
       { 
-        linkType: "product", // "product" o "category"
+        linkType: "product" as "product" | "category", // "product" o "category"
         productId: "1", 
         categoryId: "",
         imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=400&fit=crop" 
       },
       { 
-        linkType: "product",
+        linkType: "product" as "product" | "category",
         productId: "2", 
         categoryId: "",
         imageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=400&fit=crop" 
       },
       { 
-        linkType: "product",
+        linkType: "product" as "product" | "category",
         productId: "3", 
         categoryId: "",
         imageUrl: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&h=400&fit=crop" 
@@ -98,85 +431,16 @@ export default function AdminPage() {
   // Homepage content management state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<{ [key: string]: boolean }>({});
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  const [homepageContent, setHomepageContent] = useState({
+  const [availableCategories, setAvailableCategories] = useState<CategoryOption[]>(DEFAULT_CATEGORY_OPTIONS);
+  const [homepageContent, setHomepageContent] = useState<HomepageContentState>({
     featuredProducts: [] as string[], // IDs de productos destacados
     offerProducts: [] as string[], // IDs de productos en ofertas
-    promotionalSections: [
-      {
-        id: 'electronics',
-        title: 'Electrónicos',
-        description: 'Smartphones, laptops y más',
-        imageUrl: 'https://images.unsplash.com/photo-1563770660941-20978e870e26?w=800&h=600&fit=crop&crop=center',
-        linkType: 'category',
-        linkValue: 'tecnologia',
-        badgeText: 'HASTA 50% OFF',
-        position: 'large' // large, tall, normal, wide
-      },
-      {
-        id: 'fashion',
-        title: 'Moda',
-        description: 'Ropa y accesorios',
-        imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=700&fit=crop&crop=center',
-        linkType: 'category',
-        linkValue: 'moda',
-        badgeText: 'NUEVA COLECCIÓN',
-        position: 'tall'
-      },
-      {
-        id: 'home',
-        title: 'Electrohogar',
-        description: 'Cocina y limpieza',
-        imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=500&h=400&fit=crop&crop=center',
-        linkType: 'category',
-        linkValue: 'electrohogar',
-        badgeText: 'ENVÍO GRATIS',
-        position: 'normal'
-      },
-      {
-        id: 'fitness',
-        title: 'Fitness & Deportes',
-        description: 'Equipamiento deportivo y wellness',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop&crop=center',
-        linkType: 'category',
-        linkValue: 'fitness',
-        badgeText: 'FITNESS 2025',
-        position: 'wide'
-      },
-      {
-        id: 'shoes',
-        title: 'Calzado',
-        description: 'Zapatos y sneakers',
-        imageUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&h=400&fit=crop&crop=center',
-        linkType: 'category',
-        linkValue: 'calzado',
-        badgeText: 'ÚLTIMAS TALLAS',
-        position: 'normal'
-      },
-      {
-        id: 'offers',
-        title: 'Ofertas',
-        description: 'Descuentos únicos',
-        imageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=500&h=400&fit=crop&crop=center',
-        linkType: 'filter',
-        linkValue: 'ofertas',
-        badgeText: '¡OFERTAS!',
-        position: 'normal'
-      },
-      {
-        id: 'promo-2',
-        title: 'Nuevos Productos',
-        description: 'Lo último en tendencias',
-        imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&h=400&fit=crop&crop=center',
-        linkType: 'category',
-        linkValue: 'nuevos'
-      }
-    ]
+    promotionalSections: DEFAULT_PROMOTIONAL_SECTIONS.map((section) => ({ ...section })),
+    middleBanners: DEFAULT_MIDDLE_BANNERS.map((banner) => ({ ...banner })),
   });
-  const [updatingHomepageContent, setUpdatingHomepageContent] = useState(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // const [updatingHomepageContent, setUpdatingHomepageContent] = useState(false); // Unused state
   
-  // Product search for offers
-  const [searchTerm, setSearchTerm] = useState('');
   
   // Banner product search
   const [bannerSearchTerms, setBannerSearchTerms] = useState<{[key: number]: string}>({});
@@ -208,6 +472,7 @@ export default function AdminPage() {
   // Logo management state
   const [logoForm, setLogoForm] = useState({
     text: 'Importadora F&D',
+    emoji: '🏪',
     image: ''
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -241,7 +506,7 @@ export default function AdminPage() {
   }, [footerConfig, footerLoading]);
   
   // Category management state
-  const [syncingCategories, setSyncingCategories] = useState(false);
+  // const [syncingCategories, setSyncingCategories] = useState(false); // Unused state
   const [categories, setCategories] = useState([
     { id: 'electronicos', name: 'Electrónicos', active: true },
     { id: 'hogar', name: 'Hogar', active: true },
@@ -256,14 +521,26 @@ export default function AdminPage() {
       if (!categoriesSnapshot.empty) {
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
           id: doc.id,
+          name: doc.data().name || '',
+          active: doc.data().active ?? true,
           ...doc.data()
         }));
-        setCategories(categoriesData);
+        setCategories(categoriesData as { id: string; name: string; active: boolean; }[]);
       }
     } catch (error) {
       // Error loading categories
     }
   };
+
+  useEffect(() => {
+    const categoryOptions = categories
+      .map((category) => normalizeCategoryOption(category))
+      .filter((option): option is CategoryOption => option !== null);
+
+    if (categoryOptions.length > 0) {
+      setAvailableCategories((prev) => mergeCategoryOptions(prev, categoryOptions));
+    }
+  }, [categories]);
 
   const loadBannerConfig = async () => {
     try {
@@ -293,7 +570,23 @@ export default function AdminPage() {
           buttonText: popupData.buttonText || 'Ver Ofertas',
           buttonLink: popupData.buttonLink || '/popup-ofertas',
           active: popupData.active || false,
-          selectedProducts: popupData.selectedProducts || []
+          size: (() => {
+            if (isPopupSize(popupData.size)) {
+              return popupData.size;
+            }
+            if (typeof popupData.size === 'string' && POPUP_LEGACY_SIZE_MAP[popupData.size]) {
+              return POPUP_LEGACY_SIZE_MAP[popupData.size];
+            }
+            return '2x2';
+          })(),
+          position: ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'].includes(popupData.position)
+            ? popupData.position
+            : 'bottom-right',
+          mediaUrl: typeof popupData.mediaUrl === 'string' ? popupData.mediaUrl : (popupData.imageUrl || ''),
+          isVideo: popupData.isVideo || false,
+          popupType: ['category', 'information'].includes(popupData.popupType)
+            ? popupData.popupType
+            : (popupData.popupType === 'promotional' ? 'category' : 'information')
         });
       }
     } catch (error) {
@@ -306,18 +599,22 @@ export default function AdminPage() {
       const mainBannerDoc = await getDoc(doc(db, 'config', 'main-banner'));
       if (mainBannerDoc.exists()) {
         const mainBannerData = mainBannerDoc.data();
+        const loadedSlides = (mainBannerData.slides || []).map((slide: any) => ({
+          linkType: slide.linkType || "product",
+          productId: slide.productId || "",
+          categoryId: slide.categoryId || "",
+          imageUrl: slide.imageUrl || ""
+        }));
+
+        // Si no hay slides, usar valores por defecto
+        const defaultSlides = [
+          { linkType: "product", productId: "1", categoryId: "", imageUrl: "" },
+          { linkType: "product", productId: "2", categoryId: "", imageUrl: "" }
+        ];
+
         setMainBannerForm({
           active: mainBannerData.active !== undefined ? mainBannerData.active : true,
-          slides: (mainBannerData.slides || []).map((slide: any) => ({
-            linkType: slide.linkType || "product", // Compatibilidad con datos existentes
-            productId: slide.productId || "",
-            categoryId: slide.categoryId || "",
-            imageUrl: slide.imageUrl || ""
-          })) || [
-            { linkType: "product", productId: "1", categoryId: "", imageUrl: "" },
-            { linkType: "product", productId: "2", categoryId: "", imageUrl: "" },
-            { linkType: "product", productId: "3", categoryId: "", imageUrl: "" }
-          ]
+          slides: loadedSlides.length > 0 ? loadedSlides : defaultSlides
         });
       }
     } catch (error) {
@@ -333,27 +630,49 @@ export default function AdminPage() {
         setHomepageContent({
           featuredProducts: homepageData.featuredProducts || [],
           offerProducts: homepageData.offerProducts || [],
-          promotionalSections: homepageData.promotionalSections || homepageContent.promotionalSections
+          promotionalSections: normalizePromotionalSections(homepageData.promotionalSections),
+          middleBanners: normalizeMiddleBanners(homepageData.middleBanners),
         });
       } else {
         // Si no existe configuración, crear una automáticamente
-        console.log('No homepage config found, creating default...');
         await setDoc(doc(db, 'config', 'homepage-content'), homepageContent);
-        console.log('Default homepage config created automatically');
       }
     } catch (error) {
       console.error('Error loading homepage content:', error);
     }
   };
 
+  const autoSaveHomepageContent = useCallback((content: HomepageContentState) => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    setIsAutoSaving(true);
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await setDoc(doc(db, 'config', 'homepage-content'), content);      } catch (error) {
+        console.error('❌ Error auto-saving:', error);
+      } finally {
+        setIsAutoSaving(false);
+        autoSaveTimeoutRef.current = null;
+      }
+    }, 800);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const saveHomepageContent = async (showAlert = true) => {
     try {
       await setDoc(doc(db, 'config', 'homepage-content'), homepageContent);
       if (showAlert) {
         alert('✅ Contenido guardado! Ve a la página principal para ver los cambios.');
-      }
-      console.log('Homepage content saved:', homepageContent);
-    } catch (error) {
+      }    } catch (error) {
       console.error('Error saving homepage content:', error);
       if (showAlert) {
         alert('❌ Error al guardar el contenido de la página');
@@ -362,70 +681,76 @@ export default function AdminPage() {
   };
 
   // Función para guardar automáticamente cuando cambian los datos
-  const updateSection = (index: number, updatedSection: any) => {
-    const updatedSections = [...homepageContent.promotionalSections];
-    updatedSections[index] = updatedSection;
-    const newContent = { ...homepageContent, promotionalSections: updatedSections };
-    setHomepageContent(newContent);
-    
-    // Mostrar indicador de guardado
-    setIsAutoSaving(true);
-    
-    // Guardar automáticamente después de un pequeño delay
-    setTimeout(async () => {
-      try {
-        await setDoc(doc(db, 'config', 'homepage-content'), newContent);
-        console.log('✅ Auto-saved homepage content');
-      } catch (error) {
-        console.error('❌ Error auto-saving:', error);
-      } finally {
-        setIsAutoSaving(false);
-      }
-    }, 1000);
+  const updateSection = (index: number, updatedSection: PromotionalSectionState) => {
+    const normalized = clonePromotionalSection(updatedSection);
+    setHomepageContent((prev) => {
+      const updatedSections = [...prev.promotionalSections];
+      updatedSections[index] = normalized;
+      const newContent: HomepageContentState = { ...prev, promotionalSections: updatedSections };
+      autoSaveHomepageContent(newContent);
+      return newContent;
+    });
+  };
+
+  const updateMiddleBanner = (index: number, updatedBanner: MiddleBannerState) => {
+    const normalized = cloneMiddleBanner(updatedBanner);
+    setHomepageContent((prev) => {
+      const updatedBanners = [...prev.middleBanners];
+      updatedBanners[index] = normalized;
+      const newContent: HomepageContentState = { ...prev, middleBanners: updatedBanners };
+      autoSaveHomepageContent(newContent);
+      return newContent;
+    });
   };
 
   // Función para subir imagen
-  const uploadImage = async (file: File, sectionId: string): Promise<string> => {
-    setUploadingImages(prev => ({ ...prev, [sectionId]: true }));
-    
+  const uploadImage = async (
+    file: File,
+    storageKey: string,
+    options?: { folder?: string; stateKey?: string },
+  ): Promise<string> => {
+    const folder = options?.folder ?? 'homepage-promotions';
+    const stateKey = options?.stateKey ?? storageKey;    setUploadingImages((prev) => ({ ...prev, [stateKey]: true }));
+
     try {
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const optimizedFile = await optimizeImageFile(file);
       const timestamp = Date.now();
-      const fileName = `homepage-promotions/${sectionId}-${timestamp}-${file.name}`;
-      const storageRef = ref(storage, fileName);
-      
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      
-      console.log('✅ Image uploaded successfully:', downloadURL);
-      return downloadURL;
+      const fileName = `${folder}/${storageKey}-${timestamp}-${optimizedFile.name}`;      const storageRef = ref(storage, fileName);      const snapshot = await uploadBytes(storageRef, optimizedFile);      const downloadURL = await getDownloadURL(snapshot.ref);      return downloadURL;
     } catch (error) {
       console.error('❌ Error uploading image:', error);
       throw error;
     } finally {
-      setUploadingImages(prev => ({ ...prev, [sectionId]: false }));
+      setUploadingImages((prev) => ({ ...prev, [stateKey]: false }));
     }
   };
 
   // Función para manejar cambio de archivo
   const handleImageUpload = async (file: File, index: number, section: any) => {
-    try {
-      const imageUrl = await uploadImage(file, section.id);
-      updateSection(index, { ...section, imageUrl });
-    } catch (error) {
-      alert('❌ Error al subir la imagen. Intenta de nuevo.');
+    try {      const imageUrl = await uploadImage(file, section.id, { folder: 'homepage-promotions', stateKey: section.id });      updateSection(index, { ...section, imageUrl });    } catch (error) {
+      console.error('❌ Error in handleImageUpload:', error);
+      const message = error instanceof Error ? error.message : 'Error desconocido';
+      alert(`❌ Error al subir la imagen: ${message}\nVerifica los permisos de Firebase Storage.`);
     }
   };
 
-  const initializeDefaultContent = async () => {
-    try {
-      await setDoc(doc(db, 'config', 'homepage-content'), homepageContent);
-      alert('✅ Contenido inicial configurado!');
-      console.log('Default homepage content initialized');
+  const handleMiddleBannerImageUpload = async (file: File, index: number, banner: MiddleBannerState) => {
+    try {      const stateKey = `middle-${banner.id}`;
+      const imageUrl = await uploadImage(file, banner.id, {
+        folder: 'homepage-middle-banners',
+        stateKey,
+      });      updateMiddleBanner(index, { ...banner, imageUrl });
     } catch (error) {
-      console.error('Error initializing content:', error);
-      alert('❌ Error al inicializar contenido');
+      console.error('❌ Error uploading middle banner image:', error);
+      const message = error instanceof Error ? error.message : 'Error desconocido';
+      alert(`❌ Error al subir la imagen del banner: ${message}`);
     }
   };
+
+  // const initializeDefaultContent = ...; // Unused function
 
   const loadLogoConfig = async () => {
     try {
@@ -455,6 +780,189 @@ export default function AdminPage() {
     pendingOrders: 0
   });
 
+  type OrderStatus = Order['status'];
+
+  interface CustomerOrderGroup {
+    customerName: string;
+    customerEmail: string;
+    orderCount: number;
+    totalSpent: number;
+    lastOrderDate: Date;
+    lastOrderStatus: OrderStatus;
+    lastOrderId: string;
+    statusBreakdown: Partial<Record<OrderStatus, number>>;
+  }
+
+  const statusLabelMap: Record<OrderStatus, string> = {
+    pending: 'Pendiente',
+    confirmed: 'Confirmado',
+    preparing: 'Preparando',
+    shipped: 'Enviado',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado'
+  };
+
+  const statusClassMap: Record<OrderStatus, string> = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    confirmed: 'bg-blue-100 text-blue-800',
+    preparing: 'bg-orange-100 text-orange-800',
+    shipped: 'bg-purple-100 text-purple-800',
+    delivered: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800'
+  };
+
+  const ordersByCustomer = useMemo<CustomerOrderGroup[]>(() => {
+    if (!orders || orders.length === 0) return [];
+
+    const groups = new Map<string, CustomerOrderGroup>();
+
+    orders.forEach((order) => {
+      const key = order.customerEmail || order.customerName || order.id;
+      const createdAt = new Date(order.createdAt || Date.now());
+      const total = typeof order.total === 'number' ? order.total : 0;
+      const status = (order.status || 'pending') as OrderStatus;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          customerName: order.customerName || 'Cliente sin nombre',
+          customerEmail: order.customerEmail || 'Sin correo',
+          orderCount: 1,
+          totalSpent: total,
+          lastOrderDate: createdAt,
+          lastOrderStatus: status,
+          lastOrderId: order.id,
+          statusBreakdown: { [status]: 1 }
+        });
+        return;
+      }
+
+      const group = groups.get(key)!;
+      group.orderCount += 1;
+      group.totalSpent += total;
+      group.statusBreakdown[status] = (group.statusBreakdown[status] || 0) + 1;
+
+      if (createdAt.getTime() > group.lastOrderDate.getTime()) {
+        group.lastOrderDate = createdAt;
+        group.lastOrderStatus = status;
+        group.lastOrderId = order.id;
+      }
+    });
+
+    return Array.from(groups.values()).sort(
+      (a, b) => b.lastOrderDate.getTime() - a.lastOrderDate.getTime()
+    );
+  }, [orders]);
+
+  // Product sections state
+  const [productSections, setProductSections] = useState([
+    {
+      id: 'destacados',
+      name: 'Productos Destacados',
+      description: 'Primera sección en la página principal',
+      enabled: true,
+      type: 'featured',
+      selectedProducts: []
+    },
+    {
+      id: 'vendidos',
+      name: 'Los Más Vendidos',
+      description: 'Productos con mejor desempeño',
+      enabled: true,
+      type: 'bestsellers',
+      selectedProducts: []
+    },
+    {
+      id: 'novedades',
+      name: 'Novedades',
+      description: 'Productos recién llegados',
+      enabled: true,
+      type: 'new',
+      selectedProducts: []
+    },
+    {
+      id: 'electronica',
+      name: 'Electrónica',
+      description: 'Categoría de electrónicos',
+      enabled: true,
+      type: 'category',
+      categoryId: 'electronicos',
+      selectedProducts: []
+    }
+  ]);
+  const [editingSection, setEditingSection] = useState<any>(null);
+  const [showSectionModal, setShowSectionModal] = useState(false);
+  const [showProductSelector, setShowProductSelector] = useState(false);
+  const [currentSectionId, setCurrentSectionId] = useState<string>('');
+
+  // Product selector filters state
+  const [productSelectorFilters, setProductSelectorFilters] = useState({
+    category: '',
+    search: '',
+    showOnlySelected: false
+  });
+
+  // Layout patterns state
+  const {
+    patterns: layoutPatternsFetched,
+    loading: layoutPatternsLoading,
+    error: layoutPatternsError,
+    savePatterns: persistLayoutPatterns,
+  } = useLayoutPatterns();
+
+  const [layoutPatterns, setLayoutPatterns] = useState<LayoutPatternsConfig>(cloneLayoutPatterns(DEFAULT_LAYOUT_PATTERNS));
+  const [savingLayoutPatterns, setSavingLayoutPatterns] = useState(false);
+
+  useEffect(() => {
+    setLayoutPatterns(cloneLayoutPatterns(layoutPatternsFetched));
+  }, [layoutPatternsFetched]);
+
+  const orderedLayoutRules = useMemo(
+    () =>
+      LAYOUT_VARIANT_ORDER.map((variant) => {
+        const match = layoutPatterns.rules.find((rule) => rule.variant === variant);
+        return match ? { ...match } : getDefaultLayoutRule(variant);
+      }),
+    [layoutPatterns],
+  );
+
+  const updateLayoutRule = useCallback(
+    (variant: LayoutPatternVariant, updater: (rule: LayoutPatternRule) => LayoutPatternRule) => {
+      setLayoutPatterns((prev) => {
+        const currentMap = new Map(prev.rules.map((rule) => [rule.variant, rule]));
+        const currentRule = currentMap.get(variant) ?? getDefaultLayoutRule(variant);
+        currentMap.set(variant, updater({ ...currentRule }));
+        const recalculated = LAYOUT_VARIANT_ORDER.map((variantKey) => {
+          const rule = currentMap.get(variantKey) ?? getDefaultLayoutRule(variantKey);
+          return { ...rule };
+        });
+        return {
+          ...prev,
+          rules: recalculated,
+        };
+      });
+    },
+    [],
+  );
+
+  const handleSaveLayoutPatterns = useCallback(async () => {
+    try {
+      setSavingLayoutPatterns(true);
+      await persistLayoutPatterns(layoutPatterns);
+      alert('Configuración de layout guardada exitosamente');
+    } catch (error) {
+      console.error('Error saving layout patterns:', error);
+      alert('Error al guardar la configuración de layout');
+    } finally {
+      setSavingLayoutPatterns(false);
+    }
+  }, [layoutPatterns, persistLayoutPatterns]);
+
+  const handleResetLayoutPatterns = useCallback(() => {
+    const shouldReset = window.confirm('¿Restablecer los patrones de layout a los valores predeterminados?');
+    if (!shouldReset) return;
+    setLayoutPatterns(cloneLayoutPatterns(DEFAULT_LAYOUT_PATTERNS));
+  }, []);
+
   // Login form state
   const [loginForm, setLoginForm] = useState({
     email: 'admin@importadorafyd.com',
@@ -466,11 +974,13 @@ export default function AdminPage() {
   // Product form state
   const [productForm, setProductForm] = useState({
     id: '',
+    sku: '',
     nombre: '',
     precio: 0,
     descripcion: '',
     stock: 0,
     categoria: '',
+    subcategoria: '',
     nuevo: false,
     oferta: false,
     imagen: ''
@@ -495,8 +1005,13 @@ export default function AdminPage() {
       loadLogoConfig();
       
       // Cargar categorías disponibles desde productos
-      const uniqueCategories = [...new Set(products.map(p => p.categoria).filter(Boolean))];
-      setAvailableCategories(uniqueCategories);
+      const productCategoryOptions = [...new Set(products.map((p) => p.categoria).filter(Boolean))]
+        .map((category) => normalizeCategoryOption(category))
+        .filter((option): option is CategoryOption => option !== null);
+
+      if (productCategoryOptions.length > 0) {
+        setAvailableCategories((prev) => mergeCategoryOptions(prev, productCategoryOptions));
+      }
       
       // Load orders with real-time updates
       const unsubscribeOrders = loadOrders();
@@ -529,6 +1044,46 @@ export default function AdminPage() {
   useEffect(() => {
     calculateStats();
   }, [calculateStats]);
+
+  // Reset subcategoria when categoria changes
+  useEffect(() => {
+    if (productForm.categoria) {
+      setProductForm(prev => ({ ...prev, subcategoria: '' }));
+    }
+  }, [productForm.categoria]);
+
+  // Product sections functions
+  const saveProductSections = async () => {
+    try {
+      await setDoc(doc(db, 'config', 'productSections'), {
+        sections: productSections,
+        lastUpdated: new Date().toISOString()
+      });
+      alert('Configuración de secciones guardada exitosamente');
+    } catch (error) {
+      console.error('Error saving product sections:', error);
+      alert('Error al guardar la configuración');
+    }
+  };
+
+  const loadProductSections = async () => {
+    try {
+      const sectionsDoc = await getDoc(doc(db, 'config', 'productSections'));
+      if (sectionsDoc.exists()) {
+        const sectionsData = sectionsDoc.data();
+        if (sectionsData.sections) {
+          setProductSections(sectionsData.sections);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading product sections:', error);
+    }
+  };
+
+  // Load product sections on component mount
+  useEffect(() => {
+    loadProductSections();
+  }, []);
 
   // Orders functions
   const loadOrders = () => {
@@ -613,12 +1168,21 @@ export default function AdminPage() {
     setUploadingProduct(true);
 
     try {
+      const trimmedSku = (productForm.sku || '').trim();
+
+      if (!trimmedSku) {
+        alert('Por favor ingresa un SKU para el producto.');
+        setUploadingProduct(false);
+        return;
+      }
+
       let imageUrl = productForm.imagen;
 
       // Upload image if selected
       if (productImage) {
-        const imageRef = ref(storage, `products/${Date.now()}_${productImage.name}`);
-        const snapshot = await uploadBytes(imageRef, productImage);
+        const optimizedProductImage = await optimizeImageFile(productImage);
+        const imageRef = ref(storage, `products/${Date.now()}_${optimizedProductImage.name}`);
+        const snapshot = await uploadBytes(imageRef, optimizedProductImage);
         imageUrl = await getDownloadURL(snapshot.ref);
       }
 
@@ -630,9 +1194,11 @@ export default function AdminPage() {
         descripcion: productForm.descripcion,
         stock: Number(productForm.stock),
         categoria: productForm.categoria,
+        subcategoria: productForm.subcategoria,
         nuevo: productForm.nuevo,
         oferta: productForm.oferta,
         imagen: imageUrl,
+        sku: trimmedSku,
         activo: true,
       };
 
@@ -649,7 +1215,7 @@ export default function AdminPage() {
           refetch(); // Refetch to show the new data
         } catch (error) {
           console.error("Error updating product in Firestore: ", error);
-          alert(`Error al actualizar el producto: ${error.message}`);
+          alert(`Error al actualizar el producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         }
       } else {
         // Create new product
@@ -659,18 +1225,20 @@ export default function AdminPage() {
           refetch(); // Refetch to get the new product with its ID
         } catch (error) {
           console.error("Error creating product in Firestore: ", error);
-          alert(`Error al crear el producto: ${error.message}`);
+          alert(`Error al crear el producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         }
       }
 
       // Reset form and close modal
       setProductForm({
         id: '',
+        sku: '',
         nombre: '',
         precio: 0,
         descripcion: '',
         stock: 0,
         categoria: '',
+        subcategoria: '',
         nuevo: false,
         oferta: false,
         imagen: ''
@@ -687,11 +1255,13 @@ export default function AdminPage() {
   const editProduct = (product: Product) => {
     setProductForm({
       id: product.id,
+      sku: product.sku || '',
       nombre: product.nombre,
       precio: product.precio,
       descripcion: product.descripcion || '',
       stock: product.stock,
       categoria: product.categoria,
+      subcategoria: product.subcategoria || '',
       nuevo: product.nuevo || false,
       oferta: product.oferta || false,
       imagen: product.imagen || ''
@@ -738,6 +1308,49 @@ export default function AdminPage() {
     });
   };
 
+  const handlePopupImageUpload = async (file: File) => {
+    if (!user) {
+      alert(`Debes iniciar sesión como administrador para subir ${popupForm.isVideo ? 'videos' : 'imágenes'} del popup.`);
+      return;
+    }
+    try {
+      setPopupImageUploading(true);
+
+      let finalFile = file;
+      if (!popupForm.isVideo) {
+        finalFile = await optimizeImageFile(file, {
+          maxWidthOrHeight: 800,
+          maxSizeMB: 0.8,
+        });
+      }
+
+      const fileName = `config/offer-popup/${Date.now()}-${finalFile.name}`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadBytes(storageRef, finalFile, {
+        contentType: finalFile.type || (popupForm.isVideo ? 'video/mp4' : 'image/jpeg')
+      });
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      setPopupForm((prev) => ({ ...prev, mediaUrl: downloadURL }));
+    } catch (error) {
+      console.error(`Error uploading popup ${popupForm.isVideo ? 'video' : 'image'}:`, error);
+      const message = error instanceof Error ? error.message : 'Error desconocido';
+      if (message.includes('storage/unauthorized')) {
+        alert(`❌ No tienes permisos para subir este ${popupForm.isVideo ? 'video' : 'imagen'}. Verifica que estás autenticado como administrador y que las reglas de Firebase Storage lo permiten.`);
+      } else {
+        alert(`❌ Error al subir ${popupForm.isVideo ? 'el video' : 'la imagen'} del popup: ${message}`);
+      }
+    } finally {
+      setPopupImageUploading(false);
+    }
+  };
+
+  const popupSizePreset = POPUP_SIZE_PRESETS[popupForm.size] ?? POPUP_SIZE_PRESETS['2x2'];
+  const popupRatio = popupSizePreset.height / popupSizePreset.width;
+  const popupPreviewStyle = {
+    width: `min(${popupSizePreset.width}px, calc(100% - 2rem), calc((100vh - 3rem) / ${popupRatio.toFixed(3)}))`,
+    maxWidth: 'calc(100% - 2rem)'
+  } as React.CSSProperties;
+
   const selectAllProducts = () => {
     const filteredProducts = products.filter(product => 
       selectedCategory === 'all' || product.categoria === selectedCategory
@@ -778,10 +1391,9 @@ export default function AdminPage() {
       // Regenerar reporte diario cuando se entrega un pedido
       if (newStatus === 'delivered') {
         try {
-          const today = new Date().toISOString().split('T')[0];
+          // const today = new Date().toISOString().split('T')[0];
           // const { generateDailyReportUtil } = await import('@/utils/reportUtils');
           // await generateDailyReportUtil(today);
-          console.log('Reporte diario deshabilitado temporalmente');
         } catch (error) {
           console.error('Error regenerando reporte diario:', error);
         }
@@ -864,28 +1476,28 @@ export default function AdminPage() {
         title: 'Confirmado',
         icon: CreditCardIcon,
         completed: ['confirmed', 'preparing', 'shipped', 'delivered'].includes(order.status),
-        date: order.status !== 'pending' ? order.updatedAt : null
+        date: order.status !== 'pending' ? order.createdAt : null
       },
       {
         status: 'preparing',
         title: 'Preparando',
         icon: CubeIcon,
         completed: ['preparing', 'shipped', 'delivered'].includes(order.status),
-        date: order.status === 'preparing' || ['shipped', 'delivered'].includes(order.status) ? order.updatedAt : null
+        date: order.status === 'preparing' || ['shipped', 'delivered'].includes(order.status) ? order.createdAt : null
       },
       {
         status: 'shipped',
         title: 'Enviado',
         icon: TruckIcon,
         completed: ['shipped', 'delivered'].includes(order.status),
-        date: order.status === 'shipped' || order.status === 'delivered' ? order.updatedAt : null
+        date: order.status === 'shipped' || order.status === 'delivered' ? order.createdAt : null
       },
       {
         status: 'delivered',
         title: 'Entregado',
         icon: CheckCircleIcon,
         completed: order.status === 'delivered',
-        date: order.status === 'delivered' ? order.updatedAt : null
+        date: order.status === 'delivered' ? order.createdAt : null
       }
     ];
 
@@ -896,7 +1508,7 @@ export default function AdminPage() {
     const grouped: { [key: string]: Order[] } = {};
     
     orders.forEach(order => {
-      const key = `${order.customerEmail}-${order.userId}`;
+      const key = `${order.customerEmail}-${order.id}`;
       if (!grouped[key]) {
         grouped[key] = [];
       }
@@ -976,7 +1588,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -994,7 +1606,7 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
+        
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
             <span className="text-4xl mr-4">⚡</span>
@@ -1035,10 +1647,10 @@ export default function AdminPage() {
           </nav>
         </div>
 
-        {/* Dashboard Tab */}
+        
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            {/* Stats Cards */}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-lg border border-blue-200">
                 <div className="flex items-center">
@@ -1083,7 +1695,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Recent Orders */}
+            
             <div className="bg-white rounded-lg shadow-md">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Pedidos Recientes</h3>
@@ -1096,51 +1708,69 @@ export default function AdminPage() {
                         Cliente
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total
+                        Pedidos
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
+                        Total Comprado
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha
+                        Último Pedido
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estados
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {orders.slice(0, 5).map((order) => (
-                      <tr key={order.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {order.customerName}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {order.customerEmail}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatPrice(order.total)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                            order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                            order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {order.status === 'pending' ? 'Pendiente' :
-                             order.status === 'confirmed' ? 'Confirmado' :
-                             order.status === 'shipped' ? 'Enviado' :
-                             order.status === 'delivered' ? 'Entregado' : 'Cancelado'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                    {ordersByCustomer.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-6 text-center text-sm text-gray-500">
+                          No hay pedidos registrados todavía.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      ordersByCustomer.slice(0, 5).map((group) => (
+                        <tr key={group.lastOrderId}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {group.customerName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {group.customerEmail}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {group.orderCount}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatPrice(group.totalSpent)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {group.lastOrderDate.toLocaleDateString('es-CL', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(group.statusBreakdown).map(([status, count]) => (
+                                <span
+                                  key={status}
+                                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                    statusClassMap[status as OrderStatus] || 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {statusLabelMap[status as OrderStatus]} · {count}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1148,7 +1778,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Products Tab */}
+        
         {activeTab === 'products' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -1157,11 +1787,13 @@ export default function AdminPage() {
                 onClick={() => {
                   setProductForm({
                     id: '',
+                    sku: '',
                     nombre: '',
                     precio: 0,
                     descripcion: '',
                     stock: 0,
                     categoria: '',
+                    subcategoria: '',
                     nuevo: false,
                     oferta: false,
                     imagen: ''
@@ -1175,7 +1807,7 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Category Filter */}
+            
             <div className="flex items-center space-x-4">
               <label className="text-sm font-medium text-gray-700">
                 Filtrar por categoría:
@@ -1194,7 +1826,7 @@ export default function AdminPage() {
               </select>
             </div>
 
-            {/* Bulk Actions */}
+            
             <div className="bg-white rounded-lg shadow-md p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -1280,9 +1912,11 @@ export default function AdminPage() {
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0 mr-4">
                               {product.imagen ? (
-                                <img
+                                <Image
                                   src={product.imagen}
                                   alt={product.nombre}
+                                  width={40}
+                                  height={40}
                                   className="h-10 w-10 object-cover rounded"
                                 />
                               ) : (
@@ -1294,6 +1928,9 @@ export default function AdminPage() {
                             <div>
                               <div className="text-sm font-medium text-gray-900">
                                 {product.nombre}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                SKU: {product.sku && product.sku.trim() ? product.sku : 'No asignado'}
                               </div>
                               <div className="flex space-x-1 mt-1">
                                 {product.nuevo && (
@@ -1344,7 +1981,7 @@ export default function AdminPage() {
                 </table>
               </div>
               
-              {/* Products Counter */}
+              
               <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
                 <p className="text-sm text-gray-700">
                   Mostrando {products.filter(product => selectedCategory === 'all' || product.categoria === selectedCategory).length} de {products.length} productos
@@ -1357,12 +1994,12 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Reports Tab */}
+        
         {activeTab === 'reports' && (
           <SalesReportsComponent />
         )}
 
-        {/* Orders Tab */}
+        
         {activeTab === 'orders' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -1536,7 +2173,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Banner Tab */}
+        
         {activeTab === 'banner' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Gestión del Banner</h2>
@@ -1580,7 +2217,6 @@ export default function AdminPage() {
                           </label>
                           <input
                             type="file"
-                            accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0] || null;
                               const newFiles = [...bannerFiles];
@@ -1642,17 +2278,24 @@ export default function AdminPage() {
                   type="button"
                   onClick={async () => {
                     try {
+                      // console.log('🚀 Banner update started');
                       setUpdatingBanner(true);
-                      
+
                       // Upload new banner images
                       const imageUrls = [...bannerForm.images];
-                      
+                      // console.log('📁 Banner files to upload:', bannerFiles.length);
+
                       for (let i = 0; i < bannerFiles.length; i++) {
                         const file = bannerFiles[i];
                         if (file) {
-                          const imageRef = ref(storage, `banners/banner_${i}_${Date.now()}_${file.name}`);
-                          const snapshot = await uploadBytes(imageRef, file);
+                          // console.log(`📤 Uploading banner ${i}:`, file.name);
+                          const optimizedBannerFile = await optimizeImageFile(file);
+                          // console.log(`✨ Optimized banner ${i}:`, optimizedBannerFile.size, 'bytes');
+                          const imageRef = ref(storage, `banners/banner_${i}_${Date.now()}_${optimizedBannerFile.name}`);
+                          // console.log(`☁️ Uploading to Storage:`, imageRef.fullPath);
+                          const snapshot = await uploadBytes(imageRef, optimizedBannerFile);
                           const downloadUrl = await getDownloadURL(snapshot.ref);
+                          // console.log(`✅ Banner ${i} uploaded:`, downloadUrl);
                           imageUrls[i] = downloadUrl;
                         }
                       }
@@ -1689,7 +2332,7 @@ export default function AdminPage() {
                 </button>
               </form>
               
-              {/* Preview */}
+              
               <div className="mt-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa:</h3>
                 <div className="relative text-white py-12 rounded-lg overflow-hidden" style={{ background: 'linear-gradient(to right, #F16529, #F16529)' }}>
@@ -1713,7 +2356,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Popup Tab */}
+        
         {activeTab === 'popup' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Gestión del Popup de Ofertas</h2>
@@ -1732,7 +2375,22 @@ export default function AdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
-                
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Popup
+                  </label>
+                  <select
+                    value={popupForm.popupType}
+                    onChange={(e) => setPopupForm({ ...popupForm, popupType: e.target.value as 'category' | 'information' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                  >
+                    <option value="category">Categoría/Promocional</option>
+                    <option value="information">Información</option>
+                  </select>
+                </div>
+
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Descripción
@@ -1759,125 +2417,111 @@ export default function AdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
                 </div>
-                
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Productos en Oferta
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tamaño del Popup
                   </label>
-                  
-                  {/* Search box */}
-                  <div className="mb-3">
-                    <input
-className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
-                    />
-                  </div>
-                  
-                  {/* Selected products */}
-                  {popupForm.selectedProducts.length > 0 && (
-                    <div className="mb-3">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Productos Seleccionados ({popupForm.selectedProducts.length}):</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {popupForm.selectedProducts.map((productId) => {
-                          const product = products.find(p => p.id === productId);
-                          return product ? (
-                            <span
-                              key={productId}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: '#FFF0E6', color: '#F16529' }}
-                            >
-                              {product.name || product.nombre}
-                              <button
-                                onClick={() => setPopupForm({ 
-                                  ...popupForm, 
-                                  selectedProducts: popupForm.selectedProducts.filter(id => id !== productId) 
-                                })}
-                                className="ml-1" style={{ color: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.color = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.color = '#F16529'}
-                              >
-                                ✕
-                              </button>
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Product list organized by categories */}
-                  <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-md p-3">
-                    {(() => {
-                      const filteredProducts = products.filter(product => 
-                        (product.name?.toLowerCase() || product.nombre?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                        (product.category?.toLowerCase() || product.categoria?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-                      );
-                      
-                      const groupedByCategory = filteredProducts.reduce((acc, product) => {
-                        const category = product.categoria || product.category || 'Sin categoría';
-                        if (!acc[category]) acc[category] = [];
-                        acc[category].push(product);
-                        return acc;
-                      }, {} as Record<string, typeof products>);
-                      
-                      const sortedCategories = Object.keys(groupedByCategory).sort();
-                      
-                      return sortedCategories.map(category => (
-                        <div key={category} className="mb-4">
-                          <h4 className="font-semibold text-sm text-gray-700 mb-2 px-2 py-1 bg-gray-100 rounded">
-                            📦 {category.charAt(0).toUpperCase() + category.slice(1)}
-                          </h4>
-                          <div className="space-y-1 ml-2">
-                            {groupedByCategory[category].map((product) => (
-                        <div key={product.id} className="flex items-center">
+                  <select
+                    value={popupForm.size}
+                    onChange={(e) => setPopupForm({ ...popupForm, size: (isPopupSize(e.target.value) ? e.target.value : '2x2') })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                  >
+                    {Object.entries(POPUP_SIZE_PRESETS).map(([value, config]) => (
+                      <option key={value} value={value}>
+                        {config.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Posición en pantalla
+                  </label>
+                  <select
+                    value={popupForm.position}
+                    onChange={(e) => setPopupForm({ ...popupForm, position: e.target.value as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                  >
+                    <option value="bottom-right">Esquina inferior derecha</option>
+                    <option value="bottom-left">Esquina inferior izquierda</option>
+                    <option value="top-right">Esquina superior derecha</option>
+                    <option value="top-left">Esquina superior izquierda</option>
+                    <option value="center">Centro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Imagen o Video
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                        <label className="flex items-center">
                           <input
-                            type="checkbox"
-                            id={`popup-product-${product.id}`}
-                            checked={popupForm.selectedProducts.includes(product.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setPopupForm({ 
-                                  ...popupForm, 
-                                  selectedProducts: [...popupForm.selectedProducts, product.id] 
-                                });
-                              } else {
-                                setPopupForm({ 
-                                  ...popupForm, 
-                                  selectedProducts: popupForm.selectedProducts.filter(id => id !== product.id) 
-                                });
-                              }
-                            }}
-                            className="h-4 w-4 border-gray-300 rounded" style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as React.CSSProperties}
-                                              />                          <label htmlFor={`popup-product-${product.id}`} className="ml-2 flex-1 text-sm text-gray-900 cursor-pointer">
-                            <div className="flex items-center space-x-2">
-                              {((product.images && product.images.length > 0) || product.imagen) && (
-                                <img 
-                                  src={product.images?.[0] || product.imagen} 
-                                  alt={product.name || product.nombre || 'Producto'}
-                                  className="h-8 w-8 object-cover rounded"
-                                />
-                              )}
-                              <span>{product.name || product.nombre || 'Sin nombre'}</span>
-                              <span className="text-gray-500">- ${(product.price || product.precio)?.toLocaleString() || '0'}</span>
-                            </div>
-                          </label>
-                            </div>
-                          ))}
-                          </div>
-                        </div>
-                      ));
-                    })()}
-                    {products.filter(product => 
-                      (product.name?.toLowerCase() || product.nombre?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                      (product.category?.toLowerCase() || product.categoria?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-                    ).length === 0 && searchTerm && (
-                      <p className="text-gray-500 text-sm text-center py-4">
-                        No se encontraron productos que coincidan con &quot;{searchTerm}&quot;
-                      </p>
+                            type="radio"
+                            name="mediaType"
+                            checked={!popupForm.isVideo}
+                            onChange={() => setPopupForm(prev => ({ ...prev, isVideo: false, mediaUrl: '' }))}
+                            className="mr-2"
+                          />
+                        Imagen
+                      </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="mediaType"
+                            checked={popupForm.isVideo}
+                            onChange={() => setPopupForm(prev => ({ ...prev, isVideo: true, mediaUrl: '' }))}
+                            className="mr-2"
+                          />
+                        Video
+                      </label>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                      <input
+                        type="file"
+                        accept={popupForm.isVideo ? "video/*" : "image/*"}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handlePopupImageUpload(file);
+                          }
+                        }}
+                        className="w-full sm:w-auto flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                      />
+                      {popupImageUploading && (
+                        <span className="text-sm text-orange-600 mt-2 sm:mt-0">Subiendo {popupForm.isVideo ? 'video' : 'imagen'}...</span>
+                      )}
+                    </div>
+                    {popupForm.mediaUrl && (
+                      <div className="mt-3 flex items-center gap-3">
+                        {popupForm.isVideo ? (
+                          <video
+                            src={popupForm.mediaUrl}
+                            className="w-16 h-16 rounded-lg object-cover border"
+                            muted
+                          />
+                        ) : (
+                          <img
+                            src={popupForm.mediaUrl}
+                            alt="Popup"
+                            className="w-16 h-16 rounded-lg object-cover border"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPopupForm({ ...popupForm, mediaUrl: '' })}
+                          className="text-xs text-red-600 hover:text-red-800"
+                        >
+                          Quitar {popupForm.isVideo ? 'video' : 'imagen'}
+                        </button>
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Usa el buscador para encontrar productos y selecciona los que aparecerán en el popup de ofertas
-                  </p>
                 </div>
-                
+
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -1904,8 +2548,12 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         description: popupForm.description,
                         buttonText: popupForm.buttonText,
                         buttonLink: '/popup-ofertas',
-                        selectedProducts: popupForm.selectedProducts,
                         active: popupForm.active,
+                        size: popupForm.size,
+                        position: popupForm.position,
+                        mediaUrl: popupForm.mediaUrl,
+                        isVideo: popupForm.isVideo,
+                        popupType: popupForm.popupType,
                         updatedAt: new Date().toISOString()
                       });
 
@@ -1937,31 +2585,110 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   🧪 Probar Popup
                 </button>
               </form>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista previa del popup</h3>
+                <div className="relative bg-slate-100 rounded-2xl border border-slate-200 p-6 min-h-[22rem]">
+                  <div
+                    className={`absolute ${POPUP_PREVIEW_POSITION_CLASSES[popupForm.position] ?? POPUP_PREVIEW_POSITION_CLASSES['bottom-right']}`}
+                    style={popupPreviewStyle}
+                  >
+                    <div className="relative w-full" style={{ paddingBottom: `${(popupRatio * 100).toFixed(2)}%` }}>
+                      <div className="absolute inset-0 rounded-xl shadow-2xl overflow-hidden bg-gradient-to-br from-orange-500 to-red-500">
+                        <button
+                          type="button"
+                          className="absolute top-2 right-2 z-20 p-1 rounded-full bg-white/80 hover:bg-white transition-all cursor-default"
+                          aria-label="Cerrar"
+                        >
+                          <XMarkIcon className="h-4 w-4 text-gray-600" />
+                        </button>
+
+                        {popupForm.mediaUrl && !popupForm.isVideo && (
+                          <>
+                            <div
+                              className="absolute inset-0 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${popupForm.mediaUrl})` }}
+                            />
+                            <div className="absolute inset-0 bg-black/30" />
+                          </>
+                        )}
+
+                        {popupForm.mediaUrl && popupForm.isVideo && (
+                          <>
+                            <video
+                              autoPlay
+                              muted
+                              loop
+                              className="absolute inset-0 w-full h-full object-cover"
+                            >
+                              <source src={popupForm.mediaUrl} type="video/mp4" />
+                            </video>
+                            <div className="absolute inset-0 bg-black/20" />
+                          </>
+                        )}
+
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center text-white">
+                          <div className="text-3xl mb-3">
+                            {popupForm.popupType === 'category' ? '🛍️' : '📢'}
+                          </div>
+
+                          <h4 className="text-lg font-bold mb-2">
+                            {popupForm.title || '¡Oferta Especial!'}
+                          </h4>
+
+                          <p className="text-sm mb-4 opacity-90">
+                            {popupForm.description || 'Descuentos increíbles por tiempo limitado'}
+                          </p>
+
+                          <button
+                            type="button"
+                            className="bg-white text-orange-500 font-bold py-2 px-4 rounded-lg text-sm hover:shadow-lg transition-all"
+                          >
+                            {popupForm.buttonText || 'Ver Ofertas'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  Posición actual: {
+                    {
+                      'top-left': 'Esquina superior izquierda',
+                      'top-right': 'Esquina superior derecha',
+                      'bottom-left': 'Esquina inferior izquierda',
+                      'bottom-right': 'Esquina inferior derecha',
+                      center: 'Centro de la pantalla'
+                    }[popupForm.position]
+                  }
+                </p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Product Layout Tab */}
         {activeTab === 'product-layout' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">🔲 Configuración del Layout de Productos</h2>
             
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start">
-                <div className="text-yellow-500 text-xl mr-3">⚠️</div>
-                <div>
-                  <h3 className="text-yellow-800 font-semibold mb-2">¿Qué hace esta pestaña?</h3>
-                  <ul className="text-yellow-700 text-sm space-y-1">
-                    <li>• <strong>Layout Masonería:</strong> Controla cómo se muestran los productos en cuadrícula</li>
-                    <li>• <strong>Tamaños Dinámicos:</strong> Los productos aparecen en diferentes tamaños para crear variedad visual</li>
-                    <li>• <strong>Posiciones Automáticas:</strong> El sistema alterna entre pequeño, vertical, grande y horizontal</li>
-                    <li>• <strong>Actualmente:</strong> Esta funcionalidad está en modo automático y no requiere configuración manual</li>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="text-blue-500 text-xl">ℹ️</div>
+                <div className="space-y-2">
+                  <h3 className="text-blue-900 font-semibold">¿Cómo funciona el layout?</h3>
+                  <p className="text-sm text-blue-800">
+                    El layout de productos utiliza una cuadrícula tipo masonry. Puedes activar bloques especiales (hero, horizontales, verticales) y definir cada cuántos productos deben aparecer.
+                  </p>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• <strong>Activo:</strong> habilita o deshabilita el patrón.</li>
+                    <li>• <strong>Intervalo:</strong> cada cuántos productos se aplica el diseño.</li>
+                    <li>• <strong>Diseño:</strong> tamaño/forma del bloque dentro de la cuadrícula.</li>
                   </ul>
-                  <div className="mt-3 p-3 bg-yellow-100 rounded border">
-                    <p className="text-yellow-800 text-sm font-medium">
-                      💡 <strong>Tip:</strong> Ve a "Contenido Página" para editar las secciones promocionales que sí son editables.
-                    </p>
-                  </div>
+                  {layoutPatternsError && (
+                    <div className="mt-2 bg-white/80 border border-blue-200 rounded-md px-3 py-2 text-sm text-blue-900">
+                      {layoutPatternsError}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1969,116 +2696,218 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa de Patrones de Productos</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Así se ven los productos en la página principal con el sistema de layout automático:
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Pequeño (Small)</h4>
-                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-32 flex items-center justify-center">
-                        <span className="text-gray-500 text-sm">Producto pequeño</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 4 productos</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Configurador de Patrones de Layout</h3>
+                      <p className="text-sm text-gray-600">
+                        Ajusta el ritmo visual de la grilla principal. Los cambios se reflejan en la home una vez guardados.
+                      </p>
+                      {layoutPatternsFetched.updatedAt && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Última actualización: {new Date(layoutPatternsFetched.updatedAt).toLocaleString('es-CL')}
+                        </p>
+                      )}
                     </div>
-                    
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Vertical (Medium)</h4>
-                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-48 flex items-center justify-center">
-                        <span className="text-gray-500 text-sm">Producto vertical</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 4 productos (índice múltiplo de 4)</p>
-                    </div>
-                    
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Grande (Large)</h4>
-                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-64 flex items-center justify-center">
-                        <span className="text-gray-500 text-sm">Producto grande</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 12 productos (índice múltiplo de 12)</p>
-                    </div>
-                    
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Horizontal</h4>
-                      <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-full h-32 flex items-center justify-center">
-                        <span className="text-gray-500 text-sm">Producto horizontal</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Mostrado cada 6 productos (índice múltiplo de 6)</p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleResetLayoutPatterns}
+                        className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 transition-colors"
+                        disabled={savingLayoutPatterns || layoutPatternsLoading}
+                      >
+                        Restablecer valores
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveLayoutPatterns}
+                        className="text-white font-medium py-2 px-4 rounded-md transition-colors text-sm disabled:opacity-60"
+                        style={{ backgroundColor: '#F16529' }}
+                        onMouseEnter={(e) => {
+                          if (!e.currentTarget.hasAttribute('disabled')) {
+                            e.currentTarget.style.backgroundColor = '#D13C1A';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F16529';
+                        }}
+                        disabled={savingLayoutPatterns || layoutPatternsLoading}
+                      >
+                        {savingLayoutPatterns ? 'Guardando...' : 'Guardar cambios'}
+                      </button>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {orderedLayoutRules.map((rule) => {
+                      const meta = LAYOUT_VARIANT_META[rule.variant];
+                      return (
+                        <div key={rule.variant} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="text-2xl">{meta.icon}</div>
+                              <h4 className="font-medium text-gray-900">{meta.title}</h4>
+                              <p className="text-sm text-gray-600">{meta.description}</p>
+                            </div>
+                            <label className="flex items-center gap-2 text-sm text-gray-600">
+                              <span>Activo</span>
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-orange-500 rounded"
+                                checked={rule.enabled}
+                                onChange={(e) => updateLayoutRule(rule.variant, (prevRule) => ({
+                                  ...prevRule,
+                                  enabled: e.target.checked,
+                                }))}
+                                disabled={savingLayoutPatterns || layoutPatternsLoading}
+                              />
+                            </label>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Intervalo (cada cuántos productos)
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={50}
+                                value={rule.interval}
+                                onChange={(e) => {
+                                  const value = Math.max(1, Math.min(50, Number(e.target.value) || 1));
+                                  updateLayoutRule(rule.variant, (prevRule) => ({
+                                    ...prevRule,
+                                    interval: value,
+                                  }));
+                                }}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1"
+                                style={{ '--tw-ring-color': '#F16529' } as any}
+                                disabled={savingLayoutPatterns || layoutPatternsLoading}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Diseño del bloque
+                              </label>
+                              <select
+                                value={rule.span}
+                                onChange={(e) => {
+                                  const value = e.target.value as LayoutPatternSpan;
+                                  const allowedValues = meta.spanOptions.map((option) => option.value);
+                                  if (!allowedValues.includes(value)) return;
+                                  updateLayoutRule(rule.variant, (prevRule) => ({
+                                    ...prevRule,
+                                    span: value,
+                                  }));
+                                }}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1"
+                                style={{ '--tw-ring-color': '#F16529' } as any}
+                                disabled={savingLayoutPatterns || layoutPatternsLoading}
+                              >
+                                {meta.spanOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-gray-500 mt-3">
+                            {rule.enabled
+                              ? `Activo: se aplica a cada ${rule.interval} producto(s).`
+                              : 'Este patrón está deshabilitado temporalmente.'}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                 </div>
                 
                 <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Secciones de Productos</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Configura las secciones que aparecerán en la página principal.
-                  </p>
-                  
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Secciones de Productos</h3>
+                      <p className="text-sm text-gray-600">
+                        Configura las secciones que aparecerán en la página principal.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingSection(null);
+                        setShowSectionModal(true);
+                      }}
+                      className="text-white font-medium py-2 px-4 rounded-md transition-colors text-sm"
+                      style={{ backgroundColor: '#F16529' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                    >
+                      + Nueva Sección
+                    </button>
+                  </div>
+
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Productos Destacados</h4>
-                        <p className="text-sm text-gray-500">Primera sección en la página principal</p>
+                    {productSections.map((section, index) => (
+                      <div key={section.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-gray-900">{section.name}</h4>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => {
+                                  setCurrentSectionId(section.id);
+                                  setShowProductSelector(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                Productos ({section.selectedProducts.length})
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingSection(section);
+                                  setShowSectionModal(true);
+                                }}
+                                className="text-orange-600 hover:text-orange-800 text-sm"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newSections = productSections.filter(s => s.id !== section.id);
+                                  setProductSections(newSections as any);
+                                }}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">{section.description}</p>
+                        </div>
+                        <div className="flex items-center ml-4">
+                          <input
+                            type="checkbox"
+                            checked={section.enabled}
+                            onChange={(e) => {
+                              const newSections = [...productSections];
+                              newSections[index].enabled = e.target.checked;
+                              setProductSections(newSections as any);
+                            }}
+                            className="h-4 w-4 text-orange-500 rounded"
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="h-4 w-4 text-orange-500 rounded"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Los Más Vendidos</h4>
-                        <p className="text-sm text-gray-500">Productos con mejor desempeño</p>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="h-4 w-4 text-orange-500 rounded"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Novedades</h4>
-                        <p className="text-sm text-gray-500">Productos recién llegados</p>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="h-4 w-4 text-orange-500 rounded"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Electrónica</h4>
-                        <p className="text-sm text-gray-500">Categoría de electrónicos</p>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="h-4 w-4 text-orange-500 rounded"
-                        />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
                 
                 <div className="pt-4">
                   <button
-                    className="text-white font-medium py-2 px-4 rounded-md transition-colors" 
-                    style={{ backgroundColor: '#F16529' }} 
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} 
+                    onClick={saveProductSections}
+                    className="text-white font-medium py-2 px-4 rounded-md transition-colors"
+                    style={{ backgroundColor: '#F16529' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
                   >
                     Guardar Configuración
@@ -2089,14 +2918,13 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Main Banner Tab */}
         {activeTab === 'main-banner' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Gestión de Banners</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Gestión de Banners (v2)</h2>
             
             <div className="bg-white rounded-lg shadow-md p-6">
               <form className="space-y-6">
-                {/* Banner Active Toggle */}
+                
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -2110,7 +2938,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   </label>
                 </div>
 
-                {/* Slides Configuration */}
+                
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold text-gray-900">Banners del Carrusel</h3>
                   <p className="text-sm text-gray-600">Selecciona los productos que aparecerán en el banner principal</p>
@@ -2140,22 +2968,21 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                           </label>
                           <input
                             type="file"
-                            accept="image/*"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                try {
-                                  // Convert file to base64 or upload to storage
-                                  const reader = new FileReader();
-                                  reader.onload = (e) => {
-                                    const result = e.target?.result as string;
-                                    const newSlides = [...mainBannerForm.slides];
-                                    newSlides[index] = { ...newSlides[index], imageUrl: result };
-                                    setMainBannerForm({ ...mainBannerForm, slides: newSlides });
-                                  };
-                                  reader.readAsDataURL(file);
-                                } catch (error) {
-                                  alert('Error al cargar la imagen');
+                                try {                                  if (!user) {
+                                    throw new Error('Usuario no autenticado');
+                                  }
+
+                                  const timestamp = Date.now();
+                                  const optimizedMainBannerFile = await optimizeImageFile(file);
+                                  const fileName = `main-banner/slide-${index}-${timestamp}-${optimizedMainBannerFile.name}`;                                  const storageRef = ref(storage, fileName);                                  const snapshot = await uploadBytes(storageRef, optimizedMainBannerFile);                                  const downloadURL = await getDownloadURL(snapshot.ref);                                  const newSlides = [...mainBannerForm.slides];
+                                  newSlides[index] = { ...newSlides[index], imageUrl: downloadURL };
+                                  setMainBannerForm({ ...mainBannerForm, slides: newSlides });                                } catch (error) {
+                                  console.error('❌ Error uploading main banner image:', error);
+                                  const message = error instanceof Error ? error.message : 'Error desconocido';
+                                  alert(`❌ Error al subir la imagen: ${message}\nVerifica los permisos de Firebase Storage.`);
                                 }
                               }
                             }}
@@ -2195,7 +3022,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                               const newSlides = [...mainBannerForm.slides];
                               newSlides[index] = { 
                                 ...newSlides[index], 
-                                linkType: e.target.value,
+                                linkType: e.target.value as "product" | "category",
                                 productId: e.target.value === "product" ? newSlides[index].productId : "",
                                 categoryId: e.target.value === "category" ? newSlides[index].categoryId : ""
                               };
@@ -2225,7 +3052,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                               <option value="">Selecciona una categoría</option>
                               {categories.map((category) => (
                                 <option key={category.id} value={category.id}>
-                                  {category.icon || '📦'} {category.name || category.nombre}
+                                  📦 {category.name}
                                 </option>
                               ))}
                             </select>
@@ -2253,8 +3080,12 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                           <select
                             value={slide.productId}
                             onChange={(e) => {
-                              const newSlides = [...mainBannerForm.slides];
-                              newSlides[index] = { ...newSlides[index], productId: e.target.value };
+                              const newProductId = e.target.value;                              const newSlides = mainBannerForm.slides.map((s, i) => {
+                                if (i === index) {
+                                  return { ...s, productId: newProductId };
+                                }
+                                return s;
+                              });
                               setMainBannerForm({ ...mainBannerForm, slides: newSlides });
                             }}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
@@ -2264,12 +3095,12 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                               .filter(product => {
                                 const searchTerm = bannerSearchTerms[index] || '';
                                 if (!searchTerm) return true;
-                                const productName = (product.nombre || product.name || '').toLowerCase();
+                                const productName = (product.nombre || '').toLowerCase();
                                 return productName.includes(searchTerm.toLowerCase());
                               })
                               .map((product) => (
                                 <option key={product.id} value={product.id}>
-                                  {product.nombre || product.name} - ${(product.precio || product.price || 0).toLocaleString()}
+                                  {product.nombre} - ${(product.precio || 0).toLocaleString()}
                                 </option>
                               ))}
                           </select>
@@ -2279,16 +3110,16 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                             return selectedProduct && (
                               <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center space-x-3">
                                 <img 
-                                  src={selectedProduct.imagen || selectedProduct.image || ''} 
-                                  alt={selectedProduct.nombre || selectedProduct.name || 'Producto'}
+                                  src={selectedProduct.imagen || ''} 
+                                  alt={selectedProduct.nombre || 'Producto'}
                                   className="w-16 h-16 object-cover rounded"
                                 />
                                 <div>
                                   <h5 className="font-medium text-gray-900">
-                                    {selectedProduct.nombre || selectedProduct.name}
+                                    {selectedProduct.nombre}
                                   </h5>
                                   <p className="text-sm text-gray-600">
-                                    ${(selectedProduct.precio || selectedProduct.price || 0).toLocaleString()}
+                                    ${(selectedProduct.precio || 0).toLocaleString()}
                                   </p>
                                 </div>
                               </div>
@@ -2303,9 +3134,9 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                           return selectedCategory && (
                             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                               <div className="flex items-center space-x-2 mb-2">
-                                <span className="text-2xl">{selectedCategory.icon || '📦'}</span>
+                                <span className="text-2xl">📦</span>
                                 <h5 className="font-medium text-gray-900">
-                                  {selectedCategory.name || selectedCategory.nombre}
+                                  {selectedCategory.name}
                                 </h5>
                               </div>
                               <p className="text-sm text-gray-600">
@@ -2318,11 +3149,11 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                     </div>
                   ))}
                   
-                  {/* Add Banner Button */}
+                  
                   <button
                     type="button"
                     onClick={() => {
-                      const newSlides = [...mainBannerForm.slides, { linkType: "product", productId: "", categoryId: "", imageUrl: "" }];
+                      const newSlides = [...mainBannerForm.slides, { linkType: "product" as "product" | "category", productId: "", categoryId: "", imageUrl: "" }];
                       setMainBannerForm({ ...mainBannerForm, slides: newSlides });
                     }}
                     className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-orange-500 hover:text-orange-600 transition-colors"
@@ -2334,23 +3165,17 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                 <button
                   type="button"
                   onClick={async () => {
+                    setUpdatingMainBanner(true);
                     try {
-                      setUpdatingMainBanner(true);
-                      
-                      try {
-                        // Try to save to Firebase
-                        await setDoc(doc(db, 'config', 'main-banner'), {
-                          active: mainBannerForm.active,
-                          slides: mainBannerForm.slides,
-                          updatedAt: new Date().toISOString()
-                        });
-                      } catch (firebaseError) {
-                        // If Firebase fails, just update local state
-                      }
-
-                      alert('Banner principal actualizado exitosamente (modo local)');
+                      await setDoc(doc(db, 'config', 'main-banner'), {
+                        active: mainBannerForm.active,
+                        slides: mainBannerForm.slides,
+                        updatedAt: new Date().toISOString()
+                      });
+                      alert('✅ Banner principal actualizado y guardado en Firebase.');
                     } catch (error) {
-                      alert('Error al actualizar banner principal');
+                      console.error('Error al guardar en Firebase:', error);
+                      alert(`❌ Error al guardar en Firebase: ${error instanceof Error ? error.message : 'Error desconocido'}. Los cambios solo se aplicaron localmente.`);
                     } finally {
                       setUpdatingMainBanner(false);
                     }
@@ -2361,11 +3186,26 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   {updatingMainBanner ? 'Actualizando...' : 'Guardar Configuración'}
                 </button>
               </form>
+
+              
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa del Carrusel:</h3>
+                <div className="relative w-full max-w-4xl mx-auto">
+                  <MainBannerCarousel
+                    config={{
+                      active: mainBannerForm.active,
+                      slides: mainBannerForm.slides,
+                    }}
+                    products={products}
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
         )}
 
-        {/* Logo Tab */}
+        
         {activeTab === 'logo' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Gestión del Logo</h2>
@@ -2391,7 +3231,6 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   </label>
                   <input
                     type="file"
-                    accept="image/*"
                     onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
@@ -2419,8 +3258,12 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                       
                       // Upload image if selected
                       if (logoFile) {
-                        const imageRef = ref(storage, `config/logo_${Date.now()}_${logoFile.name}`);
-                        const snapshot = await uploadBytes(imageRef, logoFile);
+                        const optimizedLogoFile = await optimizeImageFile(logoFile, {
+                          maxWidthOrHeight: 600,
+                          maxSizeMB: 0.5,
+                        });
+                        const imageRef = ref(storage, `config/logo_${Date.now()}_${optimizedLogoFile.name}`);
+                        const snapshot = await uploadBytes(imageRef, optimizedLogoFile);
                         logoImageUrl = await getDownloadURL(snapshot.ref);
                       }
 
@@ -2440,7 +3283,6 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         });
                       } catch (firebaseError) {
                         // If Firebase fails (no auth), just update local state
-                        console.log('Firebase save failed, continuing with local state');
                       }
 
                       alert('Logo actualizado exitosamente');
@@ -2453,13 +3295,16 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                     }
                   }}
                   disabled={updatingLogo}
-                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#F16529' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
                 >
                   {updatingLogo ? 'Actualizando...' : 'Actualizar Logo'}
                 </button>
               </form>
               
-              {/* Preview */}
+              
               <div className="mt-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa:</h3>
                 <div className="bg-white p-4 border rounded-lg">
@@ -2479,14 +3324,14 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Categories Tab */}
+        
         {activeTab === 'categories' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Gestión de Categorías</h2>
               <button
                   onClick={() => {
-                    setCategoryForm({ id: '', name: '', active: true });
+                    setCategoryForm({ id: '', name: '', active: true, subcategorias: [] });
                     setShowCategoryModal(true);
                   }}
                   className="text-white px-4 py-2 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -2528,8 +3373,8 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
                           <div className="flex flex-wrap gap-1">
-                            {category.subcategorias && category.subcategorias.length > 0 ? (
-                              category.subcategorias.map((sub, index) => (
+                            {(category as any).subcategorias && (category as any).subcategorias.length > 0 ? (
+                              (category as any).subcategorias.map((sub: any, index: number) => (
                                 <span
                                   key={index}
                                   className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"
@@ -2563,7 +3408,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <button
                             onClick={() => {
-                              setCategoryForm(category);
+                              setCategoryForm({ ...category, subcategorias: (category as any).subcategorias || [] });
                               setShowCategoryModal(true);
                             }}
                             className="hover:opacity-80 transition-opacity" style={{ color: '#F16529' }}
@@ -2593,7 +3438,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Category Modal */}
+        
         {showCategoryModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-md w-full">
@@ -2683,7 +3528,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                               setCategories([...categories, categoryForm]);
                             }
                             setShowCategoryModal(false);
-                            setCategoryForm({ id: '', name: '', active: true });
+                            setCategoryForm({ id: '', name: '', active: true, subcategorias: [] });
                           } catch (error) {
                             alert('Error al guardar categoría');
                           }
@@ -2700,7 +3545,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Subcategory Modal */}
+        
         {showSubcategoryModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-md w-full">
@@ -2760,7 +3605,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                             const categoryIndex = categories.findIndex(c => c.id === selectedCategoryForSub);
                             if (categoryIndex >= 0) {
                               const category = categories[categoryIndex];
-                              const subcategorias = category.subcategorias || [];
+                              const subcategorias = (category as any).subcategorias || [];
                               
                               const newSubcategory = {
                                 id: Date.now().toString(),
@@ -2776,7 +3621,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                                 name: category.name,
                                 active: category.active,
                                 subcategorias: updatedSubcategorias,
-                                fechaCreacion: category.fechaCreacion || new Date().toISOString()
+                                fechaCreacion: (category as any).fechaCreacion || new Date().toISOString()
                               });
                               
                               // Update local state
@@ -2804,7 +3649,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Product Modal */}
+        
         {showProductModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -2838,12 +3683,26 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        SKU *
+                      </label>
+                      <input
+                        type="text"
+                        value={productForm.sku}
+                        onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })}
+                        required
+                        placeholder="E.g. SKU-00123"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Precio ($) *
                       </label>
                   <input
                     type="text"
                     value={productForm.precio}
-                    onChange={(e) => setProductForm({ ...productForm, precio: e.target.value })}
+                    onChange={(e) => setProductForm({ ...productForm, precio: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
                   />
                     </div>
@@ -2873,10 +3732,32 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
                       >
                         <option value="">Seleccionar categoría</option>
-                        <option value="electronicos">Electrónicos</option>
-                        <option value="hogar">Hogar</option>
-                        <option value="ropa">Ropa</option>
-                        <option value="deportes">Deportes</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Subcategoría
+                      </label>
+                      <select
+                        value={productForm.subcategoria}
+                        onChange={(e) => setProductForm({ ...productForm, subcategoria: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
+                        disabled={!productForm.categoria}
+                      >
+                        <option value="">Seleccionar subcategoría (opcional)</option>
+                        {productForm.categoria && (categories
+                          .find(cat => cat.id === productForm.categoria) as any)
+                          ?.subcategorias?.map((subcategoria: any) => (
+                            <option key={subcategoria.id} value={subcategoria.id}>
+                              {subcategoria.nombre}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
@@ -2899,7 +3780,6 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                     </label>
                     <input
                       type="file"
-                      accept="image/*"
                       onChange={(e) => setProductImage(e.target.files?.[0] || null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as any}
                     />
@@ -2956,7 +3836,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Homepage Content Tab */}
+        
         {activeTab === 'homepage-content' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">📝 Editar Contenido de la Página Principal</h2>
@@ -2967,7 +3847,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                 <div>
                   <h3 className="text-green-800 font-semibold mb-2">🚀 ¡Súper fácil! Solo selecciona y se guarda automáticamente</h3>
                   <ul className="text-green-700 text-sm space-y-1">
-                    <li>• <strong>📁 Subir imágenes:</strong> Haz clic en "Elegir archivo" para subir directamente desde tu computadora</li>
+                    <li>• <strong>📁 Subir imágenes:</strong> Haz clic en &quot;Elegir archivo&quot; para subir directamente desde tu computadora</li>
                     <li>• <strong>🎯 Seleccionar enlaces:</strong> Listas desplegables con categorías y productos existentes</li>
                     <li>• <strong>⚡ Guardado automático:</strong> Se guarda automáticamente al cambiar cualquier opción</li>
                     <li>• <strong>👁️ Ver cambios:</strong> Abre la página principal para ver los resultados al instante</li>
@@ -2976,11 +3856,28 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
               </div>
             </div>
             
-            {/* Promotional Sections */}
+            
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">🎨 Secciones Promocionales de la Página Principal</h3>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={async () => {
+                      const restoredSections = DEFAULT_PROMOTIONAL_SECTIONS.map((section) => ({ ...section }));
+                      const newContent: HomepageContentState = {
+                        ...homepageContent,
+                        promotionalSections: restoredSections,
+                      };
+
+                      setHomepageContent(newContent);
+                      autoSaveHomepageContent(newContent);
+                      alert('✅ Imágenes por defecto restauradas!');
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded transition-colors"
+                  >
+                    🔄 Restaurar Imágenes
+                  </button>
+
                   {isAutoSaving ? (
                     <div className="flex items-center text-orange-600 text-sm">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
@@ -2994,39 +3891,90 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {homepageContent.promotionalSections.map((section, index) => (
-                  <div key={section.id} className="border border-gray-200 rounded-lg p-4 hover:border-orange-300 transition-colors">
-                    <div className="space-y-4">
-                      {/* Section Header */}
+                {(() => {                  return homepageContent.promotionalSections.map((section, index) => {                    const previewWrapperClasses = (() => {
+                      const base = 'relative w-full bg-gray-900 rounded-lg overflow-hidden border-2 border-dashed border-gray-300';
+                      switch (section.position) {
+                        case 'large':
+                          return `${base} max-w-[240px] aspect-square`;
+                        case 'tall':
+                          return `${base} max-w-[180px] aspect-[1/2]`;
+                        case 'wide':
+                          return `${base} max-w-[280px] aspect-[2/1]`;
+                        default:
+                          return `${base} max-w-[220px] aspect-[4/3]`;
+                      }
+                    })();
+
+                    return (
+                  <div key={section.id} className="border border-gray-200 rounded-lg overflow-hidden hover:border-orange-300 transition-colors">
+                    
+                    <div className="bg-gray-50 px-4 py-3 border-b">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium text-gray-900">
-                          {section.position === 'large' ? '🔲 Grande (2x2)' : 
+                          {section.position === 'large' ? '🔲 Grande (2x2)' :
                            section.position === 'tall' ? '📱 Alto (1x2)' :
                            section.position === 'wide' ? '📺 Ancho (2x1)' : '⬜ Normal (1x1)'}
                         </h4>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
                           {section.linkType === 'category' ? '📁 Categoría' :
                            section.linkType === 'product' ? '📦 Producto' :
                            section.linkType === 'filter' ? '🔍 Filtro' : '🔗 URL'}
                         </span>
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                       
-                      {/* Image Preview */}
-                      <div className="relative h-32 bg-gray-100 rounded-lg overflow-hidden">
-                        <img
-                          src={section.imageUrl}
-                          alt={section.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">{section.badgeText}</span>
-                        </div>
-                        <div className="absolute top-2 right-2 bg-white bg-opacity-90 text-xs text-gray-700 px-2 py-1 rounded">
-                          Vista previa
+                      <div className="space-y-2">
+                        <h5 className="text-sm font-semibold text-gray-700 flex items-center">
+                          ✨ Vista Previa en Vivo
+                        </h5>
+                        <div className={`${previewWrapperClasses} mx-auto md:mx-0`}>
+                          {section.imageUrl ? (
+                            <img
+                              src={section.imageUrl}
+                              alt={section.title}
+                              className="absolute inset-0 h-full w-full object-cover"
+                              onError={(e) => {
+                                console.error('Error loading image:', section.imageUrl);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-800/60">
+                              <div className="text-center">
+                                <div className="text-4xl mb-2">📷</div>
+                                <div className="text-xs">Sube una imagen</div>
+                              </div>
+                            </div>
+                          )}
+
+                          
+                          {section.badgeText && (
+                            <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded font-bold shadow-lg">
+                              {section.badgeText}
+                            </div>
+                          )}
+
+                          
+                          {section.title && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/70 to-transparent text-white p-3">
+                              <div className="font-bold text-sm">{section.title}</div>
+                              {section.description && (
+                                <div className="text-xs opacity-90 mt-1">{section.description}</div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
+
                       
-                      {/* Title and Description */}
+                      <div className="space-y-3">
+                        <h5 className="text-sm font-semibold text-gray-700 flex items-center">
+                          ⚙️ Configuración
+                        </h5>
+
+                      
                       <div>
                         <input
                           type="text"
@@ -3048,7 +3996,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         />
                       </div>
                       
-                      {/* Badge Text */}
+                      
                       <input
                         type="text"
                         value={section.badgeText}
@@ -3059,11 +4007,10 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
                       />
                       
-                      {/* Image Upload */}
+                      
                       <div className="flex gap-2">
                         <input
                           type="file"
-                          accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
@@ -3080,7 +4027,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         )}
                       </div>
                       
-                      {/* Link Configuration */}
+                      
                       <div className="space-y-2">
                         <select
                           value={section.linkType}
@@ -3104,8 +4051,10 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                             className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
                           >
                             <option value="">Selecciona una categoría</option>
-                            {availableCategories.map(cat => (
-                              <option key={cat} value={cat.toLowerCase()}>{cat}</option>
+                            {availableCategories.map((cat) => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </option>
                             ))}
                           </select>
                         ) : section.linkType === 'product' ? (
@@ -3148,11 +4097,11 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         )}
                       </div>
                       
-                      {/* Position */}
+                      
                       <select
                         value={section.position}
                         onChange={(e) => {
-                          updateSection(index, { ...section, position: e.target.value });
+                          updateSection(index, { ...section, position: e.target.value as "large" | "tall" | "normal" | "wide" });
                         }}
                         className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
                       >
@@ -3161,11 +4110,181 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         <option value="wide">Ancho (2x1)</option>
                         <option value="normal">Normal (1x1)</option>
                       </select>
+                      </div>
                     </div>
                   </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
+
+
               
+              <div className="mt-10 border-t border-gray-200 pt-6">
+                <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">🖼️ Banners Intermedios</h3>
+                    <p className="text-sm text-gray-600">
+                      Estos banners aparecen entre el carrusel y el resto de secciones de la home. Son independientes del carrusel principal.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const restored = DEFAULT_MIDDLE_BANNERS.map((banner) => ({ ...banner }));
+                      const newContent: HomepageContentState = { ...homepageContent, middleBanners: restored };
+                      setHomepageContent(newContent);
+                      autoSaveHomepageContent(newContent);
+                      alert('✅ Banners intermedios restaurados');
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-2 rounded transition-colors"
+                  >
+                    🔄 Restaurar banners
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {homepageContent.middleBanners.map((banner, index) => {
+                    const placementLabel = index === 0
+                      ? 'Banner entre las primeras secciones'
+                      : index === 1
+                        ? 'Banner después de la segunda sección'
+                        : 'Banner al final de la página';
+                    const stateKey = `middle-${banner.id}`;
+
+                    return (
+                      <div key={banner.id || `middle-${index}`} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium text-gray-900">Banner #{index + 1}</h4>
+                            <p className="text-xs text-gray-500">{placementLabel}</p>
+                          </div>
+                          <span className="text-xs text-gray-400">ID: {banner.id}</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="relative h-36 sm:h-40 bg-gray-900 rounded-lg overflow-hidden">
+                            {banner.imageUrl ? (
+                              <img
+                                src={banner.imageUrl}
+                                alt={banner.title}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gray-300">
+                                <span className="text-3xl">🖼️</span>
+                                <span className="text-xs">Sin imagen</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                            <span className="absolute top-2 left-2 bg-white/90 text-xs font-semibold text-gray-800 px-2 py-1 rounded-full">
+                              {banner.badgeText || 'PROMO'}
+                            </span>
+                            <div className="absolute bottom-2 left-2 right-2 text-white">
+                              <p className="text-sm font-semibold leading-tight">{banner.title || 'Título del banner'}</p>
+                              <p className="text-xs opacity-90 leading-tight">{banner.subtitle || 'Subtítulo del banner'}</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-gray-700">Título</label>
+                            <input
+                              type="text"
+                              value={banner.title}
+                              onChange={(e) => updateMiddleBanner(index, { ...banner, title: e.target.value })}
+                              className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                              placeholder="Black Friday Anticipado"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-gray-700">Subtítulo</label>
+                            <textarea
+                              value={banner.subtitle}
+                              onChange={(e) => updateMiddleBanner(index, { ...banner, subtitle: e.target.value })}
+                              rows={2}
+                              className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                              placeholder="Texto descriptivo para el banner"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <label className="block text-xs font-semibold text-gray-700">Badge</label>
+                              <input
+                                type="text"
+                                value={banner.badgeText}
+                                onChange={(e) => updateMiddleBanner(index, { ...banner, badgeText: e.target.value })}
+                                className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                                placeholder="BLACK FRIDAY"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="block text-xs font-semibold text-gray-700">Texto botón</label>
+                              <input
+                                type="text"
+                                value={banner.ctaText}
+                                onChange={(e) => updateMiddleBanner(index, { ...banner, ctaText: e.target.value })}
+                                className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                                placeholder="Comprar ahora"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-gray-700">Link del botón</label>
+                            <input
+                              type="text"
+                              value={banner.ctaLink}
+                              onChange={(e) => updateMiddleBanner(index, { ...banner, ctaLink: e.target.value })}
+                              className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                              placeholder="/?filter=ofertas"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              {MIDDLE_BANNER_LINK_OPTIONS.map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => updateMiddleBanner(index, { ...banner, ctaLink: option.value })}
+                                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                    banner.ctaLink === option.value
+                                      ? 'bg-orange-500 text-white border-orange-500'
+                                      : 'border-gray-300 text-gray-600 hover:border-orange-400'
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-gray-700">Imagen</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="file"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleMiddleBannerImageUpload(file, index, banner);
+                                  }
+                                }}
+                                className="flex-1 text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                              />
+                              {uploadingImages[stateKey] && (
+                                <div className="flex items-center text-orange-600 text-xs">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600 mr-1"></div>
+                                  Subiendo...
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="mt-6 flex flex-wrap gap-4 justify-center">
                 <a
                   href="/"
@@ -3189,7 +4308,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
               </div>
             </div>
             
-            {/* Featured Products Selection */}
+            
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">⭐ Productos Destacados</h3>
@@ -3200,7 +4319,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                 <p className="text-blue-700 text-sm">
-                  💡 <strong>Tip:</strong> Los productos que selecciones aquí aparecerán en una sección especial "⭐ Productos Destacados" en la página principal.
+                  💡 <strong>Tip:</strong> Los productos que selecciones aquí aparecerán en una sección especial &quot;⭐ Productos Destacados&quot; en la página principal.
                 </p>
               </div>
               
@@ -3242,9 +4361,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                         setTimeout(async () => {
                           setIsAutoSaving(true);
                           try {
-                            await setDoc(doc(db, 'config', 'homepage-content'), newContent);
-                            console.log('✅ Auto-saved featured products');
-                          } catch (error) {
+                            await setDoc(doc(db, 'config', 'homepage-content'), newContent);                          } catch (error) {
                             console.error('❌ Error auto-saving:', error);
                           } finally {
                             setIsAutoSaving(false);
@@ -3282,14 +4399,14 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
           </div>
         )}
 
-        {/* Footer Information Tab */}
+        
         {activeTab === 'footer' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Información del Footer</h2>
               
               <form className="space-y-6">
-                {/* Company Description */}
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Descripción de la Empresa
@@ -3304,7 +4421,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   />
                 </div>
 
-                {/* Contact Information */}
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3349,7 +4466,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                   />
                 </div>
 
-                {/* Social Media Links */}
+                
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900">Redes Sociales</h3>
                   
@@ -3384,16 +4501,19 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        💬 WhatsApp URL
+                        💬 WhatsApp (número de teléfono)
                       </label>
                       <input
-                        type="url"
+                        type="tel"
                         value={footerForm.whatsappUrl}
                         onChange={(e) => setFooterForm({ ...footerForm, whatsappUrl: e.target.value })}
-                        placeholder="https://wa.me/tu-numero"
+                        placeholder="912345678 o 56912345678"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
                         style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Número de teléfono (se agregará automáticamente el código 56 si no lo incluyes)
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -3437,7 +4557,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
                 </button>
               </form>
               
-              {/* Preview */}
+              
               <div className="mt-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa del Footer:</h3>
                 <div className="bg-orange-500 text-white p-6 rounded-lg">
@@ -3472,13 +4592,353 @@ className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none
         )}
       </div>
 
-      {/* Chat Popup */}
+      
       {chatPopupOrder && (
-        <AdminChatPopup 
-          order={chatPopupOrder}
+        <AdminChatPopup
+          order={{...chatPopupOrder, userId: '', updatedAt: ''} as any}
           isOpen={isChatPopupOpen}
           onClose={closeChatPopup}
         />
+      )}
+
+      
+      {showSectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingSection ? 'Editar Sección' : 'Nueva Sección'}
+                </h3>
+                <button
+                  onClick={() => setShowSectionModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const sectionData = {
+                  id: editingSection?.id || `section_${Date.now()}`,
+                  name: formData.get('name') as string,
+                  description: formData.get('description') as string,
+                  enabled: true,
+                  type: formData.get('type') as string,
+                  selectedProducts: editingSection?.selectedProducts || []
+                };
+
+                if (editingSection) {
+                  const newSections = productSections.map(s =>
+                    s.id === editingSection.id ? sectionData : s
+                  );
+                  setProductSections(newSections);
+                } else {
+                  setProductSections([...productSections, sectionData]);
+                }
+
+                setShowSectionModal(false);
+                setEditingSection(null);
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre de la Sección *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      defaultValue={editingSection?.name || ''}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as any}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Descripción
+                    </label>
+                    <input
+                      type="text"
+                      name="description"
+                      defaultValue={editingSection?.description || ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as any}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo de Sección
+                    </label>
+                    <select
+                      name="type"
+                      defaultValue={editingSection?.type || 'custom'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as any}
+                    >
+                      <option value="custom">Productos Personalizados</option>
+                      <option value="featured">Productos Destacados</option>
+                      <option value="new">Productos Nuevos</option>
+                      <option value="bestsellers">Más Vendidos</option>
+                      <option value="category">Por Categoría</option>
+                    </select>
+                  </div>
+
+                  <div className="flex space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowSectionModal(false)}
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 text-white font-semibold py-2 px-4 rounded-md transition-colors"
+                      style={{ backgroundColor: '#F16529' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                    >
+                      {editingSection ? 'Actualizar' : 'Crear'} Sección
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {showProductSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Seleccionar Productos para la Sección
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowProductSelector(false);
+                    // Reset filters when closing
+                    setProductSelectorFilters({
+                      category: '',
+                      search: '',
+                      showOnlySelected: false
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Buscar por nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={productSelectorFilters.search}
+                      onChange={(e) => setProductSelectorFilters(prev => ({
+                        ...prev,
+                        search: e.target.value
+                      }))}
+                      placeholder="Buscar productos..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as any}
+                    />
+                  </div>
+
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Filtrar por categoría
+                    </label>
+                    <select
+                      value={productSelectorFilters.category}
+                      onChange={(e) => setProductSelectorFilters(prev => ({
+                        ...prev,
+                        category: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as any}
+                    >
+                      <option value="">Todas las categorías</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Opciones de vista
+                    </label>
+                    <div className="flex items-center space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={productSelectorFilters.showOnlySelected}
+                          onChange={(e) => setProductSelectorFilters(prev => ({
+                            ...prev,
+                            showOnlySelected: e.target.checked
+                          }))}
+                          className="h-4 w-4 text-orange-500 rounded mr-2"
+                        />
+                        <span className="text-sm text-gray-700">Solo seleccionados</span>
+                      </label>
+                      <button
+                        onClick={() => setProductSelectorFilters({
+                          category: '',
+                          search: '',
+                          showOnlySelected: false
+                        })}
+                        className="text-sm text-orange-600 hover:text-orange-800"
+                      >
+                        Limpiar filtros
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              
+              <div className="mb-4 text-sm text-gray-600">
+                Mostrando {products
+                  .filter((product) => {
+                    const currentSection = productSections.find(s => s.id === currentSectionId);
+                    const isSelected = currentSection?.selectedProducts.includes(product.id as never) || false;
+
+                    if (productSelectorFilters.search) {
+                      const searchTerm = productSelectorFilters.search.toLowerCase();
+                      const matchesSearch = product.nombre.toLowerCase().includes(searchTerm) ||
+                                          product.descripcion?.toLowerCase().includes(searchTerm) ||
+                                          product.categoria?.toLowerCase().includes(searchTerm);
+                      if (!matchesSearch) return false;
+                    }
+
+                    if (productSelectorFilters.category) {
+                      if (product.categoria !== productSelectorFilters.category) return false;
+                    }
+
+                    if (productSelectorFilters.showOnlySelected && !isSelected) {
+                      return false;
+                    }
+
+                    return true;
+                  }).length} de {products.length} productos
+                {productSelectorFilters.category && (
+                  <span className="font-medium">
+                    {' '}en categoría &quot;
+                    {categories.find(cat => cat.id === productSelectorFilters.category)?.name}
+                    &quot;
+                  </span>
+                )}
+                {productSelectorFilters.search && (
+                  <span className="font-medium">
+                    {' '}que coinciden con &quot;
+                    {productSelectorFilters.search}
+                    &quot;
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {products
+                  .filter((product) => {
+                    const currentSection = productSections.find(s => s.id === currentSectionId);
+                    const isSelected = currentSection?.selectedProducts.includes(product.id as never) || false;
+
+                    // Apply search filter
+                    if (productSelectorFilters.search) {
+                      const searchTerm = productSelectorFilters.search.toLowerCase();
+                      const matchesSearch = product.nombre.toLowerCase().includes(searchTerm) ||
+                                          product.descripcion?.toLowerCase().includes(searchTerm) ||
+                                          product.categoria?.toLowerCase().includes(searchTerm);
+                      if (!matchesSearch) return false;
+                    }
+
+                    // Apply category filter
+                    if (productSelectorFilters.category) {
+                      if (product.categoria !== productSelectorFilters.category) return false;
+                    }
+
+                    // Apply "only selected" filter
+                    if (productSelectorFilters.showOnlySelected && !isSelected) {
+                      return false;
+                    }
+
+                    return true;
+                  })
+                  .map((product) => {
+                  const currentSection = productSections.find(s => s.id === currentSectionId);
+                  const isSelected = currentSection?.selectedProducts.includes(product.id as never) || false;
+
+                  return (
+                    <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            const newSections = productSections.map(section => {
+                              if (section.id === currentSectionId) {
+                                const selectedProducts = e.target.checked
+                                  ? [...section.selectedProducts, product.id]
+                                  : section.selectedProducts.filter(id => id !== product.id);
+                                return { ...section, selectedProducts };
+                              }
+                              return section;
+                            });
+                            setProductSections(newSections as any);
+                          }}
+                          className="mt-1 h-4 w-4 text-orange-500 rounded"
+                        />
+                        <div className="flex-1">
+                          {product.imagen && (
+                            <img
+                              src={product.imagen}
+                              alt={product.nombre}
+                              className="w-full h-24 object-cover rounded mb-2"
+                            />
+                          )}
+                          <h4 className="font-medium text-gray-900 text-sm">{product.nombre}</h4>
+                          <p className="text-gray-600 text-xs mt-1">${product.precio?.toLocaleString()}</p>
+                          <p className="text-gray-500 text-xs">{product.categoria}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-end pt-6">
+                <button
+                  onClick={() => setShowProductSelector(false)}
+                  className="text-white font-medium py-2 px-6 rounded-md transition-colors"
+                  style={{ backgroundColor: '#F16529' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                >
+                  Listo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
