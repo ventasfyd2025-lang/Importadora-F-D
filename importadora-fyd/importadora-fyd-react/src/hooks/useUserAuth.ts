@@ -18,6 +18,7 @@ export interface UserProfile {
   lastName: string;
   phone?: string;
   rut?: string;
+  role: 'admin' | 'vendedor' | 'cliente';
   address?: {
     street: string;
     city: string;
@@ -89,6 +90,7 @@ export function useUserAuth() {
     lastName: string,
     phone?: string,
     rut?: string,
+    role: 'admin' | 'vendedor' | 'cliente' = 'cliente',
     address?: {
       street: string;
       city: string;
@@ -108,13 +110,14 @@ export function useUserAuth() {
         lastName,
         phone,
         rut,
+        role,
         address,
         createdAt: new Date()
       };
-      
+
       await setDoc(doc(db, 'users', userCredential.user.uid), profile);
       setUserProfile(profile);
-      
+
       return userCredential.user;
     } catch (error: unknown) {
       setError(getErrorMessage((error as {code?: string}).code || 'unknown'));
@@ -200,6 +203,12 @@ export function useUserAuth() {
   const isRegistered = !!userProfile;
   const isGuest = !!guestUser;
 
+  // Funciones para verificar roles
+  const isAdmin = userProfile?.role === 'admin';
+  const isVendedor = userProfile?.role === 'vendedor';
+  const isCliente = userProfile?.role === 'cliente';
+  const hasRole = (role: 'admin' | 'vendedor' | 'cliente') => userProfile?.role === role;
+
   return {
     user,
     userProfile,
@@ -207,6 +216,10 @@ export function useUserAuth() {
     currentUser,
     isRegistered,
     isGuest,
+    isAdmin,
+    isVendedor,
+    isCliente,
+    hasRole,
     loading,
     error,
     register,
