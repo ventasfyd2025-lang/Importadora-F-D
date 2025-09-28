@@ -326,7 +326,7 @@ export default function ProfilePage() {
                       <option value="Los Lagos">Los Lagos</option>
                       <option value="Antofagasta">Antofagasta</option>
                       <option value="Coquimbo">Coquimbo</option>
-                      <option value="O'Higgins">O'Higgins</option>
+                      <option value="O&apos;Higgins">O&apos;Higgins</option>
                       <option value="Maule">Maule</option>
                       <option value="Aysén">Aysén</option>
                       <option value="Magallanes">Magallanes</option>

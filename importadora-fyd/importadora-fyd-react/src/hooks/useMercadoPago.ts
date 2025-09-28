@@ -66,13 +66,7 @@ export function useMercadoPago() {
     }
   };
 
-  const redirectToCheckout = (initPoint: string) => {
-    console.log('🚀 redirectToCheckout llamado con:', initPoint);
-    console.log('🌐 window disponible:', typeof window !== 'undefined');
-    
-    if (typeof window !== 'undefined') {
-      console.log('✅ Redirigiendo a MercadoPago...');
-      window.location.href = initPoint;
+  const redirectToCheckout = (initPoint: string) => {    if (typeof window !== 'undefined') {      window.location.href = initPoint;
     } else {
       console.error('❌ Window no disponible para redirección');
     }

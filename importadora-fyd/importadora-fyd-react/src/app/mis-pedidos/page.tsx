@@ -30,7 +30,7 @@ interface Order {
   userId: string;
   items: OrderItem[];
   total: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'pending_verification' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: Date;
   updatedAt: Date;
   shippingAddress: {
@@ -49,35 +49,40 @@ interface Order {
 }
 
 const statusConfig = {
-  pending: { 
-    label: 'Pendiente', 
-    color: 'text-yellow-600 bg-yellow-50', 
-    icon: ClockIcon 
+  pending: {
+    label: 'Pendiente',
+    color: 'text-yellow-600 bg-yellow-50',
+    icon: ClockIcon
   },
-  confirmed: { 
-    label: 'Confirmado', 
-    color: 'text-blue-600 bg-blue-50', 
-    icon: CheckCircleIcon 
+  pending_verification: {
+    label: 'Verificando Pago',
+    color: 'text-blue-600 bg-blue-50',
+    icon: ClockIcon
   },
-  preparing: { 
-    label: 'Preparando', 
-    color: 'text-purple-600 bg-purple-50', 
-    icon: ShoppingBagIcon 
+  confirmed: {
+    label: 'Confirmado',
+    color: 'text-green-600 bg-green-50',
+    icon: CheckCircleIcon
   },
-  shipped: { 
-    label: 'Enviado', 
-    color: 'text-orange-600 bg-orange-50', 
-    icon: TruckIcon 
+  preparing: {
+    label: 'Preparando',
+    color: 'text-purple-600 bg-purple-50',
+    icon: ShoppingBagIcon
   },
-  delivered: { 
-    label: 'Entregado', 
-    color: 'text-green-600 bg-green-50', 
-    icon: CheckCircleIcon 
+  shipped: {
+    label: 'Enviado',
+    color: 'text-orange-600 bg-orange-50',
+    icon: TruckIcon
   },
-  cancelled: { 
-    label: 'Cancelado', 
-    color: 'text-red-600 bg-red-50', 
-    icon: XCircleIcon 
+  delivered: {
+    label: 'Entregado',
+    color: 'text-green-600 bg-green-50',
+    icon: CheckCircleIcon
+  },
+  cancelled: {
+    label: 'Cancelado',
+    color: 'text-red-600 bg-red-50',
+    icon: XCircleIcon
   }
 };
 
@@ -114,7 +119,7 @@ export default function OrdersPage() {
       // Buscar pedidos por userId (uid o email)
       const ordersQuery = query(
         collection(db, 'orders'),
-        where('userId', '==', currentUser.uid || currentUser.email)
+        where('userId', '==', (currentUser as any).uid || currentUser.email)
       );
       
       const snapshot = await getDocs(ordersQuery);
@@ -298,7 +303,7 @@ export default function OrdersPage() {
                             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                           >
                             <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
-                            Abrir Chat
+                            Estado del Pedido
                           </Link>
                           
                           {order.status === 'shipped' && order.trackingNumber && (

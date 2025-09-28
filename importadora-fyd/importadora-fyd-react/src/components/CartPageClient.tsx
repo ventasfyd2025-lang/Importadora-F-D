@@ -1,17 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
-import { useUserAuth } from '@/hooks/useUserAuth';
 import { MinusIcon, PlusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 export default function CartPageClient() {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
-  const { currentUser, userProfile, isRegistered } = useUserAuth();
 
 
   const formatPrice = (price: number) => {
@@ -89,6 +84,9 @@ export default function CartPageClient() {
                   >
                     {item.nombre}
                   </Link>
+                  {item.sku && (
+                    <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                  )}
                   <p className="text-gray-600 mt-1 text-sm sm:text-base">
                     {formatPrice(item.precio)} c/u
                   </p>

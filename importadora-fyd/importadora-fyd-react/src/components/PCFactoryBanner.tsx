@@ -108,21 +108,21 @@ export default function PCFactoryBanner({
                       {/* Product Image */}
                       <div className="relative aspect-[4/3] bg-gray-50 overflow-hidden">
                         <img
-                          src={product.imagen || (product.images && product.images[0]) || ''}
-                          alt={product.nombre || product.name || 'Producto'}
+                          src={product.imagen || ''}
+                          alt={product.nombre || 'Producto'}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         
                         {/* Discount Badge */}
                         {((product.precioOriginal && product.precioOriginal > (product.precio || 0)) || 
-                          (product.originalPrice && product.originalPrice > (product.price || 0))) && (
+                          false) && (
                           <div 
                             className="absolute top-2 left-2 text-white text-xs font-bold py-1 px-2 rounded"
                             style={{ backgroundColor: '#D64541' }}
                           >
                             -{calculateDiscount(
-                              product.precioOriginal || product.originalPrice || 0, 
-                              product.precio || product.price || 0
+                              product.precioOriginal || 0, 
+                              product.precio || 0
                             )}%
                           </div>
                         )}
@@ -132,25 +132,25 @@ export default function PCFactoryBanner({
                       <div className="p-3">
                         {/* Product Name */}
                         <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2 group-hover:text-orange-600 transition-colors">
-                          {product.nombre || product.name || 'Producto'}
+                          {product.nombre || 'Producto'}
                         </h3>
                         
                         {/* Price Section */}
                         <div className="space-y-1">
                           {/* Original Price */}
                           {((product.precioOriginal && product.precioOriginal > (product.precio || 0)) || 
-                            (product.originalPrice && product.originalPrice > (product.price || 0))) && (
+                            false) && (
                             <div className="text-xs text-gray-500 line-through">
-                              {formatPrice(product.precioOriginal || product.originalPrice || 0)}
+                              {formatPrice(product.precioOriginal || 0)}
                             </div>
                           )}
                           
                           {/* Current Price */}
                           <div 
                             className="text-sm font-bold"
-                            style={{ color: (product.oferta || product.onSale) ? '#D64541' : '#F16529' }}
+                            style={{ color: product.oferta ? '#D64541' : '#F16529' }}
                           >
-                            {formatPrice(product.precio || product.price || 0)}
+                            {formatPrice(product.precio || 0)}
                           </div>
                         </div>
                         

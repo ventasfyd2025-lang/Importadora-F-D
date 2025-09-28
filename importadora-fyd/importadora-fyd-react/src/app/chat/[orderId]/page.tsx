@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { 
@@ -144,26 +145,11 @@ export default function ChatPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!authLoading && !currentUser) {
-      router.push('/login');
-      return;
-    }
-
-    if (currentUser) {
-      loadOrder();
-      loadMessages();
-    }
-  }, [orderId, currentUser, authLoading]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     if (!orderId) return;
     
     try {
+      setOrderLoading(true);
       const orderDoc = await getDoc(doc(db, 'orders', orderId));
       if (orderDoc.exists()) {
         const data = orderDoc.data();
@@ -179,16 +165,16 @@ export default function ChatPage() {
     } finally {
       setOrderLoading(false);
     }
-  };
+  }, [orderId]);
 
-  const loadMessages = () => {
-    if (!currentUser || !orderId) return;
+  const loadMessages = useCallback(() => {
+    if (!currentUser || !orderId) return undefined;
 
     // Simplificar consulta para evitar error de índice
     const messagesQuery = query(
       collection(db, 'chat_messages'),
       where('orderId', '==', orderId),
-      where('userId', '==', currentUser.uid || currentUser.id)
+      where('userId', '==', (currentUser as any).uid || (currentUser as any).id)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -218,11 +204,31 @@ export default function ChatPage() {
     });
 
     return unsubscribe;
-  };
+  }, [currentUser, orderId]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    if (!currentUser) return;
+
+    loadOrder();
+    const unsubscribe = loadMessages();
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, [authLoading, currentUser, loadMessages, loadOrder, router]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentUser || sendingMessage || !orderId) return;
@@ -232,7 +238,7 @@ export default function ChatPage() {
     try {
       const messageData = {
         orderId,
-        userId: currentUser.uid || currentUser.id,
+        userId: (currentUser as any).uid || (currentUser as any).id,
         userEmail: currentUser.email,
         userName: `${currentUser.firstName} ${currentUser.lastName}`,
         message: newMessage.trim(),
@@ -371,9 +377,11 @@ export default function ChatPage() {
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     {item.imagen && (
-                      <img 
-                        src={item.imagen} 
+                      <Image
+                        src={item.imagen}
                         alt={item.nombre}
+                        width={48}
+                        height={48}
                         className="h-12 w-12 object-cover rounded"
                       />
                     )}

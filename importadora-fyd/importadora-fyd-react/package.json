@@ -6,12 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "analyze": "ANALYZE=true next build --turbopack"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@mercadopago/sdk-react": "^1.0.6",
+    "browser-image-compression": "^2.0.2",
+    "clsx": "^2.1.1",
     "firebase": "^12.2.1",
+    "heic2any": "^0.0.4",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.544.0",
@@ -22,7 +26,9 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^15.5.4",
     "@tailwindcss/postcss": "^4",
+    "@types/estree": "^1.0.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

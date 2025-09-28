@@ -1,4 +1,4 @@
-export const mockProducts = [
+const baseMockProducts = [
   {
     id: '1',
     nombre: 'Smartphone Samsung Galaxy A54',
@@ -219,3 +219,8 @@ export const mockProducts = [
     fechaCreacion: new Date().toISOString()
   }
 ];
+
+export const mockProducts = baseMockProducts.map((product, index) => ({
+  ...product,
+  sku: (product as any).sku ?? `SKU-${String(index + 1).padStart(5, '0')}`,
+}));

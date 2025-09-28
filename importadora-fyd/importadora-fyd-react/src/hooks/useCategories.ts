@@ -135,8 +135,8 @@ export function useCategories() {
     
     // Cleanup function
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        (unsubscribe as any)();
       }
     };
   }, []);

@@ -23,14 +23,14 @@ export async function generateDailyReportUtil(date: string = new Date().toISOStr
     const allOrders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     // Filtrar pedidos que cuentan como ventas (excluir pending y cancelled)
-    const orders = allOrders.filter(order => 
-      order.status && 
-      !['pending', 'cancelled'].includes(order.status.toLowerCase())
+    const orders = allOrders.filter(order =>
+      (order as any).status &&
+      !['pending', 'cancelled'].includes((order as any).status.toLowerCase())
     );
 
     // Calcular estadísticas
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + ((order as any).total || 0), 0);
     
     // Calcular productos más vendidos
     const productSales: { [key: string]: ProductSale } = {};
@@ -38,7 +38,7 @@ export async function generateDailyReportUtil(date: string = new Date().toISOStr
 
     orders.forEach(order => {
       // Procesar productos
-      (order.items || []).forEach((item: any) => {
+      ((order as any).items || []).forEach((item: any) => {
         const key = item.productId || item.id;
         if (!productSales[key]) {
           productSales[key] = {
@@ -54,7 +54,7 @@ export async function generateDailyReportUtil(date: string = new Date().toISOStr
       });
 
       // Procesar métodos de pago
-      const method = order.paymentMethod || 'No especificado';
+      const method = (order as any).paymentMethod || 'No especificado';
       if (!paymentMethods[method]) {
         paymentMethods[method] = {
           method,
@@ -63,7 +63,7 @@ export async function generateDailyReportUtil(date: string = new Date().toISOStr
         };
       }
       paymentMethods[method].count += 1;
-      paymentMethods[method].amount += order.total || 0;
+      paymentMethods[method].amount += (order as any).total || 0;
     });
 
     // Convertir a arrays y ordenar
@@ -89,7 +89,7 @@ export async function generateDailyReportUtil(date: string = new Date().toISOStr
     // Guardar en Firestore
     await setDoc(doc(db, 'daily_reports', dailyReport.id), dailyReport);
 
-    console.log(`✅ Reporte diario generado para ${date}: ${totalOrders} pedidos, $${totalRevenue.toLocaleString('es-CL')}`);
+    // console.log(`✅ Reporte diario generado para ${date}: ${totalOrders} pedidos, $${totalRevenue.toLocaleString('es-CL')}`);
     
     return dailyReport;
   } catch (error) {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Layout from "@/components/Layout";
 import RetailHomepage from '@/components/home/RetailHomepage';
 
 export const dynamic = 'force-dynamic';
@@ -37,5 +38,9 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <RetailHomepage />;
+  return (
+    <Layout>
+      <RetailHomepage />
+    </Layout>
+  );
 }

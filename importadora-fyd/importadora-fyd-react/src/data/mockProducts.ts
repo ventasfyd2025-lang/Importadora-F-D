@@ -1,4 +1,4 @@
-export const mockProducts = [
+const baseMockProducts = [
   // CALZADO
   {
     id: '1',
@@ -450,6 +450,11 @@ export const mockProducts = [
     imagen: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500&h=500&fit=crop&crop=center'
   }
 ];
+
+export const mockProducts = baseMockProducts.map((product, index) => ({
+  ...product,
+  sku: (product as any).sku || `SKU-${String(index + 1).padStart(5, '0')}`,
+}));
 
 export const heroSlides = [
   {

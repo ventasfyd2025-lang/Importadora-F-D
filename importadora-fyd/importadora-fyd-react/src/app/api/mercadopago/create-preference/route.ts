@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { logError, logInfo } from '@/utils/logger';
 
 // Define interfaces for strong typing
 interface RequestItem {
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
 
 
     // Log de la preferencia antes de crearla
-    console.log('📦 Creando preferencia MercadoPago:', {
+    logInfo('Creando preferencia MercadoPago', {
       orderId: orderId || 'sin_orden',
       itemsCount: mpItems.length,
       total: mpItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0),
@@ -105,22 +106,14 @@ export async function POST(request: NextRequest) {
       requestOptions: {
         idempotencyKey: idempotencyKey
       }
-    });
-
-    console.log('✅ Preferencia creada exitosamente:', {
-      preferenceId: response.id,
-      sandboxInitPoint: response.sandbox_init_point ? 'disponible' : 'no_disponible',
-      initPoint: response.init_point ? 'disponible' : 'no_disponible'
-    });
-
-    return NextResponse.json({
+    });    return NextResponse.json({
       preferenceId: response.id,
       initPoint: response.init_point,
       sandboxInitPoint: response.sandbox_init_point
     });
 
   } catch (error) {
-    console.error('Error creando preferencia MercadoPago:', error);
+    logError('Error creando preferencia MercadoPago', error);
     
     return NextResponse.json(
       { 

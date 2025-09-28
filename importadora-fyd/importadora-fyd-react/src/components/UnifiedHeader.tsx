@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useConfig } from '@/hooks/useConfig';
@@ -9,12 +10,12 @@ import { useUserAuth } from '@/hooks/useUserAuth';
 import { useI18n } from '@/context/I18nContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { 
-  Bars3Icon, 
-  MagnifyingGlassIcon, 
-  ShoppingCartIcon, 
-  UserIcon, 
-  XMarkIcon 
+import {
+  Bars3Icon,
+  MagnifyingGlassIcon,
+  ShoppingCartIcon,
+  UserIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 export default function UnifiedHeader() {
@@ -33,9 +34,7 @@ export default function UnifiedHeader() {
   const { categories } = useCategories();
 
   // Debug categories loading
-  useEffect(() => {
-    console.log('UnifiedHeader: Categories updated:', categories);
-  }, [categories]);
+  useEffect(() => {  }, [categories]);
   const { logoConfig } = useConfig();
   const { currentUser, isRegistered, isGuest, logout } = useUserAuth();
   const { t } = useI18n();
@@ -47,9 +46,12 @@ export default function UnifiedHeader() {
       return;
     }
 
+    // Get user ID based on user type
+    const userId = 'uid' in currentUser ? currentUser.uid : currentUser.id;
+
     const messagesQuery = query(
       collection(db, 'chat_messages'),
-      where('userId', '==', currentUser.uid || currentUser.id),
+      where('userId', '==', userId),
       where('isAdmin', '==', true),
       where('read', '==', false)
     );
@@ -152,42 +154,82 @@ export default function UnifiedHeader() {
   };
 
   const renderLogoBadge = () => {
-    // TAMAÑO FIJO para evitar layout shift - SIEMPRE el mismo tamaño
-    const containerClass = "flex items-center justify-center rounded-full shadow-sm w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14";
+    // Tamaños fijos para evitar layout shift - siempre el mismo tamaño independiente del contenido
+    const containerClass = "flex items-center justify-center rounded-full shadow-sm";
+    // Tamaños fijos: móvil 40px, tablet 48px, desktop 56px
+    const sizeClass = "w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14";
 
-    if (logoConfig.image) {
+    // SIEMPRE mostrar placeholder del tamaño fijo mientras no tengamos la imagen cargada
+    // Solo mostrar imagen si ya existe en logoConfig (viene de Firebase)
+    if (logoConfig && logoConfig.image && logoConfig.image.trim() !== '') {
       return (
-        <div className={containerClass} style={{ backgroundColor: '#D95D22' }}>
-          <img
+        <div className={`${containerClass} ${sizeClass} overflow-hidden`}>
+          <Image
             src={logoConfig.image}
-            alt={logoConfig.text}
-            className="rounded-full object-cover w-full h-full"
-            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            alt={logoConfig.text || 'Logo'}
+            width={56}
+            height={56}
+            className="w-full h-full object-cover"
+            style={{ minWidth: '100%', minHeight: '100%' }}
           />
         </div>
       );
     }
 
-    const fallbackText = logoConfig.emoji || logoConfig.text?.slice(0, 2)?.toUpperCase() || 'F&D';
-
+    // Placeholder transparente mientras carga Firebase - MISMO TAMAÑO
     return (
-      <span
-        className={`${containerClass} font-semibold text-white text-xs sm:text-sm lg:text-base`}
+      <div
+        className={`${containerClass} ${sizeClass}`}
         style={{ backgroundColor: '#D95D22' }}
       >
-        {fallbackText}
-      </span>
+        <span className="font-semibold text-white text-xs sm:text-sm lg:text-base">
+          F&D
+        </span>
+      </div>
     );
   };
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 shadow-xl">
+      <header id="main-header" className="fixed inset-x-0 top-0 z-[100] shadow-xl">
         <div className="relative">
           {/* Top Banner */}
           <div className="text-[11px] uppercase tracking-[0.32em] text-white bg-gradient-to-r from-[#D95D22] to-[#E67E22]">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
               <span className="font-medium">{t('header.welcome')}</span>
+
+              {/* Mobile User + Cart Icons in Top Banner */}
+              <div className="flex items-center gap-2 sm:hidden">
+                {/* User - Mobile */}
+                <Link
+                  href="/perfil"
+                  className="relative p-1.5 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
+                >
+                  <UserIcon className="h-5 w-5" />
+                  {hasUnreadMessages && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                  )}
+                </Link>
+
+                {/* Cart - Mobile */}
+                <Link
+                  href="/carrito"
+                  className="relative p-1.5 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
+                >
+                  <ShoppingCartIcon className="h-5 w-5" />
+                  {getTotalItems() > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold"
+                          style={{ backgroundColor: '#D64541' }}>
+                      {getTotalItems()}
+                    </span>
+                  )}
+                </Link>
+              </div>
+
+              {/* Desktop Info */}
               <div className="hidden gap-6 text-[11px] font-semibold sm:flex">
                 <span className="flex items-center gap-2 text-white/95 hover:text-white transition-colors">
                   <span aria-hidden className="text-sm">🚚</span>
@@ -203,7 +245,7 @@ export default function UnifiedHeader() {
 
           {/* Main Header */}
           <div className="text-white backdrop-blur-sm" style={{ background: 'linear-gradient(to right, #D95D22, #E67E22)' }}>
-            <div className="mx-auto flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="mx-auto flex flex-col gap-2 sm:gap-4 px-4 py-2 sm:py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
             
             {/* Logo + Desktop Categories + Mobile Hamburger */}
             <div className="flex items-center gap-3">
@@ -350,10 +392,10 @@ export default function UnifiedHeader() {
               </div>
 
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-3" aria-label={logoConfig.text || 'Importadora F&D'}>
+              <Link href="/" className="flex items-center gap-3" aria-label={logoConfig?.text || 'Importadora F&D'}>
                 {renderLogoBadge()}
                 <div className="flex flex-col">
-                  <span className="text-lg font-semibold">{logoConfig.text || 'Importadora F&D'}</span>
+                  <span className="text-lg font-semibold">{logoConfig?.text || 'Importadora F&D'}</span>
                   <span className="text-[11px] uppercase tracking-[0.28em] text-white/80">
                     Tu tienda de confianza
                   </span>
@@ -362,10 +404,7 @@ export default function UnifiedHeader() {
 
               {/* Mobile Hamburger Menu Button */}
               <button
-                onClick={() => {
-                  console.log('UnifiedHeader: Hamburger clicked, current state:', isMobileMenuOpen);
-                  console.log('UnifiedHeader: Categories available:', categories.length);
-                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                onClick={() => {                  setIsMobileMenuOpen(!isMobileMenuOpen);
                   setIsDesktopCategoriesOpen(false);
                   if (isMobileMenuOpen) {
                     setExpandedCategories(new Set());
@@ -402,9 +441,9 @@ export default function UnifiedHeader() {
               </form>
             </div>
 
-            {/* Right Side - User + Cart */}
-            <div className="flex items-center gap-2">
-              
+            {/* Right Side - User + Cart (Desktop only) */}
+            <div className="hidden sm:flex items-center gap-2">
+
               {/* User Menu - Desktop */}
               <div className="hidden lg:block relative" ref={userMenuRef}>
                 <button
@@ -510,21 +549,7 @@ export default function UnifiedHeader() {
                 )}
               </div>
 
-              {/* User - Mobile */}
-              <Link
-                href="/perfil"
-                className="lg:hidden relative p-2 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
-              >
-                <UserIcon className="h-6 w-6" />
-                {hasUnreadMessages && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                )}
-              </Link>
-
-              {/* Cart */}
+              {/* Cart - Desktop/Tablet only */}
               <Link
                 href="/carrito"
                 className="relative p-2 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
@@ -541,7 +566,7 @@ export default function UnifiedHeader() {
           </div>
 
           {/* Mobile Search */}
-          <div className="lg:hidden px-4 pb-4">
+          <div className="lg:hidden px-4 pb-2">
             <form onSubmit={handleSearch} className="flex">
               <input
                 type="text"
@@ -563,7 +588,7 @@ export default function UnifiedHeader() {
           {/* Mobile Menu - Categorías reales */}
           {isMobileMenuOpen && (
             <div className="lg:hidden absolute left-0 right-0 top-full bg-white border-b shadow-2xl">
-              <div className="mx-auto max-w-7xl px-6 py-6 max-h-[calc(100vh-13rem)] overflow-y-auto">
+              <div className="mx-auto max-w-7xl px-6 py-6 max-h-[calc(100vh-180px)] overflow-y-auto">
               <div className="space-y-3">
                 <div className="text-lg font-bold text-gray-800 mb-4 px-2 flex items-center gap-2">
                   <span className="text-orange-500">🏷️</span>

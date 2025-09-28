@@ -6,14 +6,17 @@ import Link from 'next/link';
 import Layout from '@/components/Layout';
 import { useCart } from '@/context/CartContext';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useBankConfig } from '@/hooks/useBankConfig';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 
 function CheckoutContent() {
   const router = useRouter();
   const { items, clearCart, getTotalPrice } = useCart();
   const { currentUser, userProfile, isRegistered } = useUserAuth();
+  const { bankConfig, loading: bankLoading } = useBankConfig();
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
     name: '',
@@ -74,15 +77,39 @@ function CheckoutContent() {
       address: (formData.get('address') as string) || checkoutData.address
     };
 
+    // Obtener archivo del comprobante
+    const comprobanteFile = formData.get('comprobante') as File;
+    if (!comprobanteFile || comprobanteFile.size === 0) {
+      alert('Por favor sube el comprobante de transferencia.');
+      setIsProcessing(false);
+      return;
+    }
+
+    // Validar tamaño del archivo (5MB máx)
+    if (comprobanteFile.size > 5 * 1024 * 1024) {
+      alert('El archivo es muy grande. Máximo 5MB.');
+      setIsProcessing(false);
+      return;
+    }
+
     try {
-      // Crear orden en Firebase primero
+      // Subir comprobante a Firebase Storage
+      const timestamp = Date.now();
+      const fileName = `comprobantes/${timestamp}_${comprobanteFile.name}`;
+      const storageRef = ref(storage, fileName);
+
+      await uploadBytes(storageRef, comprobanteFile);
+      const comprobanteUrl = await getDownloadURL(storageRef);
+
+      // Crear orden en Firebase CON el comprobante
       const orderData = {
         customerName: finalData.name,
         customerEmail: finalData.email,
         customerPhone: finalData.phone,
         shippingAddress: finalData.address,
-        userId: currentUser?.uid || finalData.email,
+        userId: (currentUser as any)?.uid || finalData.email,
         paymentMethod: 'transferencia',
+        paymentProof: comprobanteUrl, // URL del comprobante
         items: items.map(item => ({
           productId: item.productId,
           nombre: item.nombre,
@@ -91,21 +118,21 @@ function CheckoutContent() {
           imagen: item.imagen
         })),
         total: getTotalPrice(),
-        status: 'pending' as const,
+        status: 'pending_verification' as const, // Estado: esperando verificación de pago
         createdAt: new Date()
       };
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
-      // Método transferencia bancaria
-      const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n📱 Te enviaremos los datos bancarios por WhatsApp para completar el pago.';
+      // Mensaje actualizado para transferencia
+      const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n✅ Comprobante recibido exitosamente.\n🔍 Verificaremos tu pago y confirmaremos tu pedido pronto.';
 
       await addDoc(collection(db, 'chat_messages'), {
         orderId: orderRef.id,
-        userId: currentUser?.uid || finalData.email,
+        userId: (currentUser as any)?.uid || finalData.email,
         userEmail: finalData.email,
         userName: 'Sistema FyD',
-        message: `¡Hola ${finalData.name}! 👋\n\nTu pedido #${orderRef.id.slice(-8).toUpperCase()} ha sido recibido exitosamente.${paymentMessage}\n\n✅ Revisaremos tu pedido y te confirmaremos todos los detalles pronto.\n💬 Si tienes alguna pregunta, no dudes en escribirnos aquí.\n📦 Te mantendremos informado sobre el estado de tu pedido.\n\n¡Gracias por elegir FyD!`,
+        message: `¡Hola ${finalData.name}! 👋\n\nTu pedido #${orderRef.id.slice(-8).toUpperCase()} ha sido recibido exitosamente.${paymentMessage}\n\n📋 Puedes hacer seguimiento del estado en "Mis Pedidos".\n💬 Si tienes alguna pregunta, no dudes en escribirnos aquí.\n\n¡Gracias por elegir FyD!`,
         isAdmin: true,
         timestamp: new Date(),
         read: false
@@ -268,12 +295,66 @@ function CheckoutContent() {
                       Método de pago
                     </label>
                     <div className="p-4 border border-blue-300 bg-blue-50 rounded-lg">
-                      <div className="flex items-center">
+                      <div className="flex items-center mb-4">
                         <span className="text-2xl mr-3">🏦</span>
                         <div>
                           <div className="font-medium text-gray-900">Transferencia Bancaria</div>
-                          <div className="text-sm text-gray-600">Te contactaremos por WhatsApp con los datos bancarios para completar el pago</div>
+                          <div className="text-sm text-gray-600">Transfiere el monto total y sube el comprobante</div>
                         </div>
+                      </div>
+
+                      {/* Datos bancarios */}
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-gray-900 mb-3">📋 Datos para transferencia:</h4>
+                        {bankLoading ? (
+                          <div className="flex items-center justify-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                            <span className="ml-2 text-gray-600">Cargando datos bancarios...</span>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Banco:</span>
+                              <span className="ml-2">{bankConfig.bankName}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Tipo de cuenta:</span>
+                              <span className="ml-2">{bankConfig.accountType}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Número de cuenta:</span>
+                              <span className="ml-2">{bankConfig.accountNumber}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">RUT:</span>
+                              <span className="ml-2">{bankConfig.rut}</span>
+                            </div>
+                            <div className="md:col-span-2">
+                              <span className="font-medium text-gray-700">Titular:</span>
+                              <span className="ml-2">{bankConfig.holderName}</span>
+                            </div>
+                            <div className="md:col-span-2">
+                              <span className="font-medium text-gray-700">Email para confirmación:</span>
+                              <span className="ml-2">{bankConfig.email}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Upload comprobante */}
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-3">📎 Sube tu comprobante de transferencia:</h4>
+                        <input
+                          type="file"
+                          id="comprobante"
+                          name="comprobante"
+                          accept="image/*,.pdf"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                        <p className="text-xs text-gray-600 mt-2">
+                          Formatos aceptados: JPG, PNG, PDF (máx. 5MB)
+                        </p>
                       </div>
                     </div>
                   </div>

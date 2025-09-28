@@ -32,7 +32,7 @@ service cloud.firestore {
         && data.items is list
         && data.items.size() > 0
         && data.customerEmail is string
-        && data.status in ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled'];
+        && data.status in ['pending', 'pending_verification', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled'];
     }
 
     function validateChatMessage(data) {
@@ -61,6 +61,11 @@ service cloud.firestore {
     }
 
     match /config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /site_config/{configId} {
       allow read: if true;
       allow write: if isAdmin();
     }

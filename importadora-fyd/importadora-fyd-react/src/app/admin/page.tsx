@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useFooterConfig } from '@/hooks/useFooterConfig';
+import { useBankConfig } from '@/hooks/useBankConfig';
 import { useLayoutPatterns, DEFAULT_LAYOUT_PATTERNS } from '@/hooks/useLayoutPatterns';
 import { 
   collection, 
@@ -367,6 +368,7 @@ export default function AdminPage() {
   const { user, loading: authLoading, login, logout } = useAuth();
   const { products, refetch, removeProduct, removeProducts } = useProducts();
   const { footerConfig, updateFooterConfig, loading: footerLoading } = useFooterConfig();
+  const { bankConfig, updateBankConfig, loading: bankLoading } = useBankConfig();
   
   const [activeTab, setActiveTab] = useState('dashboard');
   
@@ -490,6 +492,17 @@ export default function AdminPage() {
   });
   const [updatingFooter, setUpdatingFooter] = useState(false);
 
+  // Bank details state
+  const [bankForm, setBankForm] = useState({
+    bankName: 'Banco de Chile',
+    accountType: 'Cuenta Corriente',
+    accountNumber: '123-456-789-01',
+    rut: '12.345.678-9',
+    holderName: 'Importadora FyD SpA',
+    email: 'pagos@importadorafyd.cl'
+  });
+  const [updatingBank, setUpdatingBank] = useState(false);
+
   // Sync footer form with hook data
   useEffect(() => {
     if (footerConfig && !footerLoading) {
@@ -504,7 +517,21 @@ export default function AdminPage() {
       });
     }
   }, [footerConfig, footerLoading]);
-  
+
+  // Sync bank form with hook data
+  useEffect(() => {
+    if (bankConfig && !bankLoading) {
+      setBankForm({
+        bankName: bankConfig.bankName || '',
+        accountType: bankConfig.accountType || '',
+        accountNumber: bankConfig.accountNumber || '',
+        rut: bankConfig.rut || '',
+        holderName: bankConfig.holderName || '',
+        email: bankConfig.email || ''
+      });
+    }
+  }, [bankConfig, bankLoading]);
+
   // Category management state
   // const [syncingCategories, setSyncingCategories] = useState(false); // Unused state
   const [categories, setCategories] = useState([
@@ -1624,7 +1651,8 @@ export default function AdminPage() {
                 { id: 'logo', name: 'Logo', icon: '🏪' },
                 { id: 'categories', name: 'Categorías', icon: '🏷️' },
                 { id: 'homepage-content', name: 'Contenido Página', icon: '🎨' },
-                { id: 'footer', name: 'Información', icon: '📋' }
+                { id: 'footer', name: 'Información', icon: '📋' },
+                { id: 'bank-details', name: 'Datos Bancarios', icon: '🏦' }
               ].map((tab) => (
               <button
                 key={tab.id}
@@ -4582,6 +4610,167 @@ export default function AdminPage() {
                         <span className="text-2xl cursor-pointer">📘</span>
                         <span className="text-2xl cursor-pointer">📷</span>
                         <span className="text-2xl cursor-pointer">💬</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'bank-details' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">🏦 Configuración de Datos Bancarios</h2>
+
+              <form className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🏛️ Nombre del Banco
+                    </label>
+                    <input
+                      type="text"
+                      value={bankForm.bankName}
+                      onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
+                      placeholder="Banco de Chile"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      💳 Tipo de Cuenta
+                    </label>
+                    <select
+                      value={bankForm.accountType}
+                      onChange={(e) => setBankForm({ ...bankForm, accountType: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    >
+                      <option value="Cuenta Corriente">Cuenta Corriente</option>
+                      <option value="Cuenta Vista">Cuenta Vista</option>
+                      <option value="Cuenta de Ahorro">Cuenta de Ahorro</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🔢 Número de Cuenta
+                    </label>
+                    <input
+                      type="text"
+                      value={bankForm.accountNumber}
+                      onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })}
+                      placeholder="123-456-789-01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🆔 RUT del Titular
+                    </label>
+                    <input
+                      type="text"
+                      value={bankForm.rut}
+                      onChange={(e) => setBankForm({ ...bankForm, rut: e.target.value })}
+                      placeholder="12.345.678-9"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      👤 Nombre del Titular
+                    </label>
+                    <input
+                      type="text"
+                      value={bankForm.holderName}
+                      onChange={(e) => setBankForm({ ...bankForm, holderName: e.target.value })}
+                      placeholder="Importadora FyD SpA"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📧 Email para Confirmaciones
+                    </label>
+                    <input
+                      type="email"
+                      value={bankForm.email}
+                      onChange={(e) => setBankForm({ ...bankForm, email: e.target.value })}
+                      placeholder="pagos@importadorafyd.cl"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      setUpdatingBank(true);
+                      await updateBankConfig(bankForm);
+                      alert('Datos bancarios actualizados exitosamente');
+                    } catch (error) {
+                      console.error('Error updating bank details:', error);
+                      alert('Error al actualizar los datos bancarios');
+                    } finally {
+                      setUpdatingBank(false);
+                    }
+                  }}
+                  disabled={updatingBank}
+                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#F16529' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                >
+                  {updatingBank ? 'Actualizando...' : 'Actualizar Datos Bancarios'}
+                </button>
+              </form>
+
+              {/* Vista previa */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa en Checkout:</h3>
+                <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">📋 Datos para transferencia:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">Banco:</span>
+                        <span className="ml-2">{bankForm.bankName}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Tipo de cuenta:</span>
+                        <span className="ml-2">{bankForm.accountType}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Número de cuenta:</span>
+                        <span className="ml-2">{bankForm.accountNumber}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">RUT:</span>
+                        <span className="ml-2">{bankForm.rut}</span>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="font-medium text-gray-700">Titular:</span>
+                        <span className="ml-2">{bankForm.holderName}</span>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="font-medium text-gray-700">Email para confirmación:</span>
+                        <span className="ml-2">{bankForm.email}</span>
                       </div>
                     </div>
                   </div>

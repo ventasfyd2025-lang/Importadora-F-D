@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef, memo } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { Product } from '@/types';
-import { ProductCardSkeleton } from '@/components/home/SkeletonLoader';
 import { useI18n } from '@/context/I18nContext';
 import { useCart } from '@/context/CartContext';
 
@@ -35,12 +35,14 @@ const ProductCard = memo(({ product }: { product: Product }) => {
   return (
     <div className="group relative flex flex-col sm:flex-row bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 h-full focus-within:ring-2 focus-within:ring-[#D95D22] focus-within:ring-offset-2 hover:-translate-y-1">
       <div className="relative w-full sm:w-2/5 flex-shrink-0">
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full overflow-hidden">
+        <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full overflow-hidden">
           {product.imagen ? (
-            <img
+            <Image
               src={product.imagen}
-              alt={product.nombre}
-              className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+              alt={product.nombre || 'Producto'}
+              fill
+              className="object-cover object-center transition-transform duration-700 group-hover:scale-110"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             />
           ) : (
             <div className="h-full w-full bg-gradient-to-br from-orange-100 to-pink-100 flex items-center justify-center">
@@ -105,7 +107,9 @@ const ProductCard = memo(({ product }: { product: Product }) => {
                 product.id,
                 product.nombre || 'Producto',
                 product.precio || 0,
-                product.imagen || undefined
+                product.imagen || undefined,
+                1,
+                product.sku,
               );
               // Mostrar notificación
               const notification = document.createElement('div');
@@ -270,7 +274,12 @@ const ProductCarousel = memo(({
                 className="flex-shrink-0"
                 style={{ width: `${100 / itemsToShow}%` }}
               >
-                <ProductCard product={product} />
+                <Link
+                  href={`/producto/${product.id}`}
+                  className="block h-full focus:outline-none focus:ring-2 focus:ring-[#D95D22] focus:ring-offset-2"
+                >
+                  <ProductCard product={product} />
+                </Link>
               </div>
             ))}
           </div>

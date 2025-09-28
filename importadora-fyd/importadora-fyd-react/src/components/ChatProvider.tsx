@@ -11,10 +11,12 @@ export default function ChatProvider() {
   // No mostrar chat en páginas de admin o auth
   const isAdminPage = pathname?.startsWith('/admin');
   const isAuthPage = pathname === '/login' || pathname === '/registro';
-  
-  if (!currentUser || isAdminPage || isAuthPage) {
+
+  if (isAdminPage || isAuthPage) {
     return null;
   }
 
+  // Siempre mostrar chat - para usuarios logueados será chat interno en pedidos,
+  // para todos será WhatsApp en chat general
   return <MercadoLibreChat />;
 }

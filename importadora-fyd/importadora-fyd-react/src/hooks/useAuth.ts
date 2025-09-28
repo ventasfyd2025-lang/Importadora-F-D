@@ -29,7 +29,7 @@ export function useAuth() {
     } catch (error: unknown) {
       let message = 'Error de autenticación';
       const firebaseError = error as { code?: string; message?: string };
-      
+
       switch (firebaseError.code) {
         case 'auth/user-not-found':
         case 'auth/wrong-password':

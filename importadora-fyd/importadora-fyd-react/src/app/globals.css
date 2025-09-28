@@ -27,7 +27,7 @@
 }
 
 html {
-  font-size: 16px; /* Tamaño base optimizado */
+  font-size: 14px; /* Tamaño base reducido ~15% para vista más alejada */
   scroll-behavior: smooth;
 }
 
@@ -38,18 +38,19 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  zoom: 0.9; /* Zoom más sutil para vista alejada */
 }
 
-/* Better responsive scaling - mantenemos tamaños más grandes */
+/* Better responsive scaling - reducidos ~15% para vista más alejada */
 @media (max-width: 640px) {
   html {
-    font-size: 16px; /* Móvil más grande */
+    font-size: 13px; /* Móvil reducido */
   }
 }
 
 @media (min-width: 1280px) {
   html {
-    font-size: 20px; /* Desktop aún más grande */
+    font-size: 16px; /* Desktop reducido ~20% */
   }
 }
 

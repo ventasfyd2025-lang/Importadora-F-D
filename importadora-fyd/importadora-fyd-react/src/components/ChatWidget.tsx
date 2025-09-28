@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ChatBubbleLeftRightIcon, 
   XMarkIcon, 
@@ -52,7 +52,7 @@ export default function ChatWidget({ orderId, className = '' }: ChatWidgetProps)
     // Simplificar la consulta para evitar índices complejos
     const messagesQuery = query(
       collection(db, 'chat_messages'),
-      where('userId', '==', currentUser.uid || currentUser.id),
+      where('userId', '==', (currentUser as any).uid || (currentUser as any).id),
       orderBy('timestamp', 'asc')
     );
 
@@ -87,21 +87,11 @@ export default function ChatWidget({ orderId, className = '' }: ChatWidgetProps)
     return unsubscribe;
   }, [currentUser, orderId]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    if (isOpen && unreadCount > 0) {
-      markMessagesAsRead();
-    }
-  }, [isOpen, unreadCount]);
-
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const markMessagesAsRead = async () => {
+  const markMessagesAsRead = useCallback(async () => {
     if (!currentUser) return;
 
     const unreadMessages = messages.filter(msg => !msg.read && msg.isAdmin);
@@ -115,7 +105,17 @@ export default function ChatWidget({ orderId, className = '' }: ChatWidgetProps)
         console.error('Error marking message as read:', error);
       }
     }
-  };
+  }, [currentUser, messages]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    if (isOpen && unreadCount > 0) {
+      markMessagesAsRead();
+    }
+  }, [isOpen, unreadCount, markMessagesAsRead]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentUser || loading) return;
@@ -123,7 +123,7 @@ export default function ChatWidget({ orderId, className = '' }: ChatWidgetProps)
     setLoading(true);
     try {
       const messageData = {
-        userId: currentUser.uid || currentUser.id,
+        userId: (currentUser as any).uid || (currentUser as any).id,
         userEmail: currentUser.email,
         userName: `${currentUser.firstName} ${currentUser.lastName}`,
         message: newMessage.trim(),

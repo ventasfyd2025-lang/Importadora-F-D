@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useProducts } from '@/hooks/useProducts';
 import { useHomepageConfig } from '@/hooks/useHomepageConfig';
 import { useCart } from '@/context/CartContext';
@@ -17,21 +18,15 @@ const formatPrice = (price: number) => {
 export default function ProductosDestacados() {
   const { products, loading: productsLoading } = useProducts();
   const { homepageConfig, loading: homepageLoading } = useHomepageConfig();
-  const { addToCart } = useCart();
+  const { addItem } = useCart();
 
   // Filtrar productos destacados
-  const featuredProducts = homepageConfig.featuredProducts.length > 0 
+  const featuredProducts = homepageConfig.featuredProducts.length > 0
     ? products.filter(p => homepageConfig.featuredProducts.includes(p.id))
     : [];
 
   const handleAddToCart = (product: any) => {
-    addToCart({
-      id: product.id,
-      name: product.nombre,
-      price: product.precio,
-      image: product.imagen,
-      quantity: 1
-    });
+    addItem(product.id, product.nombre, product.precio, product.imagen, 1, product.sku);
   };
 
   if (productsLoading || homepageLoading) {
@@ -79,12 +74,12 @@ export default function ProductosDestacados() {
             <p className="text-gray-500 mb-6">
               Aún no se han configurado productos destacados desde el panel de administración
             </p>
-            <a 
+            <Link
               href="/"
               className="inline-flex items-center px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
             >
               Ver todos los productos
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

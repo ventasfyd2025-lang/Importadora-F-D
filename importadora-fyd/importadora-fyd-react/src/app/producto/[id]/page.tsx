@@ -100,7 +100,7 @@ export default function ProductPage() {
       // Si decide continuar como invitado, procede a agregar al carrito
     }
 
-    addItem(product.id, product.nombre, product.precio, product.imagen, quantity);
+    addItem(product.id, product.nombre, product.precio, product.imagen, quantity, product.sku);
 
     // Show notification
     const notification = document.createElement('div');
@@ -215,6 +215,11 @@ export default function ProductPage() {
               <p className="text-lg text-gray-600 capitalize">
                 Categoría: {product.categoria}
               </p>
+              {product.sku && (
+                <p className="text-sm text-gray-500 mt-1">
+                  SKU: {product.sku}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -327,6 +332,11 @@ export default function ProductPage() {
         buttonText={popupConfig.buttonText}
         buttonLink={popupConfig.buttonLink}
         isActive={popupConfig.active}
+        size={popupConfig.size}
+        position={popupConfig.position}
+        mediaUrl={popupConfig.mediaUrl}
+        isVideo={popupConfig.isVideo}
+        popupType={popupConfig.popupType}
         onClose={() => {}}
       />
     </Layout>

@@ -1,18 +1,49 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { logError, logWarn } from '@/utils/logger';
+
+interface WalletInstance {
+  unmount: () => void;
+}
+
+interface WalletBrickConfig {
+  initialization: {
+    preferenceId: string;
+  };
+  customization?: {
+    texts?: {
+      valueProp?: string;
+    };
+  };
+  callbacks: {
+    onReady?: () => void;
+    onSubmit?: (data: unknown) => Promise<void>;
+    onError?: (error: unknown) => void;
+  };
+}
+
+interface MercadoPagoSDK {
+  bricks(): {
+    create: (brickId: 'wallet', containerId: string, config: WalletBrickConfig) => Promise<WalletInstance>;
+  };
+}
+
+interface MercadoPagoConstructor {
+  new (publicKey: string): MercadoPagoSDK;
+}
 
 interface MercadoPagoWalletProps {
   preferenceId: string;
-  onSuccess?: (data: any) => void;
-  onError?: (error: any) => void;
+  onSuccess?: (data: unknown) => void;
+  onError?: (error: unknown) => void;
   onReady?: () => void;
   className?: string;
 }
 
 declare global {
   interface Window {
-    MercadoPago: any;
+    MercadoPago?: MercadoPagoConstructor;
   }
 }
 
@@ -26,7 +57,7 @@ export default function MercadoPagoWallet({
   const walletContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [walletInstance, setWalletInstance] = useState<any>(null);
+  const walletInstanceRef = useRef<WalletInstance | null>(null);
 
   useEffect(() => {
     if (!preferenceId) {
@@ -42,19 +73,16 @@ export default function MercadoPagoWallet({
 
         // Verificar si MercadoPago SDK está disponible
         if (!window.MercadoPago) {
-          console.error('❌ MercadoPago SDK no está disponible');
+          logError('MercadoPago SDK no está disponible');
           throw new Error('MercadoPago SDK no está disponible. Verifica que el script esté cargado.');
         }
 
         const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || 'APP_USR-b6ef221a-a985-4153-83fd-ac35f8d1b4ad';
         if (!publicKey) {
-          console.error('❌ Public key no configurada');
+          logError('Public key no configurada');
           throw new Error('Public key de MercadoPago no configurada');
         }
 
-        console.log('🔑 Usando public key:', publicKey);
-
-        // Inicializar MercadoPago
         const mp = new window.MercadoPago(publicKey);
         
         // Crear el Wallet Brick
@@ -65,7 +93,7 @@ export default function MercadoPagoWallet({
           walletContainerRef.current.innerHTML = '';
         }
 
-        const wallet = await bricksBuilder.create("wallet", "wallet-container", {
+        const wallet = await bricksBuilder.create('wallet', 'wallet-container', {
           initialization: {
             preferenceId: preferenceId,
           },
@@ -76,31 +104,25 @@ export default function MercadoPagoWallet({
           },
           callbacks: {
             onReady: () => {
-              console.log('🎯 Wallet Brick está listo');
               setIsLoading(false);
               onReady?.();
             },
-            onSubmit: (data: any) => {
-              console.log('💰 Pago enviado:', data);
+            onSubmit: async (data: unknown) => {
               onSuccess?.(data);
-              return new Promise((resolve) => {
-                // Permitir que MercadoPago maneje la redirección
-                resolve(undefined);
-              });
             },
-            onError: (error: any) => {
-              console.error('❌ Error en Wallet Brick:', error);
+            onError: (walletError: unknown) => {
+              logError('Error en Wallet Brick', walletError);
               setError('Error al procesar el pago');
-              onError?.(error);
+              onError?.(walletError);
             },
           },
         });
 
-        setWalletInstance(wallet);
+        walletInstanceRef.current = wallet;
 
-      } catch (error) {
-        console.error('❌ Error inicializando MercadoPago Wallet:', error);
-        setError(error instanceof Error ? error.message : 'Error desconocido');
+      } catch (err) {
+        logError('Error inicializando MercadoPago Wallet', err);
+        setError(err instanceof Error ? err.message : 'Error desconocido');
         setIsLoading(false);
       }
     };
@@ -111,12 +133,12 @@ export default function MercadoPagoWallet({
     return () => {
       clearTimeout(timer);
       // Limpiar el wallet al desmontar
-      if (walletInstance) {
+      const instance = walletInstanceRef.current;
+      walletInstanceRef.current = null;
+      if (instance) {
         try {
-          walletInstance.unmount();
-        } catch (e) {
-          console.log('Error unmounting wallet:', e);
-        }
+          instance.unmount();
+        } catch (e) {        }
       }
     };
   }, [preferenceId, onSuccess, onError, onReady]);

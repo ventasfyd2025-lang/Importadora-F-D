@@ -29,19 +29,7 @@ export async function POST(_request: NextRequest) {
       },
       external_reference: 'test_' + Date.now(),
       statement_descriptor: 'TEST IMPORTADORA'
-    };
-
-    console.log('🔍 Creando preferencia de prueba optimizada...');
-    
-    const result = await preference.create({ body: testPreference });
-    
-    console.log('✅ Preferencia de prueba creada:', {
-      id: result.id,
-      initPoint: result.init_point,
-      sandboxInitPoint: result.sandbox_init_point
-    });
-
-    return NextResponse.json({
+    };    const result = await preference.create({ body: testPreference });    return NextResponse.json({
       success: true,
       preferenceId: result.id,
       initPoint: result.init_point,

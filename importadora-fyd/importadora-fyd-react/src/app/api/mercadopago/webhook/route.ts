@@ -18,7 +18,7 @@ function validateWebhookSignature(request: NextRequest, body: string): boolean {
     const requestId = request.headers.get('x-request-id');
     
     if (!signature || !requestId) {
-      console.log('❌ Headers de firma faltantes');
+      // console.warn('❌ Webhook sin firma o request-id');
       return false;
     }
 
@@ -28,7 +28,7 @@ function validateWebhookSignature(request: NextRequest, body: string): boolean {
     const v1Hash = signatureParts.find(part => part.startsWith('v1='))?.split('=')[1];
     
     if (!ts || !v1Hash) {
-      console.log('❌ Timestamp o hash no encontrado en firma');
+      // console.warn('❌ Encabezados de firma incompletos', { signature });
       return false;
     }
 
@@ -53,10 +53,7 @@ function validateWebhookSignature(request: NextRequest, body: string): boolean {
     );
     
     if (!isValid) {
-      console.log('❌ Firma webhook inválida');
-      console.log('Template:', template);
-      console.log('Expected:', expectedHash);
-      console.log('Received:', v1Hash);
+      // console.warn('❌ Firma de webhook inválida', { requestId, dataId });
     }
     
     return isValid;
@@ -70,16 +67,9 @@ export async function POST(request: NextRequest) {
   try {
     const bodyText = await request.text();
     const body = JSON.parse(bodyText);
-    
-    console.log('📨 Webhook MercadoPago recibido:', {
-      type: body.type,
-      action: body.action,
-      dataId: body.data?.id
-    });
 
     // Validar firma del webhook
     if (!validateWebhookSignature(request, bodyText)) {
-      console.log('❌ Firma de webhook inválida');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
@@ -87,19 +77,10 @@ export async function POST(request: NextRequest) {
     if (body.type === 'payment') {
       const paymentId = body.data.id;
       const action = body.action; // 'payment.created', 'payment.updated', etc.
-      
-      console.log(`🔄 Procesando ${action} para pago ${paymentId}`);
-      
+
       try {
         // Obtener información del pago desde MercadoPago
         const paymentInfo = await payment.get({ id: paymentId });
-        
-        console.log('💳 Información del pago:', {
-          id: paymentInfo.id,
-          status: paymentInfo.status,
-          external_reference: paymentInfo.external_reference,
-          transaction_amount: paymentInfo.transaction_amount
-        });
 
         if (paymentInfo) {
           const orderId = paymentInfo.external_reference;
@@ -149,23 +130,21 @@ export async function POST(request: NextRequest) {
                   },
                   updatedAt: new Date()
                 });
-
-                console.log(`✅ Orden ${orderId} actualizada: ${orderStatus}`);
               } else {
-                console.log(`⚠️ Orden ${orderId} no encontrada en Firestore`);
+                // console.warn('⚠️ Orden no encontrada para actualizar con pago MP', { orderId, paymentId });
               }
             } catch (firestoreError) {
               console.error('❌ Error actualizando orden en Firestore:', firestoreError);
             }
           } else {
-            console.log('⚠️ No hay external_reference en el pago');
+            // console.warn('⚠️ Pago de MercadoPago sin external_reference', { paymentId });
           }
         }
       } catch (mpError) {
         console.error('❌ Error obteniendo pago de MercadoPago:', mpError);
       }
     } else {
-      console.log('ℹ️ Tipo de notificación no manejado:', body.type);
+      // console.info('ℹ️ Notificación de MercadoPago ignorada', { type: body.type, action: body.action });
     }
 
     // Responder con 200 para confirmar que recibimos la notificación

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useI18n } from '@/context/I18nContext';
 
 interface Banner {
@@ -25,7 +24,7 @@ interface BannerCarouselProps {
 const BannerCarousel = memo(({ 
   banners = [],
   autoPlay = true,
-  autoPlayInterval = 5000
+  autoPlayInterval = 3000
 }: BannerCarouselProps) => {
   const { t } = useI18n();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -47,22 +46,6 @@ const BannerCarousel = memo(({
     setCurrentIndex(index);
   };
 
-  const goToPrevious = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + banners.length) % banners.length);
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % banners.length);
-  };
-
-  // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') {
-      goToPrevious();
-    } else if (e.key === 'ArrowRight') {
-      goToNext();
-    }
-  };
 
   if (banners.length === 0) {
     return (
@@ -88,76 +71,84 @@ const BannerCarousel = memo(({
       onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
       role="region"
       aria-label={t('common.banner')}
     >
       {/* Banner Slides */}
       <div className="relative h-56 sm:h-64 md:h-72 lg:h-80">
-        {banners.map((banner, index) => (
-          <div 
-            key={banner.id}
-            className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-              index === currentIndex 
-                ? 'opacity-100 scale-100' 
-                : 'opacity-0 scale-105'
-            }`}
-            role="group"
-            aria-hidden={index !== currentIndex}
-            aria-label={`Banner ${index + 1}`}
-          >
-            {/* Clickable Banner Image */}
-            {banner.ctaLink ? (
-              <Link 
-                href={banner.ctaLink}
-                className="block w-full h-full cursor-pointer"
-                aria-label={banner.title || `Banner ${index + 1}`}
-              >
-                <div 
-                  className={`w-full h-full bg-cover bg-center transition-transform duration-[10s] ease-linear hover:scale-105 ${
-                    index === currentIndex ? 'scale-110' : 'scale-100'
-                  }`}
-                  style={{ 
-                    backgroundImage: `url(${banner.imageUrl})` 
-                  }}
-                />
-              </Link>
-            ) : (
+        {banners.map((banner, index) => {
+          const backgroundImage = banner.imageUrl
+            ? `url(${banner.imageUrl})`
+            : 'linear-gradient(135deg, #D95D22 0%, #F97316 100%)';
+
+          return (
+            <div 
+              key={banner.id}
+              className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                index === currentIndex 
+                  ? 'opacity-100 scale-100' 
+                  : 'opacity-0 scale-105'
+              }`}
+              role="group"
+              aria-hidden={index !== currentIndex}
+              aria-label={`Banner ${index + 1}`}
+            >
               <div 
-                className={`w-full h-full bg-cover bg-center transition-transform duration-[10s] ease-linear ${
+                className={`relative w-full h-full bg-cover bg-center transition-transform duration-[10s] ease-linear ${
                   index === currentIndex ? 'scale-110' : 'scale-100'
                 }`}
-                style={{ 
-                  backgroundImage: `url(${banner.imageUrl})` 
-                }}
-              />
-            )}
-            
-          </div>
-        ))}
+                style={{ backgroundImage }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/20 to-black/10" />
+
+                <div className="absolute inset-0 flex items-center">
+                  <div className="px-4 sm:px-8 lg:px-12 w-full max-w-2xl">
+                    {banner.badgeText && (
+                      <span
+                        className="inline-block px-3 py-1 text-xs font-semibold text-white rounded-full shadow-lg mb-4"
+                        style={banner.badgeColor ? { backgroundColor: banner.badgeColor } : { backgroundColor: 'rgba(217, 93, 34, 0.85)' }}
+                      >
+                        {banner.badgeText}
+                      </span>
+                    )}
+
+                    {banner.title && (
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight drop-shadow-md">
+                        {banner.title}
+                      </h2>
+                    )}
+
+                    {banner.subtitle && (
+                      <p className="mt-2 text-sm sm:text-base lg:text-lg text-white/90 max-w-xl">
+                        {banner.subtitle}
+                      </p>
+                    )}
+
+                    {(banner.ctaText || banner.ctaLink) && (
+                      <div className="mt-6">
+                        {banner.ctaLink ? (
+                          <Link
+                            href={banner.ctaLink}
+                            className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-orange-500 text-white font-semibold shadow-lg hover:bg-orange-600 transition-colors"
+                            aria-label={banner.ctaText || banner.title || `Banner ${index + 1}`}
+                          >
+                            {banner.ctaText || 'Ver más'}
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white/20 text-white font-semibold shadow-lg">
+                            {banner.ctaText || 'Más información'}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Navigation Arrows */}
-      {banners.length > 1 && (
-        <>
-          <button
-            onClick={goToPrevious}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-30 hover:bg-opacity-50 text-white p-3 rounded-full transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-white"
-            aria-label={t('banner.previous')}
-          >
-            <ChevronLeftIcon className="h-6 w-6" />
-          </button>
-          
-          <button
-            onClick={goToNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-30 hover:bg-opacity-50 text-white p-3 rounded-full transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-white"
-            aria-label={t('banner.next')}
-          >
-            <ChevronRightIcon className="h-6 w-6" />
-          </button>
-        </>
-      )}
 
       {/* Indicators */}
       {banners.length > 1 && (

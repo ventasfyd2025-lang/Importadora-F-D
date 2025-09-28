@@ -24,10 +24,7 @@ const categoryIcons: Record<string, string> = {
 };
 
 export async function syncCategoriesToFirebase() {
-  try {
-    console.log('🔄 Iniciando sincronización de categorías...');
-
-    // Obtener todos los productos para extraer las categorías únicas
+  try {    // Obtener todos los productos para extraer las categorías únicas
     const productsSnapshot = await getDocs(collection(db, 'products'));
     const categories = new Set<string>();
 
@@ -38,7 +35,7 @@ export async function syncCategoriesToFirebase() {
       }
     });
 
-    console.log('📦 Categorías encontradas en productos:', Array.from(categories));
+    // console.log('📦 Categorías encontradas en productos:', Array.from(categories));
 
     // Verificar qué categorías ya existen en Firebase
     const categoriasSnapshot = await getDocs(collection(db, 'categorias'));
@@ -48,7 +45,7 @@ export async function syncCategoriesToFirebase() {
       existingCategories.add(doc.id);
     });
 
-    console.log('🔥 Categorías existentes en Firebase:', Array.from(existingCategories));
+    // console.log('🔥 Categorías existentes en Firebase:', Array.from(existingCategories));
 
     // Sincronizar categorías
     const syncPromises = Array.from(categories).map(async (categoryName) => {
@@ -67,16 +64,13 @@ export async function syncCategoriesToFirebase() {
         };
 
         await setDoc(doc(db, 'categorias', categoryId), categoryData);
-        console.log(`✅ Categoría creada: ${categoryName} (${categoryId})`);
+        // console.log(`✅ Categoría creada: ${categoryName} (${categoryId})`);
       } else {
-        console.log(`ℹ️ Categoría ya existe: ${categoryName} (${categoryId})`);
+        // console.log(`ℹ️ Categoría ya existe: ${categoryName} (${categoryId})`);
       }
     });
 
-    await Promise.all(syncPromises);
-    console.log('🎉 Sincronización de categorías completada');
-
-    return {
+    await Promise.all(syncPromises);    return {
       success: true,
       message: `Sincronización completada. ${categories.size} categorías procesadas.`
     };
@@ -105,10 +99,7 @@ export async function addCategory(name: string, active: boolean = true) {
       updatedAt: new Date()
     };
 
-    await setDoc(doc(db, 'categorias', categoryId), categoryData);
-    console.log(`✅ Categoría agregada: ${name}`);
-    
-    return { success: true, message: `Categoría "${name}" agregada correctamente` };
+    await setDoc(doc(db, 'categorias', categoryId), categoryData);    return { success: true, message: `Categoría "${name}" agregada correctamente` };
   } catch (error) {
     console.error('❌ Error agregando categoría:', error);
     return { success: false, message: `Error: ${error}` };

@@ -1,5 +1,6 @@
 export interface Product {
   id: string;
+  sku?: string;
   nombre: string;
   precio: number;
   descripcion?: string;
@@ -26,6 +27,7 @@ export interface CartItem {
   precio: number;
   cantidad: number;
   imagen?: string;
+  sku?: string;
 }
 
 export interface Subcategory {
@@ -49,9 +51,11 @@ export interface Order {
   customerPhone: string;
   items: CartItem[];
   total: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'pending_verification' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   shippingAddress?: string;
+  paymentMethod?: string;
+  paymentProof?: string; // URL del comprobante de pago
 }
 
 export interface SiteConfig {
@@ -74,4 +78,20 @@ export interface SiteConfig {
     cost: number;
     freeMin: number;
   };
+}
+
+export type LayoutPatternVariant = 'small' | 'vertical' | 'large' | 'horizontal';
+
+export type LayoutPatternSpan = '1x1' | '2x1' | '1x2' | '2x2';
+
+export interface LayoutPatternRule {
+  variant: LayoutPatternVariant;
+  enabled: boolean;
+  interval: number;
+  span: LayoutPatternSpan;
+}
+
+export interface LayoutPatternsConfig {
+  rules: LayoutPatternRule[];
+  updatedAt?: string;
 }

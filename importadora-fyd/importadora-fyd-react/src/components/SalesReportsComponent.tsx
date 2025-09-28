@@ -85,13 +85,13 @@ export default function SalesReportsComponent() {
   useEffect(() => {
     loadDailyReport(selectedDate);
     loadRecentReports();
-  }, [selectedDate]);
+  }, [selectedDate, loadDailyReport, loadRecentReports]);
 
   useEffect(() => {
     if (selectedMonth) {
       loadMonthlyReport(selectedMonth);
     }
-  }, [selectedMonth]);
+  }, [selectedMonth, loadMonthlyReport]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">

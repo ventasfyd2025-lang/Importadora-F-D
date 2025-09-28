@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -108,7 +109,7 @@ export default function AdminChatPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const { user, authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   const [order, setOrder] = useState<Order | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -117,26 +118,11 @@ export default function AdminChatPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (authLoading) return;
-    
-    if (!user) {
-      router.push('/admin');
-      return;
-    }
-
-    loadOrder();
-    loadMessages();
-  }, [orderId, user, authLoading]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     if (!orderId) return;
     
     try {
+      setOrderLoading(true);
       const orderDoc = await getDoc(doc(db, 'orders', orderId));
       if (orderDoc.exists()) {
         const data = orderDoc.data();
@@ -152,10 +138,10 @@ export default function AdminChatPage() {
     } finally {
       setOrderLoading(false);
     }
-  };
+  }, [orderId]);
 
-  const loadMessages = () => {
-    if (!orderId) return;
+  const loadMessages = useCallback(() => {
+    if (!orderId) return undefined;
 
     const messagesQuery = query(
       collection(db, 'chat_messages'),
@@ -187,11 +173,31 @@ export default function AdminChatPage() {
     });
 
     return unsubscribe;
-  };
+  }, [orderId]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!user) {
+      router.push('/admin');
+      return;
+    }
+
+    loadOrder();
+    const unsubscribe = loadMessages();
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, [authLoading, user, router, loadOrder, loadMessages]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !order || loading || !orderId) return;
@@ -330,9 +336,11 @@ export default function AdminChatPage() {
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     {item.imagen && (
-                      <img 
-                        src={item.imagen} 
+                      <Image
+                        src={item.imagen}
                         alt={item.nombre}
+                        width={48}
+                        height={48}
                         className="h-12 w-12 object-cover rounded"
                       />
                     )}

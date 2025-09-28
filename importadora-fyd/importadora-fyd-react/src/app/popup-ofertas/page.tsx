@@ -12,7 +12,7 @@ export default function PopupOfertasPage() {
   const loading = popupLoading || productsLoading;
 
   // Get only the products selected in admin popup offers
-  const selectedProducts = popupConfig.selectedProducts || [];
+  const selectedProducts = (popupConfig as any).selectedProducts || [];
   const displayProducts = selectedProducts.length > 0 
     ? products.filter(product => selectedProducts.includes(product.id))
     : [];
@@ -48,7 +48,7 @@ export default function PopupOfertasPage() {
           <>
             {(() => {
               const groupedByCategory = displayProducts.reduce((acc, product) => {
-                const category = product.categoria || product.category || 'Sin categoría';
+                const category = product.categoria || 'Sin categoría';
                 if (!acc[category]) acc[category] = [];
                 acc[category].push(product);
                 return acc;

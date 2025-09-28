@@ -1,16 +1,15 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, lazy } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import Link from 'next/link';
-import ProductCard from '@/components/ProductCard';
 import MasonryProductGrid from '@/components/MasonryProductGrid';
 import MainBannerCarousel from '@/components/MainBannerCarousel';
-import OfferPopup from '@/components/OfferPopup';
 import { useProducts } from '@/hooks/useProducts';
 import { useConfig } from '@/hooks/useConfig';
-import { useOfferPopup } from '@/hooks/useOfferPopup';
 import { useCategories } from '@/hooks/useCategories';
+import { useLayoutPatterns } from '@/hooks/useLayoutPatterns';
 import { useSearchParams } from 'next/navigation';
 
 export default function HomeClient() {
@@ -23,8 +22,8 @@ export default function HomeClient() {
   const { loading, error, filterProducts, getProductsByFilter, products } = useProducts();
   
   // PRIORIDAD 3: Otros datos al final
-  const { popupConfig } = useOfferPopup();
   const { categories } = useCategories();
+  const { patterns: layoutPatternsConfig } = useLayoutPatterns();
   
   
   const searchQuery = searchParams.get('search') || '';
@@ -99,7 +98,7 @@ export default function HomeClient() {
           ) : (
             <MainBannerCarousel
               products={[]} // No esperar productos, usar config únicamente
-              config={mainBannerConfig}
+              config={mainBannerConfig as any}
             />
           )}
         </>
@@ -143,9 +142,11 @@ export default function HomeClient() {
                   <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full cursor-pointer">
                     <div className="relative flex-1 min-h-[300px]">
                       <div className="bg-gradient-to-br from-pink-50 to-red-100 h-full w-full overflow-hidden">
-                        <img
+                        <Image
                           src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=700&fit=crop&crop=center"
                           alt="Moda y Ropa"
+                          fill
+                          sizes="(max-width: 768px) 100vw, 25vw"
                           className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                         />
                       </div>
@@ -261,7 +262,7 @@ export default function HomeClient() {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
               <select 
                 className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2"
-                style={{ focusRingColor: '#F16529' }}
+                style={{ '--tw-ring-color': '#F16529' } as any}
                 value={sortBy}
                 onChange={(e) => {
                   const params = new URLSearchParams(searchParams.toString());
@@ -283,7 +284,7 @@ export default function HomeClient() {
 
               <select 
                 className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2"
-                style={{ focusRingColor: '#F16529' }}
+                style={{ '--tw-ring-color': '#F16529' } as any}
                 value={priceRange}
                 onChange={(e) => {
                   const params = new URLSearchParams(searchParams.toString());
@@ -331,7 +332,7 @@ export default function HomeClient() {
               {!searchQuery && !category && !priceRange && !sortBy && !filter ? (
                 (() => {
                   const groupedByCategory = displayProducts.reduce((acc, product) => {
-                    const category = product.categoria || product.category || 'Sin categoría';
+                    const category = product.categoria || 'Sin categoría';
                     if (!acc[category]) acc[category] = [];
                     acc[category].push(product);
                     return acc;
@@ -348,7 +349,11 @@ export default function HomeClient() {
                         const displayName = categoryInfo?.name || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
                         
                         return (
-                          <MasonryProductGrid key={categoryName} products={groupedByCategory[categoryName]} />
+                          <MasonryProductGrid
+                            key={categoryName}
+                            products={groupedByCategory[categoryName]}
+                            layoutConfig={layoutPatternsConfig}
+                          />
                         );
                       })}
                     </>
@@ -357,7 +362,7 @@ export default function HomeClient() {
               ) : (
                 /* Masonry grid for filtered results */
                 <>
-                  <MasonryProductGrid products={displayProducts} />
+                  <MasonryProductGrid products={displayProducts} layoutConfig={layoutPatternsConfig} />
                   
                   <div className="text-center mt-8 text-gray-600">
                     Mostrando {displayProducts.length} productos
@@ -378,17 +383,6 @@ export default function HomeClient() {
           )}
         </div>
       </section>
-
-      {/* Offer Popup */}
-      <OfferPopup
-        title={popupConfig.title}
-        description={popupConfig.description}
-        buttonText={popupConfig.buttonText}
-        buttonLink={popupConfig.buttonLink}
-        isActive={popupConfig.active}
-        selectedProducts={popupConfig.selectedProducts}
-        onClose={() => {}}
-      />
     </>
   );
 }

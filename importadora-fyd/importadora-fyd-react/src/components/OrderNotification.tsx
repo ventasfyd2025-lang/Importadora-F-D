@@ -28,7 +28,7 @@ export default function OrderNotification() {
 
     const messagesQuery = query(
       collection(db, 'chat_messages'),
-      where('userId', '==', currentUser.uid || currentUser.id),
+      where('userId', '==', (currentUser as any).uid || (currentUser as any).id),
       where('isAdmin', '==', true),
       where('read', '==', false)
     );

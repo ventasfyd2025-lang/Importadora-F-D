@@ -212,7 +212,7 @@ export const middleBanners = [
     subtitle: 'Los mejores precios del año en todos los productos',
     imageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop',
     ctaText: 'Comprar Ahora',
-    ctaLink: '/ofertas',
+    ctaLink: '/?filter=ofertas',
     badgeText: 'BLACK FRIDAY',
     badgeColor: '#000000'
   },
@@ -222,8 +222,18 @@ export const middleBanners = [
     subtitle: 'Compras sobre $99.990 con despacho express',
     imageUrl: 'https://images.unsplash.com/photo-1606587011028-63d00a0c6d31?w=1200&h=400&fit=crop',
     ctaText: 'Ver Promociones',
-    ctaLink: '/promociones',
+    ctaLink: '/?filter=ofertas',
     badgeText: 'ENVÍO GRATIS',
     badgeColor: '#8B5CF6'
+  },
+  {
+    id: 'middle-3',
+    title: 'Liquidación Fin de Temporada',
+    subtitle: 'Últimas unidades con descuentos especiales',
+    imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1200&h=400&fit=crop',
+    ctaText: 'Descubrir Ofertas',
+    ctaLink: '/?filter=ofertas',
+    badgeText: 'HASTA 60% OFF',
+    badgeColor: '#0EA5E9'
   }
 ];

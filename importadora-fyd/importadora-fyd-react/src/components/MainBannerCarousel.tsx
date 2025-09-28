@@ -4,15 +4,39 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Product } from '@/types';
+import { defaultHeroBanners } from '@/components/home/bannerData';
+
+type SlideLinkType = 'product' | 'category';
+
+interface SlideConfig {
+  linkType?: SlideLinkType;
+  productId?: string;
+  categoryId?: string;
+  imageUrl: string;
+}
+
+interface ProcessedSlide {
+  id: string;
+  imageUrl: string;
+  featuredProduct: {
+    id: string;
+    nombre: string;
+    precio: number;
+    categoria: string;
+    stock: number;
+    imagen: string;
+  };
+  linkType: SlideLinkType;
+  productId?: string;
+  categoryId?: string;
+  targetUrl: string;
+}
 
 interface MainBannerCarouselProps {
   products: Product[];
   config: {
     active: boolean;
-    slides: {
-      productId: string;
-      imageUrl: string;
-    }[];
+    slides: SlideConfig[];
   };
   autoPlay?: boolean;
   interval?: number;
@@ -30,64 +54,95 @@ export default function MainBannerCarousel({
   const router = useRouter();
 
   // Create banner slides - INMEDIATO como PC Factory
-  const createBannerSlides = () => {
-    // CARGA INMEDIATA: usar config sin esperar productos
-    if (config?.active && config?.slides?.length) {
-      const configSlides = [];
-      
-      for (let i = 0; i < config.slides.length; i++) {
-        const slide = config.slides[i];
-        
-        if (slide.imageUrl) {
-          // Producto inmediato sin esperar la lista completa
-          const featuredProduct = {
-            id: slide.productId || `banner-slide-${i}`,
-            nombre: 'Producto destacado',
-            precio: 0,
-            categoria: 'destacados',
-            stock: 1,
-            imagen: slide.imageUrl
-          };
-          
-          configSlides.push({
-            featuredProduct: featuredProduct,
-            imageUrl: slide.imageUrl
-          });
-        }
-      }
-      
-      return configSlides;
-    }
+  const resolveLinkType = (slide: SlideConfig): SlideLinkType => {
+    if (slide.linkType === 'category') return 'category';
+    if (slide.linkType === 'product') return 'product';
+    if (slide.categoryId && !slide.productId) return 'category';
+    return 'product';
+  };
 
+  const createBannerSlides = (): ProcessedSlide[] => {
+    if (config?.active && config?.slides?.length) {
+      return (config.slides
+        .map((slide, i) => {
+          const fallbackBanner = defaultHeroBanners[i % defaultHeroBanners.length];
+          const sanitizedImageUrl = (slide?.imageUrl || '').trim();
+          const imageUrl = sanitizedImageUrl || fallbackBanner.imageUrl;
+
+          if (!imageUrl) {
+            return null;
+          }
+
+          const linkType = resolveLinkType(slide);
+          const product = linkType === 'product' && slide.productId
+            ? products.find(p => p.id === slide.productId)
+            : undefined;
+
+          const generatedId = linkType === 'category'
+            ? `category-${slide.categoryId || i}`
+            : `product-${slide.productId || i}`;
+          const uniqueSlideId = `${generatedId}-${i}`;
+          const baseTitle = linkType === 'category'
+            ? `Categoría: ${slide.categoryId || fallbackBanner?.title || 'en promoción'}`
+            : product?.nombre || fallbackBanner?.title || 'Producto destacado';
+
+          const targetUrl = linkType === 'category'
+            ? (slide.categoryId ? `/?category=${slide.categoryId}` : '#')
+            : (slide.productId ? `/producto/${slide.productId}` : '#');
+
+          return {
+            imageUrl,
+            featuredProduct: {
+              id: slide.productId || uniqueSlideId,
+              nombre: baseTitle,
+              precio: linkType === 'product' ? product?.precio || 0 : 0,
+              categoria: linkType === 'category'
+                ? slide.categoryId || fallbackBanner?.title || 'categoria'
+                : product?.categoria || fallbackBanner?.title || 'destacados',
+              stock: linkType === 'product' ? (product?.stock ?? 1) : 1,
+              imagen: imageUrl
+            },
+            linkType,
+            productId: slide.productId,
+            categoryId: slide.categoryId,
+            targetUrl,
+            // ensure unique id per slide even if same category/product repeats
+            id: uniqueSlideId
+          };
+        })
+        .filter(slide => slide !== null)) as ProcessedSlide[];
+    }
     return [];
   };
 
   const slides = createBannerSlides();
 
-  // Aggressive preload with highest priority
+  // Optimized preload with proper timing
   useEffect(() => {
     if (slides.length > 0) {
-      // Preload first image with highest priority immediately
+      // Only preload first image immediately
       if (slides[0]?.imageUrl) {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = slides[0].imageUrl;
-        link.crossOrigin = 'anonymous';
-        document.head.appendChild(link);
+        const img = new window.Image();
+        img.onload = () => handleImageLoad(0);
+        img.loading = 'eager';
+        img.src = slides[0].imageUrl;
       }
-      
-      // Preload remaining images
-      slides.forEach((slide, index) => {
-        if (slide.imageUrl) {
-          const img = new window.Image();
-          img.onload = () => handleImageLoad(index);
-          img.loading = index === 0 ? 'eager' : 'lazy';
-          img.src = slide.imageUrl;
-        }
-      });
+
+      // Preload other images with delay to avoid unused preload warnings
+      const timer = setTimeout(() => {
+        slides.slice(1).forEach((slide, index) => {
+          if (slide.imageUrl) {
+            const img = new window.Image();
+            img.onload = () => handleImageLoad(index + 1);
+            img.loading = 'lazy';
+            img.src = slide.imageUrl;
+          }
+        });
+      }, 2000); // Wait 2 seconds before preloading other images
+
+      return () => clearTimeout(timer);
     }
-  }, [slides.length]);
+  }, [slides]);
 
   useEffect(() => {
     if (isPlaying && slides.length > 1) {
@@ -102,8 +157,9 @@ export default function MainBannerCarousel({
     setImagesLoaded(prev => new Set([...prev, index]));
   };
 
-  const handleProductImageClick = (productId: string) => {
-    router.push(`/producto/${productId}`);
+  const handleSlideClick = (slide: ProcessedSlide) => {
+    if (!slide?.targetUrl || slide.targetUrl === '#') return;
+    router.push(slide.targetUrl);
   };
 
   if (slides.length === 0) {
@@ -124,7 +180,7 @@ export default function MainBannerCarousel({
             {/* Optimized Product Image - Full Screen */}
             <div 
               className="absolute inset-0 cursor-pointer hover:scale-105 transition-transform duration-300"
-              onClick={() => handleProductImageClick(slide.featuredProduct.id)}
+              onClick={() => handleSlideClick(slide)}
             >
               <Image
                 src={slide.imageUrl}

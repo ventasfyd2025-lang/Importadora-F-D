@@ -1,17 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy,
-  limit,
-  Timestamp
+import { useState } from 'react';
+import {
+  collection,
+  doc,
+  getDoc,
+  query,
+  where,
+  getDocs,
+  orderBy
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DailySalesReport, MonthlySalesReport, ProductSale, PaymentMethodSummary } from '@/types/reports';

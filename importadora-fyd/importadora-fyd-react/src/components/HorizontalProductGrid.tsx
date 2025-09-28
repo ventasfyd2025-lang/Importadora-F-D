@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 
@@ -24,9 +25,11 @@ const HorizontalProductCard = ({ product }: { product: ProductWithExtras }) => {
     e.stopPropagation();
     addItem(
       product.id,
-      product.nombre || product.name || 'Producto',
-      product.precio || product.price || 0,
-      product.imagen || product.image || undefined
+      product.nombre || 'Producto',
+      product.precio || 0,
+      product.imagen || undefined,
+      1,
+      product.sku,
     );
 
     // Show notification
@@ -56,10 +59,12 @@ const HorizontalProductCard = ({ product }: { product: ProductWithExtras }) => {
         <div className="relative w-2/5 bg-gradient-to-br from-gray-50 to-gray-100">
           <div className="absolute inset-0 p-2 flex items-center justify-center">
             {product.imagen ? (
-              <img
+              <Image
                 src={product.imagen}
-                alt={product.nombre || product.name}
-                className="max-w-full max-h-full object-contain transition-transform duration-700 group-hover:scale-110"
+                alt={product.nombre || 'Producto'}
+                fill
+                className="object-contain transition-transform duration-700 group-hover:scale-110"
+                sizes="(max-width: 768px) 50vw, 33vw"
               />
             ) : (
               <div className="text-gray-400 text-6xl">📦</div>
@@ -90,7 +95,7 @@ const HorizontalProductCard = ({ product }: { product: ProductWithExtras }) => {
             
             {/* Title */}
             <h3 className="text-sm sm:text-base font-bold text-gray-900 line-clamp-2 leading-tight">
-              {product.nombre || product.name || 'Producto sin nombre'}
+              {product.nombre || 'Producto sin nombre'}
             </h3>
             
             {/* Description */}
@@ -132,7 +137,7 @@ const HorizontalProductCard = ({ product }: { product: ProductWithExtras }) => {
               
               {/* Current Price */}
               <div className="text-sm sm:text-base font-bold text-gray-900">
-                {formatPrice(product.precio ?? product.price ?? 0)}
+                {formatPrice(product.precio ?? 0)}
               </div>
               
               {/* Stock warning */}

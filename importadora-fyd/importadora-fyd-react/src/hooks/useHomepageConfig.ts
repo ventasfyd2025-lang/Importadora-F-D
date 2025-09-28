@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { defaultMiddleBanners } from '@/components/home/bannerData';
 
 interface PromotionalSection {
   id: string;
@@ -15,10 +16,83 @@ interface PromotionalSection {
   position: 'large' | 'tall' | 'normal' | 'wide';
 }
 
+interface MiddleBanner {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  ctaText: string;
+  ctaLink: string;
+  badgeText: string;
+  badgeColor?: string;
+}
+
+const normalizeMiddleBanners = (raw: unknown): MiddleBanner[] => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return defaultMiddleBanners.map((banner) => ({ ...banner }));
+  }
+
+  return raw.map((entry, index) => {
+    const fallback = defaultMiddleBanners[index] ?? defaultMiddleBanners[0];
+    const banner = (entry && typeof entry === 'object') ? entry as Record<string, unknown> : {};
+
+    const getString = (value: unknown, fallbackValue: string): string => (
+      typeof value === 'string' && value.trim() ? value : fallbackValue
+    );
+
+    const resolveImage = (): string => {
+      const candidates = [
+        banner.imageUrl,
+        banner.imageURL,
+        banner.image,
+        banner.backgroundImage,
+      ];
+
+      const match = candidates.find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
+      return match ?? fallback.imageUrl;
+    };
+
+    const resolveLink = (): string => {
+      const candidates = [
+        banner.ctaLink,
+        banner.link,
+        banner.url,
+        banner.href,
+      ];
+
+      const match = candidates.find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
+      return match ?? fallback.ctaLink;
+    };
+
+    const resolveBadgeColor = (): string | undefined => {
+      const candidates = [
+        banner.badgeColor,
+        banner.tagColor,
+        banner.badgeBackground,
+      ];
+
+      const match = candidates.find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
+      return match ?? fallback.badgeColor;
+    };
+
+    return {
+      id: getString(banner.id, fallback.id || `middle-${index}`),
+      title: getString(banner.title, fallback.title),
+      subtitle: getString(banner.subtitle ?? banner.text, fallback.subtitle),
+      imageUrl: resolveImage(),
+      ctaText: getString(banner.ctaText ?? banner.buttonText ?? banner.linkText, fallback.ctaText),
+      ctaLink: resolveLink(),
+      badgeText: getString(banner.badgeText ?? banner.tagText, fallback.badgeText),
+      badgeColor: resolveBadgeColor(),
+    };
+  });
+};
+
 interface HomepageConfig {
   featuredProducts: string[];
   offerProducts: string[];
   promotionalSections: PromotionalSection[];
+  middleBanners: MiddleBanner[];
 }
 
 const defaultHomepageConfig: HomepageConfig = {
@@ -85,7 +159,8 @@ const defaultHomepageConfig: HomepageConfig = {
       badgeText: '¡OFERTAS!',
       position: 'normal'
     }
-  ]
+  ],
+  middleBanners: defaultMiddleBanners.map((banner) => ({ ...banner })),
 };
 
 export function useHomepageConfig() {
@@ -95,18 +170,39 @@ export function useHomepageConfig() {
   useEffect(() => {
     const loadHomepageConfig = async () => {
       try {
-        console.log('🔄 Loading homepage config from Firebase...');
         const homepageDoc = await getDoc(doc(db, 'config', 'homepage-content'));
-        if (homepageDoc.exists()) {
-          const homepageData = homepageDoc.data();
-          console.log('✅ Homepage config loaded from Firebase:', homepageData);
+        const homepageFallbackDoc = homepageDoc.exists() ? null : await getDoc(doc(db, 'config', 'homepageContent'));
+        const dataSource = homepageDoc.exists()
+          ? homepageDoc
+          : homepageFallbackDoc && homepageFallbackDoc.exists()
+            ? homepageFallbackDoc
+            : null;
+
+        if (dataSource?.exists()) {
+          const homepageData = dataSource.data();
+          const rawMiddleBanners = (() => {
+            const value = homepageData.middleBanners;
+            if (Array.isArray(value)) return value;
+            if (value && typeof value === 'object') return Object.values(value as Record<string, unknown>);
+            return undefined;
+          })();
+
+          const rawPromotionalSections = (() => {
+            const value = homepageData.promotionalSections;
+            if (Array.isArray(value)) return value;
+            if (value && typeof value === 'object') return Object.values(value as Record<string, unknown>);
+            return undefined;
+          })();
+
           setHomepageConfig({
             featuredProducts: homepageData.featuredProducts || [],
             offerProducts: homepageData.offerProducts || [],
-            promotionalSections: homepageData.promotionalSections || defaultHomepageConfig.promotionalSections
+            promotionalSections: Array.isArray(rawPromotionalSections)
+              ? rawPromotionalSections.map((section: PromotionalSection) => ({ ...section }))
+              : defaultHomepageConfig.promotionalSections,
+            middleBanners: normalizeMiddleBanners(rawMiddleBanners ?? homepageData.middleBanners),
           });
         } else {
-          console.log('ℹ️ No homepage config found in Firebase, using defaults');
           setHomepageConfig(defaultHomepageConfig);
         }
       } catch (error) {

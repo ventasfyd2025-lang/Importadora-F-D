@@ -44,9 +44,11 @@ export default function ProductCard({ product, customHeight, isSpecial = false }
     
     addItem(
       product.id,
-      product.nombre || product.name || 'Producto',
-      product.precio || product.price || 0,
-      product.imagen || (product.images && product.images[0]) || ''
+      product.nombre || 'Producto',
+      product.precio || 0,
+      product.imagen || '',
+      1,
+      product.sku,
     );
 
     // Show notification
@@ -69,8 +71,8 @@ export default function ProductCard({ product, customHeight, isSpecial = false }
   };
 
   // Get price and original price
-  const currentPrice = product.precio || product.price || 0;
-  const originalPrice = product.precioOriginal || product.originalPrice || (product.oferta ? Math.round(currentPrice * 1.3) : null);
+  const currentPrice = product.precio || 0;
+  const originalPrice = product.precioOriginal || (product.oferta ? Math.round(currentPrice * 1.3) : null);
 
   // Determine image height based on whether custom height is provided
   const imageHeight = customHeight 
@@ -81,10 +83,10 @@ export default function ProductCard({ product, customHeight, isSpecial = false }
     <Link href={`/producto/${product.id}`} className="block h-full">
       <div className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-100 flex flex-col overflow-hidden ${customHeight || 'h-full'} hover:-translate-y-1 cursor-pointer`}>
       <div className={`relative ${imageHeight}`}>
-        {(product.imagen || (product.images && product.images[0])) ? (
+        {product.imagen ? (
           <Image
-            src={product.imagen || (product.images && product.images[0]) || ''}
-            alt={product.nombre || product.name || 'Producto'}
+            src={product.imagen || ''}
+            alt={product.nombre || 'Producto'}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -124,8 +126,11 @@ export default function ProductCard({ product, customHeight, isSpecial = false }
       <div className="p-3 flex flex-col flex-grow justify-between">
         <div className="flex-grow space-y-2">
           <h3 className="text-sm font-semibold line-clamp-2 text-left leading-tight" style={{ color: '#333333' }}>
-            {product.nombre || product.name || 'Producto sin nombre'}
+            {product.nombre || 'Producto sin nombre'}
           </h3>
+          {product.sku && (
+            <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+          )}
 
           <div className="space-y-2">
             {/* Precio tachado si hay oferta */}

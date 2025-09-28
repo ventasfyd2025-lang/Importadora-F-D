@@ -8,7 +8,7 @@ import { mockProducts } from '@/data/mockProducts';
 
 // Simple in-memory cache
 const productCache = new Map<string, { data: Product[], timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 1 * 60 * 1000; // 1 minute
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -17,7 +17,7 @@ export function useProducts() {
 
   const loadProducts = useCallback(async () => {
     const cacheKey = 'products';
-    
+
     // Check if we have valid cached data
     const cached = productCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -29,37 +29,77 @@ export function useProducts() {
     try {
       setLoading(true);
       setError(null);
-      
-        // Production: try to load from Firebase
-        const productsCollection = collection(db, 'products');
-        const productsSnapshot = await getDocs(productsCollection);
-        const productsList = productsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
+
+      // Check if we're in admin context - use Firebase for admin, mock for public
+      const isAdminContext = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
+
+      if (!isAdminContext) {
+        // Public pages: use mock products for speed
+        // console.log('Using mock products for public pages...');
+        const productsList = mockProducts.map(product => ({
+          id: product.id,
+          nombre: product.nombre,
+          precio: product.precio,
+          descripcion: product.descripcion,
+          imagen: product.imagen,
+          stock: product.stock,
+          categoria: product.categoria,
+          nuevo: product.nuevo,
+          oferta: product.oferta,
+          sku: product.sku || product.id,
+          activo: true,
+          envioGratis: product.precio > 50000,
+          fechaCreacion: '2024-01-15'
         } as Product));
-        
-        // Cache the data
+
+        // Cache and set the data
         productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
         setProducts(productsList);
+      } else {
+        // Admin pages: try to use Firebase for real functionality
+        // console.log('Admin context: trying Firebase...');
+        try {
+          const productsCollection = collection(db, 'products');
+          const productsSnapshot = await getDocs(productsCollection);
+          const productsList = productsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              sku: (data as { sku?: string }).sku || data?.sku || ''
+            } as Product;
+          });
+
+          // Cache the data
+          productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
+          setProducts(productsList);
+          // console.log('Firebase successful for admin');
+        } catch (firebaseError) {
+          // console.warn('Firebase failed in admin, using mock fallback:', firebaseError);
+          // Fallback to mock even in admin if Firebase fails
+          const productsList = mockProducts.map(product => ({
+            id: product.id,
+            nombre: product.nombre,
+            precio: product.precio,
+            descripcion: product.descripcion,
+            imagen: product.imagen,
+            stock: product.stock,
+            categoria: product.categoria,
+            nuevo: product.nuevo,
+            oferta: product.oferta,
+            sku: product.sku || product.id,
+            activo: true,
+            envioGratis: product.precio > 50000,
+            fechaCreacion: '2024-01-15'
+          } as Product));
+
+          productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
+          setProducts(productsList);
+        }
+      }
     } catch (err) {
-      // Fallback to mock products if Firebase fails
-      console.warn('Firebase error, using mock products:', err);
-      const productsList = mockProducts.map(product => ({
-        id: product.id,
-        nombre: product.nombre,
-        precio: product.precio,
-        descripcion: product.descripcion,
-        imagen: product.imagen,
-        stock: product.stock,
-        categoria: product.categoria,
-        nuevo: product.nuevo,
-        oferta: product.oferta,
-        activo: true,
-        envioGratis: product.precio > 50000,
-        fechaCreacion: '2024-01-15'
-      } as Product));
-      
-      setProducts(productsList);
+      console.error('Error loading products:', err);
+      setError('Error cargando productos');
     } finally {
       setLoading(false);
     }
@@ -78,7 +118,8 @@ export function useProducts() {
       filtered = filtered.filter(product =>
         (product.nombre || '').toLowerCase().includes(query) ||
         (product.descripcion || '').toLowerCase().includes(query) ||
-        (product.categoria || '').toLowerCase().includes(query)
+        (product.categoria || '').toLowerCase().includes(query) ||
+        (product.sku || '').toLowerCase().includes(query)
       );
     }
 
@@ -180,12 +221,17 @@ export function useProducts() {
       setProducts(prev => prev.map(product =>
         product.id === id ? { ...product, ...updatedData } : product
       ));
-      
+
       // Invalidate cache
       productCache.delete('products');
     } catch (error) {
       setError('Error al actualizar el producto');
     }
+  };
+
+  const invalidateCache = () => {
+    productCache.delete('products');
+    loadProducts();
   };
 
   return {
@@ -197,6 +243,7 @@ export function useProducts() {
     removeProduct,
     removeProducts,
     updateProduct,
-    refetch: loadProducts
+    refetch: loadProducts,
+    invalidateCache
   };
 }
