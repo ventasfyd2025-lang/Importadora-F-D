@@ -11,6 +11,7 @@ import { useHomepageConfig } from '@/hooks/useHomepageConfig';
 import { useProductSections } from '@/hooks/useProductSections';
 import { useLayoutPatterns } from '@/hooks/useLayoutPatterns';
 import { useOfferPopup } from '@/hooks/useOfferPopup';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import OfferPopup from '@/components/OfferPopup';
 import BannerCarousel from '@/components/home/BannerCarousel';
 import ProductCarousel from '@/components/home/ProductCarousel';
@@ -70,6 +71,7 @@ export default function RetailHomepage() {
   const { sections: productSections } = useProductSections();
   const { patterns: layoutPatternsConfig } = useLayoutPatterns();
   const { popupConfig } = useOfferPopup();
+  const { formatDateTime } = useClientSideFormat();
   const [notification, setNotification] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
 
@@ -690,7 +692,7 @@ export default function RetailHomepage() {
               </h2>
               {layoutPatternsConfig.updatedAt && (
                 <span className="text-sm text-gray-500">
-                  Layout actualizado: {new Date(layoutPatternsConfig.updatedAt).toLocaleString('es-CL')}
+                  Layout actualizado: {formatDateTime(layoutPatternsConfig.updatedAt)}
                 </span>
               )}
             </div>

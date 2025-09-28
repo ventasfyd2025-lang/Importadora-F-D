@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { 
   collection, 
   addDoc, 
@@ -116,6 +117,7 @@ export default function AdminChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [orderLoading, setOrderLoading] = useState(true);
+  const { formatTime } = useClientSideFormat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadOrder = useCallback(async () => {
@@ -425,7 +427,7 @@ export default function AdminChatPage() {
                         
                         <div className={`flex items-center mt-1 px-3 ${message.isAdmin ? 'justify-end' : 'justify-start'}`}>
                           <span className="text-xs text-gray-500">
-                            {message.timestamp.toLocaleTimeString('es-CL', {
+                            {formatTime(message.timestamp, {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}

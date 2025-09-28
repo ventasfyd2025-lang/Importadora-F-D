@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { 
   collection, 
   addDoc, 
@@ -76,6 +77,7 @@ export default function AdminChatPopup({ order, isOpen, onClose }: AdminChatPopu
   const [loading, setLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { formatDate, formatTime } = useClientSideFormat();
 
   useEffect(() => {
     if (!isOpen || !order) return;
@@ -356,7 +358,7 @@ export default function AdminChatPopup({ order, isOpen, onClose }: AdminChatPopu
                           <p className="text-xs text-gray-600 mt-1">{step.description}</p>
                           {step.date && (
                             <p className="text-xs text-gray-500 mt-1">
-                              {step.date.toLocaleDateString('es-CL', {
+                              {formatDate(step.date, {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric',
@@ -421,7 +423,7 @@ export default function AdminChatPopup({ order, isOpen, onClose }: AdminChatPopu
                         
                         <div className={`flex items-center mt-1 px-3 ${message.isAdmin ? 'justify-end' : 'justify-start'}`}>
                           <span className="text-xs text-gray-500">
-                            {message.timestamp.toLocaleTimeString('es-CL', {
+                            {formatTime(message.timestamp, {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}

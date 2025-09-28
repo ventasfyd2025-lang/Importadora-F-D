@@ -800,6 +800,7 @@ export default function AdminPage() {
   const [showSubcategoryModal, setShowSubcategoryModal] = useState(false);
   const [selectedCategoryForSub, setSelectedCategoryForSub] = useState<string>('');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -1533,18 +1534,29 @@ export default function AdminPage() {
     return timeline.filter(item => order.status !== 'cancelled');
   };
 
+  const toggleGroupExpansion = (groupIndex: number) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupIndex)) {
+      newExpanded.delete(groupIndex);
+    } else {
+      newExpanded.add(groupIndex);
+    }
+    setExpandedGroups(newExpanded);
+  };
+
   const groupOrdersByUser = (orders: Order[]) => {
     const grouped: { [key: string]: Order[] } = {};
-    
+
     orders.forEach(order => {
-      const key = `${order.customerEmail}-${order.id}`;
+      // Group by user email OR user ID, prioritizing email
+      const key = order.customerEmail || 'unknown-user';
       if (!grouped[key]) {
         grouped[key] = [];
       }
       grouped[key].push(order);
     });
 
-    // Convert to array and sort each group by date
+    // Convert to array and sort each group by date (most recent first)
     return Object.values(grouped).map(userOrders => {
       return userOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }).sort((a, b) => new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime());
@@ -2087,20 +2099,30 @@ export default function AdminPage() {
                         <React.Fragment key={`group-${groupIndex}`}>
                           <tr key={mainOrder.id} className={totalUserOrders > 1 ? 'bg-blue-50' : ''}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {mainOrder.customerName}
-                              {totalUserOrders > 1 && (
-                                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  {totalUserOrders} pedidos
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {mainOrder.customerEmail}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {mainOrder.customerPhone}
+                          <div className="flex items-center">
+                            {totalUserOrders > 1 && (
+                              <button
+                                onClick={() => toggleGroupExpansion(groupIndex)}
+                                className="mr-2 p-1 rounded hover:bg-blue-200 transition-colors"
+                              >
+                                {expandedGroups.has(groupIndex) ? '▼' : '▶'}
+                              </button>
+                            )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {mainOrder.customerName}
+                                {totalUserOrders > 1 && (
+                                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {totalUserOrders} pedidos
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {mainOrder.customerEmail}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {mainOrder.customerPhone}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -2193,6 +2215,85 @@ export default function AdminPage() {
                           </div>
                         </td>
                       </tr>
+
+                      {/* Show individual orders when expanded */}
+                      {totalUserOrders > 1 && expandedGroups.has(groupIndex) && userOrders.slice(1).map((order, orderIndex) => (
+                        <tr key={`${groupIndex}-${orderIndex + 1}`} className="bg-blue-25 border-l-4 border-blue-300">
+                          <td className="px-6 py-3 whitespace-nowrap pl-12">
+                            <div className="text-sm text-gray-700">
+                              <div className="font-medium">Pedido #{order.id.slice(-8).toUpperCase()}</div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(order.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {formatPrice(order.total)}
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap">
+                            <select
+                              value={order.status}
+                              onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                              className="text-xs border border-gray-300 rounded px-2 py-1"
+                            >
+                              <option value="pending">Pendiente</option>
+                              <option value="confirmed">Confirmado</option>
+                              <option value="preparing">Preparando</option>
+                              <option value="shipped">Enviado</option>
+                              <option value="delivered">Entregado</option>
+                              <option value="cancelled">Cancelado</option>
+                            </select>
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap">
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {getOrderTimeline(order).map((step, index) => {
+                                const IconComponent = step.icon;
+                                return (
+                                  <div key={step.status} className="flex items-center">
+                                    <div className="flex flex-col items-center">
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 shadow-sm ${
+                                        step.completed
+                                          ? 'bg-green-500 text-white border-green-500'
+                                          : 'bg-gray-200 text-gray-500 border-gray-300'
+                                      }`}>
+                                        <IconComponent className="h-3 w-3" />
+                                      </div>
+                                      <span className={`text-xs mt-1 font-medium ${
+                                        step.completed ? 'text-green-600' : 'text-gray-500'
+                                      }`}>
+                                        {step.title}
+                                      </span>
+                                    </div>
+                                    {index < getOrderTimeline(order).length - 1 && (
+                                      <div className={`flex-1 h-0.5 mx-1 ${
+                                        step.completed ? 'bg-green-500' : 'bg-gray-300'
+                                      }`} style={{width: '15px'}}></div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openChatPopup(order)}
+                                className="relative bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded-md text-xs transition-colors"
+                              >
+                                💬 Chat
+                                {getOrderMessageCount(order.id) > 0 && (
+                                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                                    {getOrderMessageCount(order.id) > 9 ? '9+' : getOrderMessageCount(order.id)}
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                         </React.Fragment>
                       );
                     })}

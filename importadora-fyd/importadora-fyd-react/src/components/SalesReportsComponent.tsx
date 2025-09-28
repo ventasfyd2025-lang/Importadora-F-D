@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSalesReports } from '@/hooks/useSalesReports';
 import { DailySalesReport, MonthlySalesReport } from '@/types/reports';
 import { generateMonthlySalesPDF } from '@/utils/pdfGenerator';
@@ -33,7 +33,7 @@ export default function SalesReportsComponent() {
   const [recentReports, setRecentReports] = useState<DailySalesReport[]>([]);
 
   // Cargar reporte diario
-  const loadDailyReport = async (date: string) => {
+  const loadDailyReport = useCallback(async (date: string) => {
     try {
       let report = await getDailyReport(date);
       if (!report) {
@@ -43,20 +43,20 @@ export default function SalesReportsComponent() {
     } catch (error) {
       console.error('Error cargando reporte diario:', error);
     }
-  };
+  }, [getDailyReport, generateDailyReport]);
 
   // Cargar reporte mensual
-  const loadMonthlyReport = async (month: string) => {
+  const loadMonthlyReport = useCallback(async (month: string) => {
     try {
       const report = await generateMonthlyReport(month);
       setMonthlyReport(report);
     } catch (error) {
       console.error('Error cargando reporte mensual:', error);
     }
-  };
+  }, [generateMonthlyReport]);
 
   // Cargar reportes recientes
-  const loadRecentReports = async () => {
+  const loadRecentReports = useCallback(async () => {
     try {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -65,7 +65,7 @@ export default function SalesReportsComponent() {
     } catch (error) {
       console.error('Error cargando reportes recientes:', error);
     }
-  };
+  }, [getReportsInRange]);
 
   // Generar reporte PDF
   const generatePDF = () => {

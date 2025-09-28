@@ -1,0 +1,39 @@
+'use client';
+
+import { useState } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { auth } from '@/lib/firebase';
+
+export function useEmailSender() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const sendOrderEmail = async (orderId: string, email?: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const functions = getFunctions(auth.app);
+      const sendManualOrderEmail = httpsCallable(functions, 'sendManualOrderEmail');
+
+      const result = await sendManualOrderEmail({ orderId, email });
+
+      console.log('Email sent successfully:', result.data);
+      return { success: true, data: result.data };
+    } catch (err: any) {
+      const errorMessage = err.message || 'Error al enviar email';
+      setError(errorMessage);
+      console.error('Error sending email:', err);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    sendOrderEmail,
+    isLoading,
+    error,
+    clearError: () => setError(null)
+  };
+}

@@ -48,7 +48,14 @@ export function useBankConfig() {
           setBankConfig(DEFAULT_BANK_CONFIG);
         }
       } catch (error) {
-        console.error('Error loading bank config:', error);
+        // Log only if it's not a permission error (permission errors are expected for non-admin users)
+        const isPermissionError = error instanceof Error &&
+          (error.message.includes('permission') || error.message.includes('insufficient'));
+
+        if (!isPermissionError) {
+          console.error('Error loading bank config:', error);
+        }
+
         // If there's an error (like permissions), use default config
         setBankConfig(DEFAULT_BANK_CONFIG);
       } finally {

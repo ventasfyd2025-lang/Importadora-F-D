@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  ChatBubbleLeftRightIcon, 
-  XMarkIcon, 
+import {
+  ChatBubbleLeftRightIcon,
+  XMarkIcon,
   PaperAirplaneIcon,
   UserIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { 
   collection, 
   addDoc, 
@@ -43,6 +44,7 @@ export default function ChatWidget({ orderId, className = '' }: ChatWidgetProps)
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { formatTime } = useClientSideFormat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { currentUser, isRegistered } = useUserAuth();
 
@@ -221,7 +223,7 @@ export default function ChatWidget({ orderId, className = '' }: ChatWidgetProps)
                     <p className={`text-xs mt-1 ${
                       message.isAdmin ? 'text-gray-500' : 'text-orange-100'
                     }`}>
-                      {message.timestamp.toLocaleTimeString('es-CL', {
+                      {formatTime(message.timestamp, {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { 
   collection, 
   addDoc, 
@@ -105,24 +106,31 @@ const statusConfig = {
     icon: CheckCircleIcon,
     description: '¡Tu pedido ha sido entregado exitosamente!'
   },
-  cancelled: { 
-    label: 'Cancelado', 
-    color: 'text-red-600 bg-red-50 border-red-200', 
+  cancelled: {
+    label: 'Cancelado',
+    color: 'text-red-600 bg-red-50 border-red-200',
     icon: XCircleIcon,
     description: 'Este pedido ha sido cancelado'
+  },
+  pending_verification: {
+    label: 'Pendiente de verificación',
+    color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+    icon: ClockIcon,
+    description: 'Hemos recibido tu comprobante de pago y estamos verificando la transferencia'
   }
 };
 
 const getTimelineSteps = (status: string) => {
   const steps = [
     { key: 'pending', label: 'Pedido recibido' },
+    { key: 'pending_verification', label: 'Verificando pago' },
     { key: 'confirmed', label: 'Confirmado' },
     { key: 'preparing', label: 'Preparando' },
     { key: 'shipped', label: 'Enviado' },
     { key: 'delivered', label: 'Entregado' }
   ];
 
-  const statusOrder = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered'];
+  const statusOrder = ['pending', 'pending_verification', 'confirmed', 'preparing', 'shipped', 'delivered'];
   const currentIndex = statusOrder.indexOf(status);
   
   return steps.map((step, index) => ({
@@ -143,6 +151,7 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [orderLoading, setOrderLoading] = useState(true);
+  const { formatTime } = useClientSideFormat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadOrder = useCallback(async () => {
@@ -293,7 +302,10 @@ export default function ChatPage() {
   }
 
   const timelineSteps = getTimelineSteps(order.status);
-  const StatusIcon = statusConfig[order.status].icon;
+
+  // Protección defensiva para estados no definidos
+  const currentStatusConfig = statusConfig[order.status] || statusConfig.pending;
+  const StatusIcon = currentStatusConfig.icon;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -312,9 +324,9 @@ export default function ChatPage() {
                 <h1 className="text-xl font-semibold text-gray-900">
                   Chat - Pedido #{orderId.slice(-8).toUpperCase()}
                 </h1>
-                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${statusConfig[order.status].color}`}>
+                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${currentStatusConfig.color}`}>
                   <StatusIcon className="h-3 w-3 mr-1" />
-                  {statusConfig[order.status].label}
+                  {currentStatusConfig.label}
                 </div>
               </div>
             </div>
@@ -364,8 +376,8 @@ export default function ChatPage() {
                 ))}
               </div>
               
-              <div className={`mt-4 p-3 rounded-lg border ${statusConfig[order.status].color}`}>
-                <p className="text-sm">{statusConfig[order.status].description}</p>
+              <div className={`mt-4 p-3 rounded-lg border ${currentStatusConfig.color}`}>
+                <p className="text-sm">{currentStatusConfig.description}</p>
               </div>
             </div>
 
@@ -466,7 +478,7 @@ export default function ChatPage() {
                         
                         <div className={`flex items-center mt-1 px-3 ${message.isAdmin ? 'justify-start' : 'justify-end'}`}>
                           <span className="text-xs text-gray-500">
-                            {message.timestamp.toLocaleTimeString('es-CL', {
+                            {formatTime(message.timestamp, {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}

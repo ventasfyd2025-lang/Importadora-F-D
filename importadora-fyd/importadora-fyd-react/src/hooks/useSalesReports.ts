@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   collection,
   doc,
@@ -18,7 +18,7 @@ export function useSalesReports() {
   const [error, setError] = useState<string | null>(null);
 
   // Generar reporte diario basado en pedidos del día
-  const generateDailyReport = async (date: string = new Date().toISOString().split('T')[0]) => {
+  const generateDailyReport = useCallback(async (date: string = new Date().toISOString().split('T')[0]) => {
     try {
       setLoading(true);
       setError(null);
@@ -27,7 +27,7 @@ export function useSalesReports() {
       // const { generateDailyReportUtil } = await import('@/utils/reportUtils');
       // const dailyReport = await generateDailyReportUtil(date);
       const dailyReport = null;
-      
+
       return dailyReport;
     } catch (error) {
       setError('Error generando reporte diario');
@@ -35,10 +35,10 @@ export function useSalesReports() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Obtener reporte diario
-  const getDailyReport = async (date: string) => {
+  const getDailyReport = useCallback(async (date: string) => {
     try {
       const reportDoc = await getDoc(doc(db, 'daily_reports', `daily_${date}`));
       if (reportDoc.exists()) {
@@ -49,10 +49,10 @@ export function useSalesReports() {
       setError('Error obteniendo reporte diario');
       throw error;
     }
-  };
+  }, []);
 
   // Generar reporte mensual
-  const generateMonthlyReport = async (month: string) => {
+  const generateMonthlyReport = useCallback(async (month: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -124,10 +124,10 @@ export function useSalesReports() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Obtener reportes de un rango de fechas
-  const getReportsInRange = async (startDate: string, endDate: string) => {
+  const getReportsInRange = useCallback(async (startDate: string, endDate: string) => {
     try {
       const reportsQuery = query(
         collection(db, 'daily_reports'),
@@ -142,7 +142,7 @@ export function useSalesReports() {
       setError('Error obteniendo reportes');
       throw error;
     }
-  };
+  }, []);
 
   return {
     loading,

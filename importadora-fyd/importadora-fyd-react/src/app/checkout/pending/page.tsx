@@ -88,7 +88,7 @@ function PaymentPendingContent() {
                 Próximos pasos:
               </h3>
               <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Recibirás un email cuando se procese el pago</li>
+                <li>• Te notificaremos cuando se procese el pago</li>
                 <li>• Puedes revisar el estado en &quot;Mis Pedidos&quot;</li>
                 <li>• El producto se reservará por 24 horas</li>
               </ul>
