@@ -893,16 +893,25 @@ export default function AdminPage() {
   const loadUsers = async () => {
     try {
       setUsersLoading(true);
+      console.log('Loading users from Firestore...');
       const usersQuery = query(collection(db, 'users'));
       const snapshot = await getDocs(usersQuery);
-      const usersData = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        uid: doc.id
-      })) as UserProfile[];
+      console.log('Users snapshot:', snapshot.size, 'documents');
 
+      const usersData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('User document:', doc.id, data);
+        return {
+          ...data,
+          uid: doc.id
+        };
+      }) as UserProfile[];
+
+      console.log('Loaded users:', usersData);
       setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
+      alert('Error cargando usuarios: ' + error);
     } finally {
       setUsersLoading(false);
     }
@@ -2120,11 +2129,34 @@ export default function AdminPage() {
         {activeTab === 'roles' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">👥 Gestión de Roles</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">👥 Gestión de Roles</h2>
+                <button
+                  onClick={loadUsers}
+                  disabled={usersLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
+                >
+                  {usersLoading ? 'Cargando...' : '🔄 Recargar Usuarios'}
+                </button>
+              </div>
 
               {usersLoading ? (
                 <div className="text-center py-8">
                   <div className="text-xl">Cargando usuarios...</div>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 text-6xl mb-4">👥</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay usuarios encontrados</h3>
+                  <p className="text-gray-600 mb-4">
+                    Puede que no haya usuarios registrados o que haya un problema de conexión con Firebase.
+                  </p>
+                  <button
+                    onClick={loadUsers}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+                  >
+                    🔄 Intentar de nuevo
+                  </button>
                 </div>
               ) : (
                 <>
