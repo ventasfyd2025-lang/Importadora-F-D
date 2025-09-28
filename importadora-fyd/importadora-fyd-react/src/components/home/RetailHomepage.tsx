@@ -329,11 +329,14 @@ export default function RetailHomepage() {
       }
     }
     
-    // Fill remaining slots with random products
+    // Fill remaining slots with deterministic selection (avoid Math.random for SSR consistency)
     const remaining = productList.filter(p => !diverseProducts.includes(p));
+    let seed = 1; // Use a consistent seed
     while (diverseProducts.length < count && remaining.length > 0) {
-      const randomIndex = Math.floor(Math.random() * remaining.length);
-      diverseProducts.push(remaining.splice(randomIndex, 1)[0]);
+      // Simple LCG (Linear Congruential Generator) for deterministic pseudo-random selection
+      seed = (seed * 9301 + 49297) % 233280;
+      const index = Math.floor((seed / 233280) * remaining.length);
+      diverseProducts.push(remaining.splice(index, 1)[0]);
     }
     
     return diverseProducts.slice(0, count);

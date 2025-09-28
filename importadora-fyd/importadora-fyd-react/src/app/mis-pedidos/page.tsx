@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
@@ -99,6 +100,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const router = useRouter();
+  const { formatDateTime, formatDate } = useClientSideFormat();
 
   useEffect(() => {
     if (!loading && !isRegistered) {
@@ -219,13 +221,7 @@ export default function OrdersPage() {
                             Pedido #{order.id.slice(-8).toUpperCase()}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {order.createdAt.toLocaleDateString('es-CL', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {formatDateTime(order.createdAt)}
                           </p>
                         </div>
                       </div>
@@ -318,7 +314,7 @@ export default function OrdersPage() {
                         </div>
 
                         <div className="text-sm text-gray-500">
-                          Última actualización: {order.updatedAt.toLocaleDateString('es-CL')}
+                          Última actualización: {formatDate(order.updatedAt)}
                         </div>
                       </div>
                     </div>

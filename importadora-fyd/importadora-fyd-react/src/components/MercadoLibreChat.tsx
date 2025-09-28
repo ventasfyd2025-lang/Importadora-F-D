@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useFooterConfig } from '@/hooks/useFooterConfig';
+import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { 
   collection, 
   addDoc, 
@@ -54,6 +55,7 @@ export default function MercadoLibreChat({ orderId, className = '' }: MercadoLib
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useUserAuth();
   const { footerConfig } = useFooterConfig();
+  const { formatTime } = useClientSideFormat();
 
   const whatsappUrl = footerConfig?.socialMedia?.whatsapp?.trim();
   // Chat general siempre redirije a WhatsApp, chat de pedidos usa chat interno
@@ -397,10 +399,7 @@ export default function MercadoLibreChat({ orderId, className = '' }: MercadoLib
                         
                         <div className={`flex items-center mt-1 px-3 ${message.isAdmin ? 'justify-start' : 'justify-end'}`}>
                           <span className="text-xs text-gray-500">
-                            {message.timestamp.toLocaleTimeString('es-CL', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {formatTime(message.timestamp)}
                           </span>
                           {!message.isAdmin && (
                             <div className="ml-2">
