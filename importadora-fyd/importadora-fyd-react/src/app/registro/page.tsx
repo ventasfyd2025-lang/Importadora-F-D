@@ -114,6 +114,7 @@ export default function RegisterPage() {
         formData.lastName,
         formData.phone,
         formData.rut,
+        'cliente', // rol por defecto
         formData.address
       );
       router.push('/');
