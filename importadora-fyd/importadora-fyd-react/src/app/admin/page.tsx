@@ -822,6 +822,7 @@ export default function AdminPage() {
 
   const statusLabelMap: Record<OrderStatus, string> = {
     pending: 'Pendiente',
+    pending_verification: 'Verificando Pago',
     confirmed: 'Confirmado',
     preparing: 'Preparando',
     shipped: 'Enviado',
@@ -831,7 +832,8 @@ export default function AdminPage() {
 
   const statusClassMap: Record<OrderStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-blue-100 text-blue-800',
+    pending_verification: 'bg-blue-100 text-blue-800',
+    confirmed: 'bg-green-100 text-green-800',
     preparing: 'bg-orange-100 text-orange-800',
     shipped: 'bg-purple-100 text-purple-800',
     delivered: 'bg-green-100 text-green-800',
