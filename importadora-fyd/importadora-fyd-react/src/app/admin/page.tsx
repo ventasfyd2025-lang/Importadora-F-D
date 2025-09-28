@@ -10,6 +10,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useFooterConfig } from '@/hooks/useFooterConfig';
 import { useBankConfig } from '@/hooks/useBankConfig';
 import { useLayoutPatterns, DEFAULT_LAYOUT_PATTERNS } from '@/hooks/useLayoutPatterns';
+import { useUserAuth, UserProfile } from '@/hooks/useUserAuth';
 import { 
   collection, 
   getDocs, 
@@ -371,7 +372,12 @@ export default function AdminPage() {
   const { bankConfig, updateBankConfig, loading: bankLoading } = useBankConfig();
   
   const [activeTab, setActiveTab] = useState('dashboard');
-  
+
+  // Users management state
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+
   // Banner management state
   const [bannerForm, setBannerForm] = useState({
     title: '¡Ofertas Especiales!',
@@ -882,6 +888,75 @@ export default function AdminPage() {
       (a, b) => b.lastOrderDate.getTime() - a.lastOrderDate.getTime()
     );
   }, [orders]);
+
+  // Users management functions
+  const loadUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const usersQuery = query(collection(db, 'users'));
+      const snapshot = await getDocs(usersQuery);
+      const usersData = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        uid: doc.id
+      })) as UserProfile[];
+
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'vendedor' | 'cliente') => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        role: newRole
+      });
+
+      // Actualizar estado local
+      setUsers(prev => prev.map(user =>
+        user.uid === userId ? { ...user, role: newRole } : user
+      ));
+
+      setEditingUser(null);
+      alert('Rol actualizado exitosamente');
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      alert('Error al actualizar rol');
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+      setUsers(prev => prev.filter(user => user.uid !== userId));
+      alert('Usuario eliminado exitosamente');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Error al eliminar usuario');
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'bg-red-100 text-red-800 border-red-200';
+      case 'vendedor': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'cliente': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Load users when roles tab is active
+  useEffect(() => {
+    if (activeTab === 'roles') {
+      loadUsers();
+    }
+  }, [activeTab]);
 
   // Product sections state
   const [productSections, setProductSections] = useState([
@@ -1659,6 +1734,7 @@ export default function AdminPage() {
                 { id: 'products', name: 'Productos', icon: '📦' },
                 { id: 'orders', name: 'Pedidos', icon: '🛒', badge: unreadCount > 0 ? unreadCount : null },
                 { id: 'reports', name: 'Reportes', icon: '📈' },
+                { id: 'roles', name: 'Roles', icon: '👥' },
                 { id: 'main-banner', name: 'Banners', icon: '🏆' },
                 { id: 'product-layout', name: 'Layout Productos', icon: '🔲' },
                 { id: 'popup', name: 'Popup Ofertas', icon: '🎉' },
@@ -2039,6 +2115,122 @@ export default function AdminPage() {
         
         {activeTab === 'reports' && (
           <SalesReportsComponent />
+        )}
+
+        {activeTab === 'roles' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">👥 Gestión de Roles</h2>
+
+              {usersLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-xl">Cargando usuarios...</div>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Usuario
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rol
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fecha Registro
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {users.map((user) => (
+                          <tr key={user.uid} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {user.firstName} {user.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500">{user.email}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {editingUser === user.uid ? (
+                                <select
+                                  defaultValue={user.role}
+                                  onChange={(e) => updateUserRole(user.uid, e.target.value as any)}
+                                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                                >
+                                  <option value="cliente">Cliente</option>
+                                  <option value="vendedor">Vendedor</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                              ) : (
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getRoleColor(user.role || 'cliente')}`}>
+                                  {user.role || 'cliente'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString('es-CL') : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                              {editingUser === user.uid ? (
+                                <button
+                                  onClick={() => setEditingUser(null)}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >
+                                  Cancelar
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setEditingUser(user.uid)}
+                                    className="text-indigo-600 hover:text-indigo-900"
+                                  >
+                                    Editar Rol
+                                  </button>
+                                  <button
+                                    onClick={() => deleteUser(user.uid)}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-8 bg-blue-50 rounded-lg p-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Cómo crear usuarios vendedor</h3>
+                    <div className="space-y-3 text-sm text-gray-600">
+                      <p><strong>Opción 1 - Firebase Console:</strong></p>
+                      <ol className="list-decimal list-inside space-y-1 ml-4">
+                        <li>Ve a Firebase Console &gt; Authentication &gt; Users</li>
+                        <li>Haz clic en "Add user"</li>
+                        <li>Ingresa email y contraseña</li>
+                        <li>Aquí cambia el rol a "Vendedor"</li>
+                      </ol>
+
+                      <p className="mt-4"><strong>Opción 2 - Desde el sitio:</strong></p>
+                      <ol className="list-decimal list-inside space-y-1 ml-4">
+                        <li>El vendedor se registra normalmente en /auth</li>
+                        <li>Por defecto tendrá rol "Cliente"</li>
+                        <li>Aquí cambias su rol a "Vendedor"</li>
+                      </ol>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
 
         
