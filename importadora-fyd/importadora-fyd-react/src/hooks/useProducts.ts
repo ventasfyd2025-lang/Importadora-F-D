@@ -30,12 +30,25 @@ export function useProducts() {
       setLoading(true);
       setError(null);
 
-      // Check if we're in admin context - use Firebase for admin, mock for public
-      const isAdminContext = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
+      // Always use Firebase for real products data
+      try {
+        const productsCollection = collection(db, 'products');
+        const productsSnapshot = await getDocs(productsCollection);
+        const productsList = productsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            sku: (data as { sku?: string }).sku || data?.sku || ''
+          } as Product;
+        });
 
-      if (!isAdminContext) {
-        // Public pages: use mock products for speed
-        // console.log('Using mock products for public pages...');
+        // Cache the data
+        productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
+        setProducts(productsList);
+      } catch (firebaseError) {
+        console.warn('Firebase failed, using mock fallback:', firebaseError);
+        // Fallback to mock products if Firebase fails
         const productsList = mockProducts.map(product => ({
           id: product.id,
           nombre: product.nombre,
@@ -52,50 +65,8 @@ export function useProducts() {
           fechaCreacion: '2024-01-15'
         } as Product));
 
-        // Cache and set the data
         productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
         setProducts(productsList);
-      } else {
-        // Admin pages: try to use Firebase for real functionality
-        // console.log('Admin context: trying Firebase...');
-        try {
-          const productsCollection = collection(db, 'products');
-          const productsSnapshot = await getDocs(productsCollection);
-          const productsList = productsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              sku: (data as { sku?: string }).sku || data?.sku || ''
-            } as Product;
-          });
-
-          // Cache the data
-          productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
-          setProducts(productsList);
-          // console.log('Firebase successful for admin');
-        } catch (firebaseError) {
-          // console.warn('Firebase failed in admin, using mock fallback:', firebaseError);
-          // Fallback to mock even in admin if Firebase fails
-          const productsList = mockProducts.map(product => ({
-            id: product.id,
-            nombre: product.nombre,
-            precio: product.precio,
-            descripcion: product.descripcion,
-            imagen: product.imagen,
-            stock: product.stock,
-            categoria: product.categoria,
-            nuevo: product.nuevo,
-            oferta: product.oferta,
-            sku: product.sku || product.id,
-            activo: true,
-            envioGratis: product.precio > 50000,
-            fechaCreacion: '2024-01-15'
-          } as Product));
-
-          productCache.set(cacheKey, { data: productsList, timestamp: Date.now() });
-          setProducts(productsList);
-        }
       }
     } catch (err) {
       console.error('Error loading products:', err);

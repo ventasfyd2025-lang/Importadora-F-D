@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Product } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useNotification } from '@/context/NotificationContext';
 
 interface ProductCardProps {
   product: Product;
@@ -17,6 +18,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, customHeight, isSpecial = false }: ProductCardProps) {
   const { addItem } = useCart();
   const { currentUser, loading } = useUserAuth();
+  const { addNotification } = useNotification();
   const router = useRouter();
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -51,16 +53,13 @@ export default function ProductCard({ product, customHeight, isSpecial = false }
       product.sku,
     );
 
-    // Show notification
-    const notification = document.createElement('div');
-    notification.textContent = currentUser ? 'Producto agregado al carrito' : 'Producto agregado al carrito (como invitado)';
-    notification.className = 'fixed top-4 right-4 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-all duration-300';
-    notification.style.backgroundColor = '#28A745';
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
+    // Show notification using unified system
+    addNotification({
+      type: 'success',
+      title: 'Producto agregado al carrito',
+      message: currentUser ? undefined : 'Agregado como invitado',
+      duration: 3000
+    });
   };
 
   const formatPrice = (price: number) => {

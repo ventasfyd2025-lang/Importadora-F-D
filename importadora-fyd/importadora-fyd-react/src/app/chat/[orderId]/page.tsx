@@ -179,11 +179,11 @@ export default function ChatPage() {
   const loadMessages = useCallback(() => {
     if (!currentUser || !orderId) return undefined;
 
-    // Simplificar consulta para evitar error de índice
+    // Use userEmail for consistent filtering across all user types
     const messagesQuery = query(
       collection(db, 'chat_messages'),
       where('orderId', '==', orderId),
-      where('userId', '==', (currentUser as any).uid || (currentUser as any).id)
+      where('userEmail', '==', currentUser.email)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -247,7 +247,7 @@ export default function ChatPage() {
     try {
       const messageData = {
         orderId,
-        userId: (currentUser as any).uid || (currentUser as any).id,
+        userId: currentUser.email, // Use email for consistent filtering
         userEmail: currentUser.email,
         userName: `${currentUser.firstName} ${currentUser.lastName}`,
         message: newMessage.trim(),

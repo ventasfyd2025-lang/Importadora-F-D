@@ -14,10 +14,13 @@ import { db, storage } from '@/lib/firebase';
 
 function CheckoutContent() {
   const router = useRouter();
-  const { items, clearCart, getTotalPrice } = useCart();
+  const { items, clearCart, getTotalPrice, reserveCartStock, releaseCartStock, stockLoading } = useCart();
   const { currentUser, userProfile, isRegistered } = useUserAuth();
   const { bankConfig, loading: bankLoading } = useBankConfig();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [successOrderId, setSuccessOrderId] = useState('');
   const [checkoutData, setCheckoutData] = useState({
     name: '',
     email: '',
@@ -25,6 +28,11 @@ function CheckoutContent() {
     rut: '',
     address: ''
   });
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Auto-populate user data when logged in
   useEffect(() => {
@@ -52,10 +60,10 @@ function CheckoutContent() {
 
   // Redirect if cart is empty
   useEffect(() => {
-    if (items.length === 0) {
+    if (mounted && items.length === 0) {
       router.push('/carrito');
     }
-  }, [items, router]);
+  }, [mounted, items, router]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -93,15 +101,35 @@ function CheckoutContent() {
     }
 
     try {
-      // Subir comprobante a Firebase Storage
+      console.log('🔄 Iniciando proceso de transferencia...');
+      console.log('📁 Archivo del comprobante:', comprobanteFile.name, comprobanteFile.size, 'bytes');
+
+      // Crear ID temporal para la orden
+      const tempOrderId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // PASO 1: Reservar stock antes de continuar
+      console.log('📦 Reservando stock para los productos...');
+      try {
+        await reserveCartStock(tempOrderId);
+        console.log('✅ Stock reservado exitosamente');
+      } catch (stockError) {
+        console.error('❌ Error reservando stock:', stockError);
+        alert(`Error: ${stockError.message}`);
+        setIsProcessing(false);
+        return;
+      }
+
+      // PASO 2: Subir comprobante a Firebase Storage
       const timestamp = Date.now();
       const fileName = `comprobantes/${timestamp}_${comprobanteFile.name}`;
       const storageRef = ref(storage, fileName);
 
+      console.log('☁️ Subiendo comprobante a Storage...');
       await uploadBytes(storageRef, comprobanteFile);
       const comprobanteUrl = await getDownloadURL(storageRef);
+      console.log('✅ Comprobante subido exitosamente:', comprobanteUrl);
 
-      // Crear orden en Firebase CON el comprobante
+      // PASO 3: Crear orden en Firebase CON el comprobante
       const orderData = {
         customerName: finalData.name,
         customerEmail: finalData.email,
@@ -119,14 +147,18 @@ function CheckoutContent() {
         })),
         total: getTotalPrice(),
         status: 'pending_verification' as const, // Estado: esperando verificación de pago
+        stockReservedId: tempOrderId, // ID usado para reservar stock
         createdAt: new Date()
       };
 
+      console.log('📝 Creando orden en Firestore...');
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
+      console.log('✅ Orden creada exitosamente:', orderRef.id);
 
       // Mensaje actualizado para transferencia
       const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n✅ Comprobante recibido exitosamente.\n🔍 Verificaremos tu pago y confirmaremos tu pedido pronto.';
 
+      console.log('💬 Creando mensaje de chat...');
       await addDoc(collection(db, 'chat_messages'), {
         orderId: orderRef.id,
         userId: (currentUser as any)?.uid || finalData.email,
@@ -137,6 +169,7 @@ function CheckoutContent() {
         timestamp: new Date(),
         read: false
       });
+      console.log('✅ Mensaje de chat creado');
 
       // Redirigir a página de éxito completa
       const successUrl = new URLSearchParams({
@@ -147,21 +180,75 @@ function CheckoutContent() {
         total: getTotalPrice().toString()
       });
 
+      console.log('🛒 Limpiando carrito...');
       clearCart();
-      router.push(`/checkout/success?${successUrl.toString()}`);
+
+      // Mostrar estado de éxito en el mismo componente
+      setSuccessOrderId(orderRef.id);
+      setOrderSuccess(true);
+
+      const successPath = `/checkout/success?${successUrl.toString()}`;
+      console.log('🎉 Redirigiendo a página de éxito:', successPath);
+
+      // Redirigir después de 3 segundos
+      setTimeout(() => {
+        window.location.href = successPath;
+      }, 3000);
 
     } catch (error) {
-      console.error('Error procesando pedido:', error);
-      alert('Error al procesar el pedido. Inténtalo de nuevo.');
+      console.error('❌ Error procesando pedido:', error);
+      console.error('❌ Detalles del error:', error.message, error.stack);
+
+      // Si hubo un error después de reservar stock, intentar liberarlo
+      try {
+        console.log('🔄 Intentando liberar stock reservado...');
+        await releaseCartStock();
+        console.log('✅ Stock liberado exitosamente');
+      } catch (releaseError) {
+        console.error('❌ Error liberando stock:', releaseError);
+      }
+
+      alert(`Error al procesar el pedido: ${error.message}. El stock ha sido liberado. Inténtalo de nuevo.`);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (items.length === 0) {
+  // Show loading spinner until mounted to prevent hydration mismatch
+  if (!mounted || items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  // Show success screen if order was completed
+  if (orderSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-green-800 mb-4">¡Pedido Exitoso!</h1>
+          <p className="text-lg text-gray-600 mb-4">
+            Tu pedido #{successOrderId.slice(-8).toUpperCase()} ha sido recibido correctamente.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Hemos recibido tu comprobante de transferencia y te contactaremos pronto para confirmar el pago.
+          </p>
+          <div className="space-y-3">
+            <div className="text-sm text-gray-500">
+              Redirigiendo a la página de confirmación en 3 segundos...
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-green-600 h-2 rounded-full animate-pulse w-full"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -369,10 +456,10 @@ function CheckoutContent() {
                       </Link>
                       <button
                         type="submit"
-                        disabled={isProcessing}
+                        disabled={isProcessing || stockLoading}
                         className="flex-1 py-3 px-6 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {isProcessing ? 'Procesando...' : 'Confirmar pedido'}
+                        {isProcessing ? 'Procesando...' : stockLoading ? 'Verificando stock...' : 'Confirmar pedido'}
                       </button>
                     </div>
                   </div>

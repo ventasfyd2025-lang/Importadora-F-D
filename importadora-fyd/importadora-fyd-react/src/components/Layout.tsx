@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import { NotificationProvider } from '@/context/NotificationContext';
+import NotificationDisplay from './NotificationDisplay';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -31,12 +33,15 @@ export default function Layout({ children }: LayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="min-h-screen" style={{ paddingTop: `${paddingTop}px` }}>
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <NotificationProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="min-h-screen" style={{ paddingTop: `${paddingTop}px` }}>
+          {children}
+        </main>
+        <Footer />
+        <NotificationDisplay />
+      </div>
+    </NotificationProvider>
   );
 }

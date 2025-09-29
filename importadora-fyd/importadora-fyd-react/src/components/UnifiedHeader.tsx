@@ -8,6 +8,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useConfig } from '@/hooks/useConfig';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useI18n } from '@/context/I18nContext';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
@@ -38,6 +39,7 @@ export default function UnifiedHeader() {
   const { logoConfig } = useConfig();
   const { currentUser, isRegistered, isGuest, logout } = useUserAuth();
   const { t } = useI18n();
+  const unreadOrderNotifications = useOrderNotifications();
 
   // Escuchar mensajes no leídos
   useEffect(() => {
@@ -46,12 +48,10 @@ export default function UnifiedHeader() {
       return;
     }
 
-    // Get user ID based on user type
-    const userId = 'uid' in currentUser ? currentUser.uid : currentUser.id;
-
+    // Use email for consistent filtering across all user types (registered and guest)
     const messagesQuery = query(
       collection(db, 'chat_messages'),
-      where('userId', '==', userId),
+      where('userEmail', '==', currentUser.email),
       where('isAdmin', '==', true),
       where('read', '==', false)
     );
@@ -497,9 +497,14 @@ export default function UnifiedHeader() {
                               <Link
                                 href="/mis-pedidos"
                                 onClick={() => setIsUserMenuOpen(false)}
-                                className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 relative"
                               >
                                 Mis Pedidos
+                                {unreadOrderNotifications > 0 && (
+                                  <span className="absolute top-1 right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                                    {unreadOrderNotifications > 9 ? '9+' : unreadOrderNotifications}
+                                  </span>
+                                )}
                               </Link>
                             </>
                           )}

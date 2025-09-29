@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import Layout from '@/components/Layout';
 import { UserIcon, MapPinIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {
   const { currentUser, userProfile, updateUserProfile, isRegistered, loading } = useUserAuth();
+  const unreadOrderNotifications = useOrderNotifications();
   const router = useRouter();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -369,9 +371,14 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={() => router.push('/mis-pedidos')}
-              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base relative"
             >
               <span className="text-gray-700">Ver Mis Pedidos</span>
+              {unreadOrderNotifications > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                  {unreadOrderNotifications > 9 ? '9+' : unreadOrderNotifications}
+                </span>
+              )}
             </button>
             <button
               onClick={() => router.push('/')}

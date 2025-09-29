@@ -159,6 +159,29 @@ export default function VendedorPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('orders');
 
+  // Load orders - moved before conditional returns
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Order[];
+
+      setOrders(ordersData);
+      calculateStats(ordersData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
   // Si no está autenticado, mostrar login
   if (!currentUser) {
     return <VendedorLogin />;
@@ -188,29 +211,6 @@ export default function VendedorPage() {
       </Layout>
     );
   }
-
-  // Load orders
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const ordersQuery = query(
-      collection(db, 'orders'),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
-      const ordersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Order[];
-
-      setOrders(ordersData);
-      calculateStats(ordersData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
 
   const calculateStats = (ordersData: Order[]) => {
     const today = new Date().toISOString().split('T')[0];

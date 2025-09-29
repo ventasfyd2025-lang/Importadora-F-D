@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { CartItem } from '@/types';
+import { useStockManager } from './useStockManager';
 
 export function useCartState() {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [reservedOrderId, setReservedOrderId] = useState<string | null>(null);
+  const { reserveStock, releaseStock, confirmSale, loading: stockLoading } = useStockManager();
 
   // Load cart from localStorage on initial load
   useEffect(() => {
@@ -86,6 +89,61 @@ export function useCartState() {
     return items.reduce((total, item) => total + (item.precio * item.cantidad), 0);
   }, [items]);
 
+  // Reserve stock during checkout
+  const reserveCartStock = useCallback(async (orderId: string) => {
+    if (items.length === 0) return false;
+
+    try {
+      const stockItems = items.map(item => ({
+        productId: item.productId,
+        quantity: item.cantidad,
+        productName: item.nombre
+      }));
+
+      await reserveStock(stockItems, orderId);
+      setReservedOrderId(orderId);
+      return true;
+    } catch (error) {
+      console.error('Error reserving cart stock:', error);
+      throw error;
+    }
+  }, [items, reserveStock]);
+
+  // Release reserved stock (if checkout fails)
+  const releaseCartStock = useCallback(async () => {
+    if (!reservedOrderId || items.length === 0) return false;
+
+    try {
+      const stockItems = items.map(item => ({
+        productId: item.productId,
+        quantity: item.cantidad,
+        productName: item.nombre
+      }));
+
+      await releaseStock(stockItems, reservedOrderId);
+      setReservedOrderId(null);
+      return true;
+    } catch (error) {
+      console.error('Error releasing cart stock:', error);
+      throw error;
+    }
+  }, [items, reservedOrderId, releaseStock]);
+
+  // Confirm sale (convert reservation to confirmed sale)
+  const confirmCartSale = useCallback(async () => {
+    if (!reservedOrderId) return false;
+
+    try {
+      await confirmSale(reservedOrderId);
+      setReservedOrderId(null);
+      clearCart(); // Clear cart after successful sale
+      return true;
+    } catch (error) {
+      console.error('Error confirming cart sale:', error);
+      throw error;
+    }
+  }, [reservedOrderId, confirmSale, clearCart]);
+
   return {
     items,
     addItem,
@@ -93,6 +151,11 @@ export function useCartState() {
     updateQuantity,
     clearCart,
     getTotalItems,
-    getTotalPrice
+    getTotalPrice,
+    reserveCartStock,
+    releaseCartStock,
+    confirmCartSale,
+    reservedOrderId,
+    stockLoading
   };
 }

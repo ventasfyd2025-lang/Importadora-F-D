@@ -5,13 +5,13 @@ const baseMockProducts = [
     precio: 299990,
     precioOriginal: 399990,
     descripcion: 'Smartphone con pantalla de 6.4" Super AMOLED, cámara triple de 50MP y batería de 5000mAh. ¡Ahora con 25% de descuento!',
-    imagen: 'https://images.samsung.com/is/image/samsung/p6pim/cl/2302/gallery/cl-galaxy-a54-5g-sm-a546-sm-a546ezklltc-534845094',
+    imagen: '/api/placeholder/400/300?text=Samsung+Galaxy+A54',
     stock: 15,
     categoria: 'electronicos',
     nuevo: true,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '2',
@@ -19,13 +19,13 @@ const baseMockProducts = [
     precio: 159990,
     precioOriginal: 199990,
     descripcion: 'Auriculares inalámbricos con cancelación de ruido, hasta 35 horas de batería. ¡Oferta especial!',
-    imagen: 'https://www.sony.cl/image/5d02da5df552836db894cad34f4d8e2c?fmt=pjpeg&wid=330&bgcolor=FFFFFF&bgc=FFFFFF',
+    imagen: '/api/placeholder/400/300?text=Sony+WH-CH720N',
     stock: 8,
     categoria: 'electronicos',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '3',
@@ -33,13 +33,13 @@ const baseMockProducts = [
     precio: 89990,
     precioOriginal: 119990,
     descripcion: 'Cafetera compacta para cápsulas Nespresso, ideal para espacios pequeños. ¡Precio especial!',
-    imagen: 'https://www.nespresso.com/shared_res/agility/global/images/products/machines/essenza-mini/essenza-mini-black.png',
+    imagen: '/api/placeholder/400/300?text=Nespresso+Essenza',
     stock: 12,
     categoria: 'hogar',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '4',
@@ -47,26 +47,26 @@ const baseMockProducts = [
     precio: 129990,
     precioOriginal: 169990,
     descripcion: 'Zapatillas deportivas con tecnología Air Max para máxima comodidad. ¡Descuento del 23%!',
-    imagen: 'https://static.nike.com/a/images/t_PDP_1280_v1/f_auto,q_auto:eco/awjogtdnqxniqqk0wpgf/air-max-270-shoes-9B2pSM.png',
+    imagen: '/api/placeholder/400/300?text=Nike+Air+Max+270',
     stock: 20,
     categoria: 'deportes',
     nuevo: true,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '5',
     nombre: 'Polera Básica Uniqlo',
     precio: 12990,
     descripcion: 'Polera de algodón 100%, corte regular, disponible en varios colores',
-    imagen: 'https://www.uniqlo.com/jp/api/cloudfronturl/images/goods/422990/item/09_422990.jpg',
+    imagen: '/api/placeholder/400/300?text=Polera+Uniqlo',
     stock: 50,
     categoria: 'ropa',
     nuevo: false,
     oferta: false,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '6',
@@ -74,26 +74,26 @@ const baseMockProducts = [
     precio: 199990,
     precioOriginal: 249990,
     descripcion: 'Monitor LED IPS de 24 pulgadas con resolución Full HD 1920x1080. ¡Ahorra $50.000!',
-    imagen: 'https://www.lg.com/us/images/monitors/md07515962/gallery/desktop-01.jpg',
+    imagen: '/api/placeholder/400/300?text=Monitor+LG+24',
     stock: 7,
     categoria: 'electronicos',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '7',
     nombre: 'Lámpara de Mesa Moderna',
     precio: 45990,
     descripcion: 'Lámpara de mesa con diseño minimalista, ideal para escritorio u oficina',
-    imagen: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+    imagen: '/api/placeholder/400/300?text=Lámpara+Mesa',
     stock: 25,
     categoria: 'hogar',
     nuevo: true,
     oferta: false,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '8',
@@ -101,13 +101,13 @@ const baseMockProducts = [
     precio: 79990,
     precioOriginal: 99990,
     descripcion: 'Chaqueta deportiva con material transpirable, perfecta para entrenamientos. ¡20% de descuento!',
-    imagen: 'https://assets.adidas.com/images/h_840,f_auto,q_auto,fl_lossy,c_fill,g_auto/8413ed47b7a444e995b7af4b00ccafed_9366/Chaqueta_con_Capucha_Essentials_3_Franjas_Negro_H12227_01_laydown.jpg',
+    imagen: '/api/placeholder/400/300?text=Chaqueta+Adidas',
     stock: 18,
     categoria: 'deportes',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '9',
@@ -115,13 +115,13 @@ const baseMockProducts = [
     precio: 189990,
     precioOriginal: 249990,
     descripcion: 'Tablet de 10.5" con procesador Helio G80 y 4GB RAM. ¡Ahorra $60.000!',
-    imagen: 'https://images.samsung.com/is/image/samsung/p6pim/cl/sm-x200nzaalto/gallery/cl-galaxy-tab-a8-x200-sm-x200nzaalto-531472693',
+    imagen: '/api/placeholder/400/300?text=Samsung+Tab+A8',
     stock: 8,
     categoria: 'electronicos',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '10',
@@ -129,13 +129,13 @@ const baseMockProducts = [
     precio: 69990,
     precioOriginal: 89990,
     descripcion: 'Zapatillas de running cómodas para uso diario. ¡Precio especial!',
-    imagen: 'https://static.nike.com/a/images/t_PDP_1280_v1/f_auto,q_auto:eco/779bcabc-a1b1-47c2-9e9a-ca6e59c6b8a1/revolution-6-running-shoes-hhYFNV.png',
+    imagen: '/api/placeholder/400/300?text=Nike+Revolution+6',
     stock: 15,
     categoria: 'deportes',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '11',
@@ -143,13 +143,13 @@ const baseMockProducts = [
     precio: 119990,
     precioOriginal: 149990,
     descripcion: 'Microondas digital de 23 litros con grill. ¡20% de descuento!',
-    imagen: 'https://www.lg.com/cl/images/microondas/md07501852/gallery/large01.jpg',
+    imagen: '/api/placeholder/400/300?text=Microondas+LG',
     stock: 6,
     categoria: 'hogar',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '12',
@@ -157,13 +157,13 @@ const baseMockProducts = [
     precio: 279990,
     precioOriginal: 329990,
     descripcion: 'Apple Watch SE de 44mm con GPS. ¡Oferta por tiempo limitado!',
-    imagen: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/watch-se-gps-aluminum-midnight-sport-loop-midnight-1up',
+    imagen: '/api/placeholder/400/300?text=Apple+Watch+SE',
     stock: 4,
     categoria: 'electronicos',
     nuevo: true,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '13',
@@ -171,52 +171,52 @@ const baseMockProducts = [
     precio: 59990,
     precioOriginal: 79990,
     descripcion: 'Jeans clásicos Levi\'s 501 en algodón 100%. ¡25% de descuento!',
-    imagen: 'https://lsco.scene7.com/is/image/lsco/005013000450050-front-pdp-ld',
+    imagen: '/api/placeholder/400/300?text=Jeans+Levis+501',
     stock: 12,
     categoria: 'ropa',
     nuevo: false,
     oferta: true,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '16',
     nombre: 'Audífonos Bluetooth Premium',
     precio: 79990,
     descripcion: 'Audífonos inalámbricos con cancelación de ruido y 30 horas de batería.',
-    imagen: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&h=500&fit=crop',
+    imagen: '/api/placeholder/400/300?text=Audífonos+Bluetooth',
     stock: 25,
     categoria: 'electronicos',
     nuevo: false,
     oferta: false,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '14',
     nombre: 'Mochila de Viaje',
     precio: 45990,
     descripcion: 'Mochila ergonómica con múltiples compartimentos y material impermeable.',
-    imagen: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop',
+    imagen: '/api/placeholder/400/300?text=Mochila+Viaje',
     stock: 18,
     categoria: 'deportes',
     nuevo: false,
     oferta: false,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   },
   {
     id: '15',
     nombre: 'Set de Sartenes Antiadherentes',
     precio: 89990,
     descripcion: 'Set de 3 sartenes con recubrimiento cerámico libre de PFOA.',
-    imagen: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    imagen: '/api/placeholder/400/300?text=Set+Sartenes',
     stock: 12,
     categoria: 'hogar',
     nuevo: false,
     oferta: false,
     activo: true,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: '2024-01-15T10:30:00.000Z'
   }
 ];
 

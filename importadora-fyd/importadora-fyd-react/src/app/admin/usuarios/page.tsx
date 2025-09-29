@@ -125,7 +125,12 @@ export default function UsuariosAdminPage() {
             <p className="text-gray-600">Administra roles y permisos de usuarios</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Administradores y Vendedores */}
+          <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+            <div className="px-6 py-4 bg-red-50 border-b border-red-200">
+              <h3 className="text-lg font-medium text-red-900">👑 Administradores y Vendedores</h3>
+              <p className="text-sm text-red-700">Personal autorizado con permisos especiales</p>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -145,7 +150,7 @@ export default function UsuariosAdminPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
+                  {users.filter(user => user.role === 'admin' || user.role === 'vendedor').map((user) => (
                     <tr key={user.uid} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -173,7 +178,110 @@ export default function UsuariosAdminPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString('es-CL') : 'N/A'}
+                        {user.createdAt ? (() => {
+                          try {
+                            const date = user.createdAt.toDate ? user.createdAt.toDate() : new Date(user.createdAt);
+                            return date.toLocaleDateString('es-CL');
+                          } catch (error) {
+                            return 'Fecha inválida';
+                          }
+                        })() : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        {editingUser === user.uid ? (
+                          <button
+                            onClick={() => setEditingUser(null)}
+                            className="text-gray-600 hover:text-gray-900"
+                          >
+                            Cancelar
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setEditingUser(user.uid)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Editar Rol
+                            </button>
+                            {user.uid !== userProfile?.uid && (
+                              <button
+                                onClick={() => deleteUser(user.uid)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Clientes */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="px-6 py-4 bg-green-50 border-b border-green-200">
+              <h3 className="text-lg font-medium text-green-900">👥 Clientes</h3>
+              <p className="text-sm text-green-700">Usuarios registrados de la tienda</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuario
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rol
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Fecha Registro
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.filter(user => !user.role || user.role === 'cliente').map((user) => (
+                    <tr key={user.uid} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.firstName} {user.lastName}
+                          </div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {editingUser === user.uid ? (
+                          <select
+                            defaultValue={user.role || 'cliente'}
+                            onChange={(e) => updateUserRole(user.uid, e.target.value as any)}
+                            className="text-sm border border-gray-300 rounded px-2 py-1"
+                          >
+                            <option value="cliente">Cliente</option>
+                            <option value="vendedor">Vendedor</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getRoleColor(user.role || 'cliente')}`}>
+                            {user.role || 'cliente'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.createdAt ? (() => {
+                          try {
+                            const date = user.createdAt.toDate ? user.createdAt.toDate() : new Date(user.createdAt);
+                            return date.toLocaleDateString('es-CL');
+                          } catch (error) {
+                            return 'Fecha inválida';
+                          }
+                        })() : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         {editingUser === user.uid ? (

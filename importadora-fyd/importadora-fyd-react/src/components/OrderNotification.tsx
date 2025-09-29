@@ -26,9 +26,10 @@ export default function OrderNotification() {
   useEffect(() => {
     if (!currentUser) return;
 
+    // Use userEmail for consistent filtering across all user types
     const messagesQuery = query(
       collection(db, 'chat_messages'),
-      where('userId', '==', (currentUser as any).uid || (currentUser as any).id),
+      where('userEmail', '==', currentUser.email),
       where('isAdmin', '==', true),
       where('read', '==', false)
     );

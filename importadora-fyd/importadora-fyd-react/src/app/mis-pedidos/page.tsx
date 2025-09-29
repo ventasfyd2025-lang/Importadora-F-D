@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useClientSideFormat } from '@/hooks/useClientSideFormat';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   ShoppingBagIcon, 
@@ -101,6 +101,33 @@ export default function OrdersPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const router = useRouter();
   const { formatDateTime, formatDate } = useClientSideFormat();
+
+  // Mark admin messages as read when user visits this page
+  useEffect(() => {
+    if (currentUser?.email) {
+      const markMessagesAsRead = async () => {
+        try {
+          const messagesQuery = query(
+            collection(db, 'chat_messages'),
+            where('userEmail', '==', currentUser.email),
+            where('isAdmin', '==', true),
+            where('read', '==', false)
+          );
+
+          const snapshot = await getDocs(messagesQuery);
+          const batch = snapshot.docs.map(doc =>
+            updateDoc(doc.ref, { read: true })
+          );
+
+          await Promise.all(batch);
+        } catch (error) {
+          console.error('Error marking messages as read:', error);
+        }
+      };
+
+      markMessagesAsRead();
+    }
+  }, [currentUser?.email]);
 
   useEffect(() => {
     if (!loading && !isRegistered) {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -119,6 +120,28 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+
+          {/* Google Sign-In */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">O continúa con</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <GoogleSignInButton
+                mode="signin"
+                onSuccess={() => router.push('/')}
+                onError={(error) => setError(error)}
+                size="md"
+                variant="outline"
+              />
+            </div>
+          </div>
 
           <div className="mt-6">
             <div className="relative">

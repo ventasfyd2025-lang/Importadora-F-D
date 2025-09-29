@@ -12,6 +12,11 @@ interface CartContextType {
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
+  reserveCartStock: (orderId: string) => Promise<boolean>;
+  releaseCartStock: () => Promise<boolean>;
+  confirmCartSale: () => Promise<boolean>;
+  reservedOrderId: string | null;
+  stockLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);

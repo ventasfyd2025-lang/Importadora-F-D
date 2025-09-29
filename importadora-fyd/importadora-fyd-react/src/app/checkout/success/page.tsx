@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircleIcon, ClockIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface OrderInfo {
   orderId: string;
@@ -18,6 +19,7 @@ interface OrderInfo {
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const unreadOrderNotifications = useOrderNotifications();
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
 
   const orderId = searchParams.get('orderId');
@@ -186,9 +188,14 @@ function PaymentSuccessContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Link
                 href="/mis-pedidos"
-                className="flex items-center justify-center py-3 px-6 border border-transparent rounded-lg text-base font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors shadow-md hover:shadow-lg"
+                className="flex items-center justify-center py-3 px-6 border border-transparent rounded-lg text-base font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors shadow-md hover:shadow-lg relative"
               >
                 📦 Ver Mis Pedidos
+                {unreadOrderNotifications > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                    {unreadOrderNotifications > 9 ? '9+' : unreadOrderNotifications}
+                  </span>
+                )}
               </Link>
 
               <Link
