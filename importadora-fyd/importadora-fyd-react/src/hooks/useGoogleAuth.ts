@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import { useState } from 'react';
 import {
@@ -125,7 +125,7 @@ export function useGoogleAuth() {
       provider.addScope('email');
       provider.addScope('profile');
 
-      const result = await linkWithCredential(currentUser, provider.credential!);
+      const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
       console.log('✅ Google account linked successfully:', user.email);

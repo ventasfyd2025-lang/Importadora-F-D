@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,7 @@ interface ProductCardProps {
   isSpecial?: boolean;
 }
 
-export default function ProductCard({ product, customHeight, isSpecial = false }: ProductCardProps) {
+const ProductCard = memo(function ProductCard({ product, customHeight, isSpecial = false }: ProductCardProps) {
   const { addItem } = useCart();
   const { currentUser, loading } = useUserAuth();
   const { addNotification } = useNotification();
@@ -180,4 +180,6 @@ export default function ProductCard({ product, customHeight, isSpecial = false }
       </div>
     </Link>
   );
-}
+});
+
+export default ProductCard;

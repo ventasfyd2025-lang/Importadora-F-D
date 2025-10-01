@@ -50,6 +50,7 @@ export interface Order {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerRut?: string; // RUT del cliente
   items: CartItem[];
   total: number;
   status: 'pending' | 'pending_verification' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';

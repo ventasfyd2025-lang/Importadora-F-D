@@ -7,20 +7,37 @@ import Layout from '@/components/Layout';
 import { useCart } from '@/context/CartContext';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useBankConfig } from '@/hooks/useBankConfig';
+import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { addDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
+import dynamic from 'next/dynamic';
+
+const MercadoPagoWallet = dynamic(() => import('@/components/MercadoPagoWallet'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 bg-gray-50 border border-gray-200 rounded-lg">
+      <div className="flex items-center justify-center space-x-3">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+        <span className="text-gray-600">Cargando MercadoPago...</span>
+      </div>
+    </div>
+  )
+});
 
 function CheckoutContent() {
   const router = useRouter();
   const { items, clearCart, getTotalPrice, reserveCartStock, releaseCartStock, stockLoading } = useCart();
   const { currentUser, userProfile, isRegistered } = useUserAuth();
   const { bankConfig, loading: bankLoading } = useBankConfig();
+  const { createPreference, loading: mpLoading } = useMercadoPago();
   const [isProcessing, setIsProcessing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'transferencia' | 'mercadopago'>('transferencia');
+  const [mpPreferenceId, setMpPreferenceId] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState({
     name: '',
     email: '',
@@ -28,6 +45,8 @@ function CheckoutContent() {
     rut: '',
     address: ''
   });
+
+  const isGuest = !isRegistered;
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -72,6 +91,79 @@ function CheckoutContent() {
     }).format(price);
   };
 
+  // Handler para MercadoPago
+  const handleMercadoPagoCheckout = async () => {
+    // Validar datos del formulario
+    if (!checkoutData.name || !checkoutData.email || !checkoutData.phone || !checkoutData.address) {
+      alert('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Crear orden primero en Firebase
+      const orderData = {
+        customerName: checkoutData.name,
+        customerEmail: checkoutData.email,
+        customerPhone: checkoutData.phone,
+        customerRut: checkoutData.rut,
+        shippingAddress: checkoutData.address,
+        userId: (currentUser as any)?.uid || checkoutData.email,
+        paymentMethod: 'mercadopago',
+        items: items.map(item => ({
+          productId: item.productId,
+          nombre: item.nombre,
+          precio: item.precio,
+          cantidad: item.cantidad,
+          imagen: item.imagen
+        })),
+        total: getTotalPrice(),
+        status: 'pending_payment' as const,
+        createdAt: new Date()
+      };
+
+      const orderRef = await addDoc(collection(db, 'orders'), orderData);
+
+      // Crear preferencia de MercadoPago
+      const mpItems = items.map(item => ({
+        id: item.productId,
+        title: item.nombre,
+        description: `${item.nombre} - Importadora F&D`,
+        quantity: item.cantidad,
+        price: item.precio,
+        image: item.imagen,
+      }));
+
+      const preference = await createPreference({
+        items: mpItems,
+        userInfo: {
+          firstName: checkoutData.name.split(' ')[0] || '',
+          lastName: checkoutData.name.split(' ').slice(1).join(' ') || '',
+          email: checkoutData.email,
+          phone: checkoutData.phone,
+          address: {
+            street: checkoutData.address,
+            postalCode: ''
+          }
+        },
+        orderId: orderRef.id
+      });
+
+      if (preference?.preferenceId) {
+        setMpPreferenceId(preference.preferenceId);
+      } else {
+        throw new Error('No se pudo crear la preferencia de pago');
+      }
+
+    } catch (error) {
+      console.error('Error creando preferencia MP:', error);
+      alert('Error al procesar el pago. Por favor intenta nuevamente.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleCheckout = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -114,7 +206,7 @@ function CheckoutContent() {
         console.log('✅ Stock reservado exitosamente');
       } catch (stockError) {
         console.error('❌ Error reservando stock:', stockError);
-        alert(`Error: ${stockError.message}`);
+        alert(`Error: ${(stockError as any)?.message || 'Error desconocido'}`);
         setIsProcessing(false);
         return;
       }
@@ -134,6 +226,7 @@ function CheckoutContent() {
         customerName: finalData.name,
         customerEmail: finalData.email,
         customerPhone: finalData.phone,
+        customerRut: finalData.rut,
         shippingAddress: finalData.address,
         userId: (currentUser as any)?.uid || finalData.email,
         paymentMethod: 'transferencia',
@@ -180,9 +273,6 @@ function CheckoutContent() {
         total: getTotalPrice().toString()
       });
 
-      console.log('🛒 Limpiando carrito...');
-      clearCart();
-
       // Mostrar estado de éxito en el mismo componente
       setSuccessOrderId(orderRef.id);
       setOrderSuccess(true);
@@ -197,7 +287,7 @@ function CheckoutContent() {
 
     } catch (error) {
       console.error('❌ Error procesando pedido:', error);
-      console.error('❌ Detalles del error:', error.message, error.stack);
+      console.error('❌ Detalles del error:', (error as any)?.message, (error as any)?.stack);
 
       // Si hubo un error después de reservar stock, intentar liberarlo
       try {
@@ -208,14 +298,15 @@ function CheckoutContent() {
         console.error('❌ Error liberando stock:', releaseError);
       }
 
-      alert(`Error al procesar el pedido: ${error.message}. El stock ha sido liberado. Inténtalo de nuevo.`);
+      alert(`Error al procesar el pedido: ${(error as any)?.message || 'Error desconocido'}. El stock ha sido liberado. Inténtalo de nuevo.`);
     } finally {
       setIsProcessing(false);
     }
   };
 
   // Show loading spinner until mounted to prevent hydration mismatch
-  if (!mounted || items.length === 0) {
+  // Show processing screen while order is being processed
+  if (!mounted || (items.length === 0 && !orderSuccess)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
@@ -283,6 +374,22 @@ function CheckoutContent() {
                 </div>
 
                 <form onSubmit={handleCheckout} className="p-6 space-y-6">
+                  {isGuest && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                      <div className="flex">
+                        <div className="text-blue-400 mr-2">👤</div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
+                            Comprando como invitado
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            Completa los datos para procesar tu pedido. Si deseas crear una cuenta, puedes hacerlo después de la compra.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {isRegistered && userProfile && (
                     <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
                       <div className="flex">
@@ -381,7 +488,91 @@ function CheckoutContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Método de pago
                     </label>
-                    <div className="p-4 border border-blue-300 bg-blue-50 rounded-lg">
+
+                    {/* Selector de método de pago */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      {/* MercadoPago */}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('mercadopago')}
+                        className={`p-4 border-2 rounded-lg transition-all ${
+                          paymentMethod === 'mercadopago'
+                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                            : 'border-gray-300 bg-white hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl">💳</span>
+                          {paymentMethod === 'mercadopago' && (
+                            <span className="text-blue-600 font-bold">✓</span>
+                          )}
+                        </div>
+                        <div className="font-semibold text-gray-900 text-left">MercadoPago</div>
+                        <div className="text-sm text-gray-600 text-left mt-1">Pago online con tarjeta</div>
+                      </button>
+
+                      {/* Transferencia */}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('transferencia')}
+                        className={`p-4 border-2 rounded-lg transition-all ${
+                          paymentMethod === 'transferencia'
+                            ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
+                            : 'border-gray-300 bg-white hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl">🏦</span>
+                          {paymentMethod === 'transferencia' && (
+                            <span className="text-orange-600 font-bold">✓</span>
+                          )}
+                        </div>
+                        <div className="font-semibold text-gray-900 text-left">Transferencia</div>
+                        <div className="text-sm text-gray-600 text-left mt-1">Transferencia bancaria</div>
+                      </button>
+                    </div>
+
+                    {/* Sección de MercadoPago */}
+                    {paymentMethod === 'mercadopago' && (
+                      <div className="p-4 border border-blue-300 bg-blue-50 rounded-lg">
+                        <div className="flex items-center mb-4">
+                          <span className="text-2xl mr-3">💳</span>
+                          <div>
+                            <div className="font-medium text-gray-900">Pago con MercadoPago</div>
+                            <div className="text-sm text-gray-600">Paga con tarjeta de crédito, débito o efectivo</div>
+                          </div>
+                        </div>
+
+                        {!mpPreferenceId ? (
+                          <button
+                            type="button"
+                            onClick={handleMercadoPagoCheckout}
+                            disabled={isProcessing || mpLoading}
+                            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isProcessing || mpLoading ? 'Procesando...' : 'Continuar con MercadoPago'}
+                          </button>
+                        ) : (
+                          <div className="mt-4">
+                            <MercadoPagoWallet
+                              preferenceId={mpPreferenceId}
+                              onSuccess={() => {
+                                clearCart();
+                                setOrderSuccess(true);
+                              }}
+                              onError={(error) => {
+                                console.error('Error en pago MP:', error);
+                                alert('Error en el pago. Por favor intenta nuevamente.');
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Sección de Transferencia */}
+                    {paymentMethod === 'transferencia' && (
+                      <div className="p-4 border border-orange-300 bg-orange-50 rounded-lg">
                       <div className="flex items-center mb-4">
                         <span className="text-2xl mr-3">🏦</span>
                         <div>
@@ -443,26 +634,30 @@ function CheckoutContent() {
                           Formatos aceptados: JPG, PNG, PDF (máx. 5MB)
                         </p>
                       </div>
-                    </div>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="border-t pt-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Link
-                        href="/carrito"
-                        className="flex-1 py-3 px-6 border border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
-                      >
-                        Volver al carrito
-                      </Link>
-                      <button
-                        type="submit"
-                        disabled={isProcessing || stockLoading}
-                        className="flex-1 py-3 px-6 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isProcessing ? 'Procesando...' : stockLoading ? 'Verificando stock...' : 'Confirmar pedido'}
-                      </button>
+                  {/* Botones de acción solo para transferencia */}
+                  {paymentMethod === 'transferencia' && (
+                    <div className="border-t pt-6">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Link
+                          href="/carrito"
+                          className="flex-1 py-3 px-6 border border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
+                        >
+                          Volver al carrito
+                        </Link>
+                        <button
+                          type="submit"
+                          disabled={isProcessing || stockLoading}
+                          className="flex-1 py-3 px-6 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? 'Procesando...' : stockLoading ? 'Verificando stock...' : 'Confirmar pedido'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </form>
               </div>
             </div>

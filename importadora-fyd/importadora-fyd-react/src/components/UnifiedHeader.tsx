@@ -9,8 +9,9 @@ import { useConfig } from '@/hooks/useConfig';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useI18n } from '@/context/I18nContext';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import CartButton from '@/components/header/CartButton';
+import UserMenu from '@/components/header/UserMenu';
+import NotificationBadge from '@/components/header/NotificationBadge';
 import {
   Bars3Icon,
   MagnifyingGlassIcon,
@@ -25,7 +26,6 @@ export default function UnifiedHeader() {
   const [isDesktopCategoriesOpen, setIsDesktopCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const [categoriesLoadTimeout, setCategoriesLoadTimeout] = useState(false);
   
   const desktopCategoriesRef = useRef<HTMLDivElement>(null);
@@ -41,29 +41,8 @@ export default function UnifiedHeader() {
   const { t } = useI18n();
   const unreadOrderNotifications = useOrderNotifications();
 
-  // Escuchar mensajes no leídos
-  useEffect(() => {
-    if (!currentUser) {
-      setHasUnreadMessages(false);
-      return;
-    }
-
-    // Use email for consistent filtering across all user types (registered and guest)
-    const messagesQuery = query(
-      collection(db, 'chat_messages'),
-      where('userEmail', '==', currentUser.email),
-      where('isAdmin', '==', true),
-      where('read', '==', false)
-    );
-
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      setHasUnreadMessages(snapshot.docs.length > 0);
-    }, (error) => {
-      console.error('Error listening to messages:', error);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
+  // Usar el hook compartido en vez de listener duplicado
+  const hasUnreadMessages = unreadOrderNotifications > 0;
 
   // Close dropdown when clicking outside
   useEffect(() => {

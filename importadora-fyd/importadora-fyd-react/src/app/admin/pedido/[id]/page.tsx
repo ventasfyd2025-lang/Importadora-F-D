@@ -3,9 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import { Order } from '@/types';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import optimizeImageFile from '@/utils/imageProcessing';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +21,8 @@ interface ChatMessage {
   isAdmin: boolean;
   timestamp: Date;
   read: boolean;
+  imageUrl?: string;
+  imageFileName?: string;
 }
 
 export default function OrderDetailPage() {
@@ -29,6 +35,9 @@ export default function OrderDetailPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Load order details
   useEffect(() => {
@@ -84,27 +93,79 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user || !order) return;
+    if ((!newMessage.trim() && !selectedImage) || !user || !order) return;
 
     setSendingMessage(true);
+    setUploadingImage(true);
+
     try {
+      let imageUrl = '';
+      let imageFileName = '';
+
+      // Upload image if selected
+      if (selectedImage) {
+        const optimizedImage = await optimizeImageFile(selectedImage);
+        const timestamp = new Date().getTime();
+        const fileName = `chat-images/${orderId}/${timestamp}-admin-${optimizedImage.name}`;
+        const storageRef = ref(storage, fileName);
+
+        await uploadBytes(storageRef, optimizedImage);
+        imageUrl = await getDownloadURL(storageRef);
+        imageFileName = selectedImage.name; // Keep original name for display
+      }
+
       await addDoc(collection(db, 'chat_messages'), {
         orderId: orderId,
         userId: order.customerEmail, // Use customer email as userId for proper filtering
         userEmail: order.customerEmail, // Send to customer's email
         userName: 'Admin FyD',
-        message: newMessage.trim(),
+        message: newMessage.trim() || (imageUrl ? 'Imagen enviada por el administrador' : ''),
         isAdmin: true,
         timestamp: serverTimestamp(),
-        read: false // Admin messages should start as unread for client
+        read: false, // Admin messages should start as unread for client
+        ...(imageUrl && { imageUrl, imageFileName })
       });
 
       setNewMessage('');
+      setSelectedImage(null);
+      setImagePreview(null);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
       setSendingMessage(false);
+      setUploadingImage(false);
     }
+  };
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona solo archivos de imagen');
+        return;
+      }
+
+      // Validar tamaño (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen debe ser menor a 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const updateOrderStatus = async (newStatus: Order['status']) => {
@@ -285,6 +346,11 @@ export default function OrderDetailPage() {
                   <p className="text-sm font-medium text-gray-500">Teléfono</p>
                   <p className="text-gray-900">{order.customerPhone}</p>
                 </div>
+
+                <div className="sm:col-span-1">
+                  <dt className="text-sm font-medium text-gray-500">RUT</dt>
+                  <p className="text-gray-900">{order.customerRut || 'No proporcionado'}</p>
+                </div>
                 {order.shippingAddress && (
                   <div>
                     <p className="text-sm font-medium text-gray-500">Dirección</p>
@@ -297,7 +363,6 @@ export default function OrderDetailPage() {
             {/* Resumen del Pedido */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen del Pedido</h3>
-
               <div className="space-y-3">
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-center space-x-3">
@@ -405,7 +470,25 @@ export default function OrderDetailPage() {
                               : 'bg-white text-gray-900 border border-gray-200'
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{message.message}</p>
+                          {message.imageUrl ? (
+                            <div className="space-y-2">
+                              <div className="relative max-w-xs">
+                                <Image
+                                  src={message.imageUrl}
+                                  alt={message.imageFileName || 'Imagen enviada'}
+                                  width={200}
+                                  height={150}
+                                  className="rounded-lg object-cover w-full h-auto"
+                                  style={{ maxHeight: '200px' }}
+                                />
+                              </div>
+                              {message.message && (
+                                <p className="whitespace-pre-wrap">{message.message}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{message.message}</p>
+                          )}
                         </div>
 
                         <div className={`flex items-center mt-1 px-3 ${message.isAdmin ? 'justify-end' : 'justify-start'}`}>
@@ -429,6 +512,28 @@ export default function OrderDetailPage() {
 
               {/* Input */}
               <div className="border-t border-gray-200 p-4 bg-white rounded-b-lg">
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="mb-4 relative">
+                    <div className="relative inline-block">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="max-w-xs max-h-32 rounded-lg object-cover"
+                      />
+                      <button
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedImage?.name}
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex items-end space-x-3">
                   <div className="flex-1">
                     <textarea
@@ -441,9 +546,22 @@ export default function OrderDetailPage() {
                       disabled={sendingMessage}
                     />
                   </div>
+
+                  {/* Image Upload Button */}
+                  <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 p-3 rounded-xl transition-all duration-200 hover:scale-105">
+                    <PhotoIcon className="h-5 w-5" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                  </label>
+
                   <button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || sendingMessage}
+                    disabled={(!newMessage.trim() && !selectedImage) || sendingMessage}
                     className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white p-3 rounded-xl transition-all duration-200 disabled:cursor-not-allowed hover:scale-105"
                   >
                     {sendingMessage ? (
@@ -457,7 +575,7 @@ export default function OrderDetailPage() {
                 </div>
 
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Comunicación directa con el cliente
+                  Comunicación directa con el cliente • {uploadingImage ? 'Subiendo imagen...' : 'Puedes enviar texto e imágenes'}
                 </p>
               </div>
             </div>

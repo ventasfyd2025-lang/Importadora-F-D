@@ -17,12 +17,16 @@ import {
   updateDoc,
   serverTimestamp 
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { 
-  ChatBubbleLeftRightIcon, 
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import optimizeImageFile from '@/utils/imageProcessing';
+import { db, storage } from '@/lib/firebase';
+import {
+  ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
   UserIcon,
   CheckIcon,
+  PhotoIcon,
+  XMarkIcon,
   ShieldCheckIcon,
   ArrowLeftIcon,
   ClockIcon,
@@ -42,6 +46,8 @@ interface ChatMessage {
   read: boolean;
   userEmail?: string;
   userName?: string;
+  imageUrl?: string;
+  imageFileName?: string;
 }
 
 interface OrderItem {
@@ -151,6 +157,9 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [orderLoading, setOrderLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { formatTime } = useClientSideFormat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -240,29 +249,79 @@ export default function ChatPage() {
   }, [messages, scrollToBottom]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !currentUser || sendingMessage || !orderId) return;
+    if ((!newMessage.trim() && !selectedImage) || !currentUser || sendingMessage || !orderId) return;
 
     setSendingMessage(true);
-    
+    setUploadingImage(true);
+
     try {
+      let imageUrl = '';
+      let imageFileName = '';
+
+      // Upload image if selected
+      if (selectedImage) {
+        const optimizedImage = await optimizeImageFile(selectedImage);
+        const timestamp = new Date().getTime();
+        const fileName = `chat-images/${orderId}/${timestamp}-${optimizedImage.name}`;
+        const storageRef = ref(storage, fileName);
+        await uploadBytes(storageRef, optimizedImage);
+        imageUrl = await getDownloadURL(storageRef);
+        imageFileName = selectedImage.name; // Keep original name for display
+      }
+
       const messageData = {
         orderId,
         userId: currentUser.email, // Use email for consistent filtering
         userEmail: currentUser.email,
         userName: `${currentUser.firstName} ${currentUser.lastName}`,
-        message: newMessage.trim(),
+        message: newMessage.trim() || (imageUrl ? 'Imagen compartida' : ''),
         isAdmin: false,
         timestamp: serverTimestamp(),
-        read: false
+        read: false,
+        ...(imageUrl && { imageUrl, imageFileName })
       };
 
       await addDoc(collection(db, 'chat_messages'), messageData);
       setNewMessage('');
+      setSelectedImage(null);
+      setImagePreview(null);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
       setSendingMessage(false);
+      setUploadingImage(false);
     }
+  };
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona solo archivos de imagen');
+        return;
+      }
+
+      // Validar tamaño (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen debe ser menor a 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -473,7 +532,25 @@ export default function ChatPage() {
                               : 'bg-blue-500 text-white'
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{message.message}</p>
+                          {message.imageUrl ? (
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <Image
+                                  src={message.imageUrl}
+                                  alt={message.imageFileName || 'Imagen compartida'}
+                                  width={250}
+                                  height={200}
+                                  className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(message.imageUrl, '_blank')}
+                                />
+                              </div>
+                              {message.message && message.message !== 'Imagen compartida' && (
+                                <p className="whitespace-pre-wrap">{message.message}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{message.message}</p>
+                          )}
                         </div>
                         
                         <div className={`flex items-center mt-1 px-3 ${message.isAdmin ? 'justify-start' : 'justify-end'}`}>
@@ -512,33 +589,83 @@ export default function ChatPage() {
 
               {/* Input */}
               <div className="border-t border-gray-200 p-4 bg-white rounded-b-lg">
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="mb-4 relative inline-block">
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="max-w-48 max-h-32 rounded-lg object-cover border-2 border-blue-200"
+                      />
+                      <button
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{selectedImage?.name}</p>
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-end space-x-3">
                   <div className="flex-1">
-                    <textarea
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Escribe tu mensaje sobre el pedido..."
-                      className="w-full resize-none border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-24"
-                      rows={2}
-                      disabled={sendingMessage}
-                    />
+                    <div className="relative">
+                      <textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Escribe tu mensaje sobre el pedido..."
+                        className="w-full resize-none border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-24"
+                        rows={2}
+                        disabled={sendingMessage || uploadingImage}
+                      />
+
+                      {/* Image Upload Button */}
+                      <div className="absolute bottom-3 right-3">
+                        <input
+                          type="file"
+                          id="imageUpload"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                          disabled={sendingMessage || uploadingImage}
+                        />
+                        <label
+                          htmlFor="imageUpload"
+                          className={`cursor-pointer p-1 rounded-lg transition-colors ${
+                            sendingMessage || uploadingImage
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : 'text-gray-500 hover:text-blue-500 hover:bg-blue-50'
+                          }`}
+                        >
+                          <PhotoIcon className="h-5 w-5" />
+                        </label>
+                      </div>
+                    </div>
                   </div>
+
                   <button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || sendingMessage}
+                    disabled={(!newMessage.trim() && !selectedImage) || sendingMessage || uploadingImage}
                     className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white p-3 rounded-xl transition-all duration-200 disabled:cursor-not-allowed hover:scale-105"
                   >
-                    {sendingMessage ? (
+                    {sendingMessage || uploadingImage ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                     ) : (
                       <PaperAirplaneIcon className="h-5 w-5" />
                     )}
                   </button>
                 </div>
-                
+
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Responderemos lo antes posible durante horario laboral
+                  Responderemos lo antes posible durante horario laboral • Puedes enviar imágenes (máx. 5MB)
                 </p>
               </div>
             </div>

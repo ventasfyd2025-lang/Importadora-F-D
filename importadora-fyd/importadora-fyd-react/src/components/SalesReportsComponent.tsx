@@ -3,10 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSalesReports } from '@/hooks/useSalesReports';
 import { DailySalesReport, MonthlySalesReport } from '@/types/reports';
-import { generateMonthlySalesPDF } from '@/utils/pdfGenerator';
-import { 
-  ChartBarIcon, 
-  DocumentArrowDownIcon, 
+import {
+  ChartBarIcon,
+  DocumentArrowDownIcon,
   CalendarIcon,
   CurrencyDollarIcon,
   ShoppingCartIcon,
@@ -68,13 +67,15 @@ export default function SalesReportsComponent() {
   }, [getReportsInRange]);
 
   // Generar reporte PDF
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!monthlyReport) {
       alert('No hay reporte mensual disponible para generar PDF');
       return;
     }
-    
+
     try {
+      // Dynamic import para reducir bundle size
+      const { generateMonthlySalesPDF } = await import('@/utils/pdfGenerator');
       generateMonthlySalesPDF(monthlyReport);
     } catch (error) {
       console.error('Error generando PDF:', error);

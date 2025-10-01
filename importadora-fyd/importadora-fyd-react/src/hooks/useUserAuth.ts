@@ -8,7 +8,7 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 export interface UserProfile {
@@ -26,6 +26,9 @@ export interface UserProfile {
     postalCode: string;
   };
   createdAt: Date;
+  blocked?: boolean;
+  blockedAt?: Date;
+  unblockedAt?: Date;
 }
 
 export interface GuestUser {
@@ -54,13 +57,24 @@ export function useUserAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      
+
       if (firebaseUser) {
         // Cargar perfil del usuario registrado
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as UserProfile);
+            const userData = userDoc.data() as UserProfile;
+            // Verificar si el usuario está bloqueado
+            if (userData.blocked) {
+              // Cerrar sesión automáticamente si el usuario está bloqueado
+              await signOut(auth);
+              setError('Tu cuenta ha sido bloqueada. Contacta al administrador.');
+              setUser(null);
+              setUserProfile(null);
+              setLoading(false);
+              return;
+            }
+            setUserProfile(userData);
           }
         } catch (error) {
           console.error('Error loading user profile:', error);
@@ -76,12 +90,40 @@ export function useUserAuth() {
         }
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
     return unsubscribe;
   }, []);
+
+  // Monitorear cambios en el documento del usuario en tiempo real
+  useEffect(() => {
+    if (!user) return;
+
+    let previousBlocked = false;
+
+    const unsubscribeUserDoc = onSnapshot(doc(db, 'users', user.uid), async (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data() as UserProfile;
+
+        // Si el usuario fue bloqueado mientras estaba usando la aplicación
+        if (userData.blocked && !previousBlocked) {
+          // Cerrar sesión automáticamente
+          await signOut(auth);
+          setError('Tu cuenta ha sido bloqueada. Contacta al administrador.');
+          return;
+        }
+
+        previousBlocked = userData.blocked || false;
+
+        // Actualizar el perfil del usuario
+        setUserProfile(userData);
+      }
+    });
+
+    return () => unsubscribeUserDoc();
+  }, [user]);
 
   const register = async (
     email: string,
@@ -129,8 +171,24 @@ export function useUserAuth() {
     try {
       setError(null);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Verificar si el usuario está bloqueado
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserProfile;
+        if (userData.blocked) {
+          // Cerrar sesión inmediatamente si está bloqueado
+          await signOut(auth);
+          setError('Tu cuenta ha sido bloqueada. Contacta al administrador.');
+          throw new Error('blocked-user');
+        }
+      }
+
       return userCredential.user;
     } catch (error: unknown) {
+      if ((error as Error).message === 'blocked-user') {
+        throw error;
+      }
       setError(getErrorMessage((error as {code?: string}).code || 'unknown'));
       throw error;
     }

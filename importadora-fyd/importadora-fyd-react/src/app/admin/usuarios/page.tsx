@@ -180,7 +180,7 @@ export default function UsuariosAdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.createdAt ? (() => {
                           try {
-                            const date = user.createdAt.toDate ? user.createdAt.toDate() : new Date(user.createdAt);
+                            const date = (user.createdAt as any)?.toDate ? (user.createdAt as any).toDate() : new Date(user.createdAt);
                             return date.toLocaleDateString('es-CL');
                           } catch (error) {
                             return 'Fecha inválida';
@@ -276,7 +276,7 @@ export default function UsuariosAdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.createdAt ? (() => {
                           try {
-                            const date = user.createdAt.toDate ? user.createdAt.toDate() : new Date(user.createdAt);
+                            const date = (user.createdAt as any)?.toDate ? (user.createdAt as any).toDate() : new Date(user.createdAt);
                             return date.toLocaleDateString('es-CL');
                           } catch (error) {
                             return 'Fecha inválida';

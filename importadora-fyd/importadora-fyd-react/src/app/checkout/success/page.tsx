@@ -5,6 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircleIcon, ClockIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useCart } from '@/context/CartContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+interface OrderItem {
+  productId: string;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+  imagen?: string;
+}
 
 interface OrderInfo {
   orderId: string;
@@ -14,12 +25,14 @@ interface OrderInfo {
   total: number;
   paymentId?: string;
   status?: string;
+  items?: OrderItem[];
 }
 
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const unreadOrderNotifications = useOrderNotifications();
+  const { clearCart } = useCart();
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
 
   const orderId = searchParams.get('orderId');
@@ -31,24 +44,61 @@ function PaymentSuccessContent() {
   const status = searchParams.get('status');
 
   useEffect(() => {
-    // Obtener información del pedido
-    if (orderId) {
-      setOrderInfo({
-        orderId,
-        paymentMethod,
-        customerName,
-        customerEmail,
-        total: parseInt(total),
-        paymentId: paymentId || undefined,
-        status: status || undefined
-      });
-    }
+    const loadOrderDetails = async () => {
+      if (!orderId) return;
 
-    // Limpiar carrito de localStorage después de un pedido exitoso
+      try {
+        // Obtener detalles completos de la orden desde Firebase
+        const orderDoc = await getDoc(doc(db, 'orders', orderId));
+
+        if (orderDoc.exists()) {
+          const orderData = orderDoc.data();
+          setOrderInfo({
+            orderId,
+            paymentMethod: orderData.paymentMethod || paymentMethod,
+            customerName: orderData.customerName || customerName,
+            customerEmail: orderData.customerEmail || customerEmail,
+            total: orderData.total || parseInt(total),
+            paymentId: paymentId || undefined,
+            status: status || orderData.status,
+            items: orderData.items || []
+          });
+        } else {
+          // Fallback a datos de URL si no existe en Firebase
+          setOrderInfo({
+            orderId,
+            paymentMethod,
+            customerName,
+            customerEmail,
+            total: parseInt(total),
+            paymentId: paymentId || undefined,
+            status: status || undefined
+          });
+        }
+      } catch (error) {
+        console.error('Error cargando detalles de orden:', error);
+        // Usar datos de URL como fallback
+        setOrderInfo({
+          orderId,
+          paymentMethod,
+          customerName,
+          customerEmail,
+          total: parseInt(total),
+          paymentId: paymentId || undefined,
+          status: status || undefined
+        });
+      }
+    };
+
+    loadOrderDetails();
+
+    // Limpiar carrito después de un pedido exitoso
     if (typeof window !== 'undefined') {
+      console.log('🛒 Limpiando carrito en página de éxito...');
       localStorage.removeItem('cart');
+      clearCart(); // Limpiar también el contexto del carrito
     }
-  }, [orderId, paymentMethod, customerName, customerEmail, total, paymentId, status]);
+  }, [orderId, paymentMethod, customerName, customerEmail, total, paymentId, status, clearCart]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -145,6 +195,39 @@ function PaymentSuccessContent() {
                       )}
                     </div>
                   </div>
+
+                  {/* Products List */}
+                  {orderInfo.items && orderInfo.items.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Productos comprados</h3>
+                      <div className="space-y-3">
+                        {orderInfo.items.map((item, index) => (
+                          <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            {item.imagen && (
+                              <div className="flex-shrink-0 w-16 h-16 bg-white rounded-md overflow-hidden border border-gray-200">
+                                <img
+                                  src={item.imagen}
+                                  alt={item.nombre}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {item.nombre}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Cantidad: {item.cantidad}
+                              </p>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              {formatPrice(item.precio * item.cantidad)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Payment specific info */}
                   {orderInfo.paymentMethod === 'transferencia' ? (

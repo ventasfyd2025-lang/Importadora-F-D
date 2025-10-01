@@ -211,7 +211,7 @@ export function useStockManager() {
 
       const snapshot = await getDocs(transactionsQuery);
 
-      const batch = [];
+      const batch: Promise<void>[] = [];
       snapshot.forEach((doc) => {
         batch.push(updateDoc(doc.ref, { type: 'sale' }));
       });

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -33,17 +33,28 @@ export default function HomeClient() {
   const sortBy = searchParams.get('sort') || '';
   const filter = searchParams.get('filter') || '';
 
-  const getDisplayProducts = () => {
+  // Memoizar displayProducts para evitar recalcular en cada render
+  const displayProducts = useMemo(() => {
     if (filter) {
-      const filtered = getProductsByFilter(filter);
-      return filtered;
+      return getProductsByFilter(filter);
     }
-    const filtered = filterProducts(searchQuery, category, priceRange, sortBy, subcategory);
-    return filtered;
-  };
+    return filterProducts(searchQuery, category, priceRange, sortBy, subcategory);
+  }, [filter, getProductsByFilter, filterProducts, searchQuery, category, priceRange, sortBy, subcategory]);
 
-  const displayProducts = getDisplayProducts();
+  // Memoizar agrupamiento por categorías
+  const { groupedByCategory, sortedCategories } = useMemo(() => {
+    const grouped = displayProducts.reduce((acc, product) => {
+      const category = product.categoria || 'Sin categoría';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(product);
+      return acc;
+    }, {} as Record<string, typeof displayProducts>);
 
+    return {
+      groupedByCategory: grouped,
+      sortedCategories: Object.keys(grouped).sort()
+    };
+  }, [displayProducts]);
 
   const getPageTitle = () => {
     if (searchQuery) return `Resultados para "${searchQuery}"`;
@@ -330,19 +341,8 @@ export default function HomeClient() {
             <>
               {/* Show products organized by category only on main page without filters */}
               {!searchQuery && !category && !priceRange && !sortBy && !filter ? (
-                (() => {
-                  const groupedByCategory = displayProducts.reduce((acc, product) => {
-                    const category = product.categoria || 'Sin categoría';
-                    if (!acc[category]) acc[category] = [];
-                    acc[category].push(product);
-                    return acc;
-                  }, {} as Record<string, typeof displayProducts>);
-                  
-                  const sortedCategories = Object.keys(groupedByCategory).sort();
-                  
-                  return (
-                    <>
-                      {sortedCategories.map(categoryName => {
+                <>
+                  {sortedCategories.map(categoryName => {
                         // Find the category to get its icon
                         const categoryInfo = categories.find(cat => cat.id === categoryName || cat.name.toLowerCase() === categoryName.toLowerCase());
                         const categoryIcon = categoryInfo?.icon || '📦';
@@ -357,8 +357,6 @@ export default function HomeClient() {
                         );
                       })}
                     </>
-                  );
-                })()
               ) : (
                 /* Masonry grid for filtered results */
                 <>

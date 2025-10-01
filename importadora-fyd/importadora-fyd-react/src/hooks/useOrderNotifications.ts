@@ -32,16 +32,17 @@ export function useOrderNotifications() {
       collection(db, 'chat_messages'),
       where('userEmail', '==', currentUser.email),
       where('isAdmin', '==', true),
-      where('read', '==', false),
-      orderBy('timestamp', 'desc')
+      where('read', '==', false)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const unreadCount = snapshot.size;
+      console.log(`📧 Found ${unreadCount} unread messages for ${currentUser.email}`);
       setUnreadOrderMessages(unreadCount);
     }, (error) => {
-      // If user doesn't have orders or permissions, just set to 0
-      console.log('Order notifications listener error (expected for new users):', error.code);
+      console.error('❌ Error en notificaciones de pedidos:', error);
+      console.log('User email:', currentUser.email);
+      console.log('Error code:', error.code);
       setUnreadOrderMessages(0);
     });
 

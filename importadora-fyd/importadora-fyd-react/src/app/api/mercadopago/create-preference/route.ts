@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
         email: userInfo?.email || ''
       },
       back_urls: {
-        success: `${baseUrl}/checkout/success`,
-        failure: `${baseUrl}/checkout/failure`,
-        pending: `${baseUrl}/checkout/pending`
+        success: `${baseUrl}/checkout/success?orderId=${orderId}&paymentMethod=mercadopago&customerName=${encodeURIComponent(userInfo?.firstName + ' ' + userInfo?.lastName)}&customerEmail=${encodeURIComponent(userInfo?.email || '')}`,
+        failure: `${baseUrl}/checkout/failure?orderId=${orderId}`,
+        pending: `${baseUrl}/checkout/pending?orderId=${orderId}`
       },
       external_reference: orderId || `order_${Date.now()}`,
       notification_url: `${baseUrl}/api/mercadopago/webhook`,

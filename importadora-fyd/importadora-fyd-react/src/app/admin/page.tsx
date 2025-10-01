@@ -373,8 +373,9 @@ export default function AdminPage() {
   const { products, refetch, removeProduct, removeProducts } = useProducts();
   const { footerConfig, updateFooterConfig, loading: footerLoading } = useFooterConfig();
   const { bankConfig, updateBankConfig, loading: bankLoading } = useBankConfig();
-  
+
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [ordersFilter, setOrdersFilter] = useState<'active' | 'completed'>('active');
 
   // Users management state
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -759,7 +760,11 @@ export default function AdminPage() {
 
       const optimizedFile = await optimizeImageFile(file);
       const timestamp = Date.now();
-      const fileName = `${folder}/${storageKey}-${timestamp}-${optimizedFile.name}`;      const storageRef = ref(storage, fileName);      const snapshot = await uploadBytes(storageRef, optimizedFile);      const downloadURL = await getDownloadURL(snapshot.ref);      return downloadURL;
+      const fileName = `${folder}/${storageKey}-${timestamp}-${optimizedFile.name}`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadBytes(storageRef, optimizedFile);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
     } catch (error) {
       console.error('❌ Error uploading image:', error);
       throw error;
@@ -958,6 +963,43 @@ export default function AdminPage() {
     }
   };
 
+  const blockUser = async (userId: string) => {
+    if (!confirm('¿Estás seguro de que quieres bloquear este usuario? No podrá iniciar sesión hasta que lo desbloquees.')) {
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        blocked: true,
+        blockedAt: serverTimestamp()
+      });
+      // Actualizar estado local
+      setUsers(prev => prev.map(user =>
+        user.uid === userId ? { ...user, blocked: true } : user
+      ));
+      alert('Usuario bloqueado exitosamente');
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      alert('Error al bloquear usuario');
+    }
+  };
+
+  const unblockUser = async (userId: string) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        blocked: false,
+        unblockedAt: serverTimestamp()
+      });
+      // Actualizar estado local
+      setUsers(prev => prev.map(user =>
+        user.uid === userId ? { ...user, blocked: false } : user
+      ));
+      alert('Usuario desbloqueado exitosamente');
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      alert('Error al desbloquear usuario');
+    }
+  };
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800 border-red-200';
@@ -967,9 +1009,9 @@ export default function AdminPage() {
     }
   };
 
-  // Load users when roles tab is active
+  // Load users when user management tab is active
   useEffect(() => {
-    if (activeTab === 'roles') {
+    if (activeTab === 'user-management') {
       loadUsers();
     }
   }, [activeTab]);
@@ -1872,11 +1914,10 @@ export default function AdminPage() {
           {/* Horizontal Navigation */}
           <nav className="flex flex-wrap gap-2">
                           {[
-                { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
+                { id: 'dashboard', name: 'Dashboard & Reportes', icon: '🏠' },
                 { id: 'products', name: 'Productos & Stock', icon: '📦' },
-                { id: 'sales-analytics', name: 'Ventas y Reportes', icon: '📈' },
                 { id: 'orders', name: 'Pedidos', icon: '🛒', badge: newOrdersCount > 0 ? newOrdersCount : null, badgeColor: 'bg-red-500' },
-                { id: 'roles', name: 'Roles', icon: '👥' },
+                { id: 'user-management', name: 'Gestión de Usuario', icon: '👥' },
                 { id: 'main-banner', name: 'Banners', icon: '🏆' },
                 { id: 'product-layout', name: 'Layout Productos', icon: '🔲' },
                 { id: 'popup', name: 'Popup Ofertas', icon: '🎉' },
@@ -1910,7 +1951,63 @@ export default function AdminPage() {
         
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            
+
+            {/* Dashboard & Reportes Header */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                    <span className="text-white text-lg">🏠</span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Dashboard & Reportes</h2>
+                    <p className="text-gray-600 text-sm">Panel principal con estadísticas y exportación</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const today = new Date();
+                      const currentMonth = today.toISOString().slice(0, 7);
+                      const monthName = today.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+
+                      // Generate a simple PDF report with current data
+                      const reportData = {
+                        month: currentMonth,
+                        monthName: monthName,
+                        totalSales: stats.totalRevenue,
+                        totalOrders: stats.totalOrders,
+                        averageOrderValue: stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0,
+                        topProducts: orders.flatMap(order => order.items)
+                          .reduce((acc, item) => {
+                            const existing = acc.find(p => p.nombre === item.nombre);
+                            if (existing) {
+                              existing.quantity += item.cantidad;
+                              existing.revenue += item.precio * item.cantidad;
+                            } else {
+                              acc.push({
+                                nombre: item.nombre,
+                                quantity: item.cantidad,
+                                revenue: item.precio * item.cantidad
+                              });
+                            }
+                            return acc;
+                          }, [] as any[])
+                          .sort((a, b) => b.revenue - a.revenue)
+                          .slice(0, 5)
+                      };
+
+                      // Simple export alert for now (could be enhanced with actual PDF generation)
+                      alert(`Reporte de ${monthName}\n\nVentas totales: ${formatPrice(reportData.totalSales)}\nPedidos: ${reportData.totalOrders}\nVenta promedio: ${formatPrice(reportData.averageOrderValue)}\n\nProducto más vendido: ${reportData.topProducts[0]?.nombre || 'N/A'}`);
+                    }}
+                    className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors font-semibold text-sm"
+                  >
+                    📊 Exportar Reporte
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-orange-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center">
@@ -2058,6 +2155,7 @@ export default function AdminPage() {
                     precio: 0,
                     descripcion: '',
                     stock: 0,
+                    minStock: 0,
                     categoria: '',
                     subcategoria: '',
                     nuevo: false,
@@ -2670,11 +2768,11 @@ export default function AdminPage() {
         )}
 
 
-        {activeTab === 'roles' && (
+        {activeTab === 'user-management' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">👥 Gestión de Roles</h2>
+                <h2 className="text-2xl font-bold text-gray-900">👥 Gestión de Usuarios</h2>
                 <button
                   onClick={loadUsers}
                   disabled={usersLoading}
@@ -2715,6 +2813,9 @@ export default function AdminPage() {
                             Rol
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Fecha Registro
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2750,6 +2851,15 @@ export default function AdminPage() {
                                 </span>
                               )}
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                                user.blocked
+                                  ? 'bg-red-100 text-red-800 border-red-200'
+                                  : 'bg-green-100 text-green-800 border-green-200'
+                              }`}>
+                                {user.blocked ? '🚫 Bloqueado' : '✅ Activo'}
+                              </span>
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString('es-CL') : 'N/A'}
                             </td>
@@ -2775,6 +2885,21 @@ export default function AdminPage() {
                                   >
                                     Eliminar
                                   </button>
+                                  {user.blocked ? (
+                                    <button
+                                      onClick={() => unblockUser(user.uid)}
+                                      className="text-green-600 hover:text-green-900"
+                                    >
+                                      ✅ Desbloquear
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => blockUser(user.uid)}
+                                      className="text-orange-600 hover:text-orange-900"
+                                    >
+                                      🚫 Bloquear
+                                    </button>
+                                  )}
                                 </>
                               )}
                             </td>
@@ -2814,7 +2939,7 @@ export default function AdminPage() {
           <div className="space-y-6">
             {/* Modern Orders Header */}
             <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
                     <span className="text-white text-lg">🛒</span>
@@ -2850,6 +2975,30 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Sub-tabs para filtrar pedidos */}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setOrdersFilter('active')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 shadow-md ${
+                    ordersFilter === 'active'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white scale-105 shadow-lg'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105'
+                  }`}
+                >
+                  📋 Pedidos Activos
+                </button>
+                <button
+                  onClick={() => setOrdersFilter('completed')}
+                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 shadow-md ${
+                    ordersFilter === 'completed'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white scale-105 shadow-lg'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105'
+                  }`}
+                >
+                  ✅ Historial de Ventas
+                </button>
+              </div>
             </div>
 
             {/* Modern Orders Table */}
@@ -2879,7 +3028,15 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {groupOrdersByUser(orders).map((userOrders, groupIndex) => {
+                    {groupOrdersByUser(
+                      orders.filter(order => {
+                        if (ordersFilter === 'active') {
+                          return ['pending', 'pending_verification', 'pending_payment', 'confirmed', 'preparing', 'processing', 'shipped'].includes(order.status);
+                        } else {
+                          return ['delivered', 'completed'].includes(order.status);
+                        }
+                      })
+                    ).map((userOrders, groupIndex) => {
                       const mainOrder = userOrders[0]; // Usar el pedido más reciente como principal
                       const totalUserOrders = userOrders.length;
                       const totalAmount = userOrders.reduce((sum, order) => sum + order.total, 0);
@@ -3988,6 +4145,21 @@ export default function AdminPage() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Imagen del Banner
                           </label>
+                          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                            <p className="text-blue-800 font-medium mb-1">📐 Tamaño óptimo universal:</p>
+                            <ul className="text-blue-700 space-y-1">
+                              <li>• <strong>Tamaño:</strong> 1200x600px (ratio 2:1)</li>
+                              <li>• <strong>Formato:</strong> JPG o PNG</li>
+                              <li>• <strong>Zona segura:</strong> Centro 800px para texto</li>
+                              <li>• <strong>Tamaño máximo:</strong> 5MB</li>
+                            </ul>
+                            <div className="mt-2 p-2 bg-blue-100 rounded">
+                              <p className="text-blue-800 text-xs font-medium">💡 Diseño responsivo:</p>
+                              <p className="text-blue-700 text-xs">• Desktop: se ve completo (1200x600px)</p>
+                              <p className="text-blue-700 text-xs">• Mobile: se recorta a cuadrado (600x600px del centro)</p>
+                              <p className="text-blue-700 text-xs">• Coloca elementos importantes en el centro</p>
+                            </div>
+                          </div>
                           <input
                             type="file"
                             onChange={async (e) => {
@@ -4251,8 +4423,19 @@ export default function AdminPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Imagen del Logo
                   </label>
+                  <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+                    <p className="text-green-800 font-medium mb-1">📐 Medidas recomendadas:</p>
+                    <ul className="text-green-700 space-y-1">
+                      <li>• <strong>Tamaño:</strong> 200x60px o 300x90px</li>
+                      <li>• <strong>Formato:</strong> PNG con transparencia</li>
+                      <li>• <strong>Estilo:</strong> Logo horizontal preferible</li>
+                      <li>• <strong>Tamaño máximo:</strong> 2MB</li>
+                    </ul>
+                    <p className="text-green-600 text-xs mt-2">💡 Tip: Usa fondo transparente para mejor integración</p>
+                  </div>
                   <input
                     type="file"
+                    accept="image/*"
                     onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                   />
@@ -4880,6 +5063,17 @@ export default function AdminPage() {
                       <h4 className="text-sm font-bold text-gray-800">Imágenes del Producto</h4>
                     </div>
 
+                    {/* Image Specifications */}
+                    <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded-lg text-xs">
+                      <p className="text-orange-800 font-medium mb-1">📐 Especificaciones:</p>
+                      <ul className="text-orange-700 space-y-0.5">
+                        <li>• <strong>Tamaño:</strong> 800x800px (1:1)</li>
+                        <li>• <strong>Formato:</strong> JPG o PNG</li>
+                        <li>• <strong>Fondo:</strong> Blanco preferible</li>
+                        <li>• <strong>Máximo:</strong> 5MB por imagen</li>
+                      </ul>
+                    </div>
+
                     {/* Compact Image Upload Area */}
                     <div className="border-2 border-dashed border-orange-200 rounded-lg p-3 text-center bg-orange-50/50 hover:bg-orange-50 transition-colors">
                       <input
@@ -5009,8 +5203,7 @@ export default function AdminPage() {
                     disabled={uploadingProduct}
                     className="flex-[2] text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                     style={{
-                      backgroundColor: '#F16529',
-                      ':hover': { backgroundColor: '#D13C1A' }
+                      backgroundColor: '#F16529'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -5221,9 +5414,15 @@ export default function AdminPage() {
                       />
                       
                       
+                      <div className="mb-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
+                        <p className="text-purple-800 font-medium">📐 Promociones:</p>
+                        <p className="text-purple-700">600x400px • JPG/PNG • Max 3MB</p>
+                      </div>
+
                       <div className="flex gap-2">
                         <input
                           type="file"
+                          accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
@@ -5965,206 +6164,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Sales Analytics Section */}
-        {activeTab === 'sales-analytics' && (
-          <div className="space-y-6">
-            {/* Modern Analytics Header */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
-                    <span className="text-white text-lg">📈</span>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Ventas y Reportes</h2>
-                    <p className="text-gray-600 text-sm">Dashboard unificado con estadísticas y exportación</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      const today = new Date();
-                      const currentMonth = today.toISOString().slice(0, 7);
-                      const monthName = today.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
-
-                      // Generate a simple PDF report with current data
-                      const reportData = {
-                        month: currentMonth,
-                        monthName: monthName,
-                        totalSales: stats.totalRevenue,
-                        totalOrders: stats.totalOrders,
-                        averageOrderValue: stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0,
-                        topProducts: orders.flatMap(order => order.items)
-                          .reduce((acc, item) => {
-                            const existing = acc.find(p => p.nombre === item.nombre);
-                            if (existing) {
-                              existing.quantity += item.cantidad;
-                              existing.revenue += item.precio * item.cantidad;
-                            } else {
-                              acc.push({
-                                nombre: item.nombre,
-                                quantity: item.cantidad,
-                                revenue: item.precio * item.cantidad
-                              });
-                            }
-                            return acc;
-                          }, [] as any[])
-                          .sort((a, b) => b.revenue - a.revenue)
-                          .slice(0, 5)
-                      };
-
-                      // Simple export alert for now (could be enhanced with actual PDF generation)
-                      alert(`Reporte de ${monthName}\n\nVentas totales: ${formatPrice(reportData.totalSales)}\nPedidos: ${reportData.totalOrders}\nVenta promedio: ${formatPrice(reportData.averageOrderValue)}\n\nProducto más vendido: ${reportData.topProducts[0]?.nombre || 'N/A'}`);
-                    }}
-                    className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors font-semibold text-sm"
-                  >
-                    📊 Exportar Reporte
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F16529' }}>
-                      <span className="text-white text-sm">💰</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: '#F16529' }}>Venta Promedio</p>
-                      <p className="text-lg font-bold text-gray-800">
-                        {stats.totalOrders > 0 ? formatPrice(stats.totalRevenue / stats.totalOrders) : '$0'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F16529' }}>
-                      <span className="text-white text-sm">📅</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: '#F16529' }}>Ventas Hoy</p>
-                      <p className="text-lg font-bold text-gray-800">
-                        {orders.filter(order => {
-                          const orderDate = new Date(order.createdAt);
-                          const today = new Date();
-                          return orderDate.toDateString() === today.toDateString();
-                        }).length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F16529' }}>
-                      <span className="text-white text-sm">💵</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: '#F16529' }}>Ingresos del Mes</p>
-                      <p className="text-lg font-bold text-gray-800">
-                        {formatPrice(orders.filter(order => {
-                          const orderDate = new Date(order.createdAt);
-                          const now = new Date();
-                          return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
-                        }).reduce((sum, order) => sum + order.total, 0))}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Top Products */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
-                  <span className="text-white text-sm">🏆</span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-800">Productos Más Vendidos</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(() => {
-                  // Calcular productos más vendidos
-                  const productSales = {};
-                  orders.forEach(order => {
-                    order.items.forEach(item => {
-                      if (productSales[item.productId]) {
-                        productSales[item.productId].quantity += item.cantidad;
-                        productSales[item.productId].revenue += item.precio * item.cantidad;
-                      } else {
-                        productSales[item.productId] = {
-                          name: item.nombre,
-                          quantity: item.cantidad,
-                          revenue: item.precio * item.cantidad,
-                          image: item.imagen
-                        };
-                      }
-                    });
-                  });
-
-                  return Object.entries(productSales)
-                    .sort(([,a], [,b]) => b.quantity - a.quantity)
-                    .slice(0, 6)
-                    .map(([productId, data]) => (
-                      <div key={productId} className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-                        <div className="flex items-center gap-3">
-                          {data.image && (
-                            <img
-                              src={data.image}
-                              alt={data.name}
-                              className="w-12 h-12 rounded-lg object-cover border-2 border-orange-200"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-800 text-sm truncate">{data.name}</p>
-                            <p className="text-xs" style={{ color: '#F16529' }}>
-                              {data.quantity} vendidos • {formatPrice(data.revenue)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ));
-                })()}
-              </div>
-            </div>
-
-            {/* Recent Sales Timeline */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
-                  <span className="text-white text-sm">⏰</span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-800">Ventas Recientes</h3>
-              </div>
-
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {orders.slice(0, 10).map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F16529' }}>
-                        <span className="text-white text-xs">🛒</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">{order.customerName}</p>
-                        <p className="text-xs text-gray-600">{order.customerEmail}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-800">{formatPrice(order.total)}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString('es-CL')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
 

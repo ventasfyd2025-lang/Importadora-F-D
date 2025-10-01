@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Product } from '@/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, limit, orderBy } from 'firebase/firestore';
 import { mockProducts } from '@/data/mockProducts';
 
 // Simple in-memory cache
@@ -33,7 +33,13 @@ export function useProducts() {
       // Always use Firebase for real products data
       try {
         const productsCollection = collection(db, 'products');
-        const productsSnapshot = await getDocs(productsCollection);
+        // Optimize: Limit query to 100 products, ordered by creation date
+        const productsQuery = query(
+          productsCollection,
+          orderBy('fechaCreacion', 'desc'),
+          limit(100)
+        );
+        const productsSnapshot = await getDocs(productsQuery);
         const productsList = productsSnapshot.docs.map(doc => {
           const data = doc.data();
           return {

@@ -26,7 +26,7 @@ export default function GoogleSignInButton({
   const handleClick = async () => {
     try {
       if (mode === 'link' && currentUser) {
-        await linkGoogleAccount(currentUser);
+        await linkGoogleAccount(currentUser as any);
       } else {
         await signInWithGoogle();
       }

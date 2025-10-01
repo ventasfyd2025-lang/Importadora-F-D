@@ -163,14 +163,14 @@ export default function B2BOrderManagement({ className }: B2BOrderManagementProp
           formData.customerId,
           formData.items,
           formData,
-          currentUser.uid
+          (currentUser as any)?.uid || currentUser.email
         );
       } else {
         await createQuote(
           formData.customerId,
           formData.items,
           formData,
-          currentUser.uid
+          (currentUser as any)?.uid || currentUser.email
         );
       }
 
@@ -349,7 +349,7 @@ export default function B2BOrderManagement({ className }: B2BOrderManagementProp
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => updatePOStatus(order.id, 'confirmed', currentUser?.uid)}
+                        onClick={() => updatePOStatus(order.id, 'confirmed', (currentUser as any)?.uid || currentUser?.email)}
                         disabled={order.status !== 'pending'}
                         className="text-green-600 hover:text-green-800 disabled:opacity-50"
                       >
@@ -427,7 +427,7 @@ export default function B2BOrderManagement({ className }: B2BOrderManagementProp
                     <div className="flex items-center space-x-2">
                       {quote.status === 'accepted' && !quote.convertedToPO && (
                         <button
-                          onClick={() => convertQuoteToPO(quote.id, currentUser?.uid || '')}
+                          onClick={() => convertQuoteToPO(quote.id, (currentUser as any)?.uid || currentUser?.email || '')}
                           className="text-blue-600 hover:text-blue-800"
                           title="Convertir a Orden de Compra"
                         >
