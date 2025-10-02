@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
-import { MinusIcon, PlusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 
 export default function CartPageClient() {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
@@ -30,7 +30,7 @@ export default function CartPageClient() {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-12 border border-orange-100 text-center">
-            <ShoppingBagIcon className="h-24 w-24 text-orange-400 mx-auto mb-6" />
+            <ShoppingBag className="h-24 w-24 text-orange-400 mx-auto mb-6" strokeWidth={2} />
             <h1 className="text-3xl font-bold text-gray-800 mb-4">
               Tu carrito está vacío
             </h1>
@@ -115,7 +115,7 @@ export default function CartPageClient() {
                       onClick={() => handleQuantityChange(item.productId, item.cantidad - 1)}
                       className="p-1 sm:p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                      <MinusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                     <span className="px-2 py-1 sm:px-3 sm:py-1 min-w-[40px] sm:min-w-[50px] text-center font-medium text-sm sm:text-base">
                       {item.cantidad}
@@ -124,7 +124,7 @@ export default function CartPageClient() {
                       onClick={() => handleQuantityChange(item.productId, item.cantidad + 1)}
                       className="p-1 sm:p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                      <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
 
@@ -138,7 +138,7 @@ export default function CartPageClient() {
                     onClick={() => removeItem(item.productId)}
                     className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                   >
-                    <TrashIcon className="h-5 w-5" />
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               </div>

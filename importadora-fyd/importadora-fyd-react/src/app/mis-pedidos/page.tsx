@@ -7,16 +7,16 @@ import { useUserAuth } from '@/hooks/useUserAuth';
 import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { collection, query, where, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { 
-  ShoppingBagIcon, 
-  TruckIcon, 
-  CheckCircleIcon, 
-  ClockIcon,
-  XCircleIcon,
-  ChatBubbleLeftRightIcon,
-  HomeIcon,
-  ArrowLeftIcon
-} from '@heroicons/react/24/outline';
+import {
+  ShoppingBag,
+  Truck,
+  CheckCircle,
+  Clock,
+  XCircle,
+  MessageSquare,
+  Home,
+  ArrowLeft
+} from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -53,37 +53,37 @@ const statusConfig = {
   pending: {
     label: 'Pendiente',
     color: 'text-yellow-600 bg-yellow-50',
-    icon: ClockIcon
+    icon: Clock
   },
   pending_verification: {
     label: 'Verificando Pago',
     color: 'text-blue-600 bg-blue-50',
-    icon: ClockIcon
+    icon: Clock
   },
   confirmed: {
     label: 'Confirmado',
     color: 'text-green-600 bg-green-50',
-    icon: CheckCircleIcon
+    icon: CheckCircle
   },
   preparing: {
     label: 'Preparando',
     color: 'text-purple-600 bg-purple-50',
-    icon: ShoppingBagIcon
+    icon: ShoppingBag
   },
   shipped: {
     label: 'Enviado',
     color: 'text-orange-600 bg-orange-50',
-    icon: TruckIcon
+    icon: Truck
   },
   delivered: {
     label: 'Entregado',
     color: 'text-green-600 bg-green-50',
-    icon: CheckCircleIcon
+    icon: CheckCircle
   },
   cancelled: {
     label: 'Cancelado',
     color: 'text-red-600 bg-red-50',
-    icon: XCircleIcon
+    icon: XCircle
   }
 };
 
@@ -213,8 +213,8 @@ export default function OrdersPage() {
               className="inline-flex items-center px-6 py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:scale-105 shadow-lg gap-2"
               style={{ background: 'linear-gradient(to right, #F16529, #E94E1B)' }}
             >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <HomeIcon className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5" />
+              <Home className="h-5 w-5" />
               Volver al Home
             </Link>
           </div>
@@ -226,7 +226,7 @@ export default function OrdersPage() {
           </div>
         ) : orders.length === 0 ? (
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-12 border border-orange-100 text-center">
-            <ShoppingBagIcon className="h-24 w-24 text-orange-400 mx-auto mb-6" />
+            <ShoppingBag className="h-24 w-24 text-orange-400 mx-auto mb-6" />
             <h3 className="text-2xl font-bold text-gray-800 mb-2">No tienes pedidos aún</h3>
             <p className="text-lg text-gray-600 mb-8">¡Explora nuestra tienda y realiza tu primera compra!</p>
             <button
@@ -286,8 +286,9 @@ export default function OrdersPage() {
                           {order.items.map((item, index) => (
                             <div key={index} className="flex items-center space-x-3">
                               {item.imagen && (
-                                <img 
-                                  src={item.imagen} 
+                                <img
+                                  loading="lazy"
+                                  src={item.imagen}
                                   alt={item.nombre}
                                   className="h-12 w-12 object-cover rounded"
                                 />
@@ -330,7 +331,7 @@ export default function OrdersPage() {
                             href={`/chat/${order.id}`}
                             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                           >
-                            <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                            <MessageSquare className="h-4 w-4 mr-2" />
                             Estado del Pedido
                           </Link>
                           
@@ -339,7 +340,7 @@ export default function OrdersPage() {
                               onClick={() => window.open(`https://www.correos.cl/SitePages/seguimiento/seguimiento.aspx?envio=${order.trackingNumber}`, '_blank')}
                               className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                              <TruckIcon className="h-4 w-4 mr-2" />
+                              <Truck className="h-4 w-4 mr-2" />
                               Rastrear Envío
                             </button>
                           )}

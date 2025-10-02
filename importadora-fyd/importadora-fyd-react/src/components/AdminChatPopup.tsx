@@ -287,8 +287,9 @@ export default function AdminChatPopup({ order, isOpen, onClose }: AdminChatPopu
                   {order.items.map((item, index) => (
                     <div key={index} className="flex items-center space-x-2">
                       {item.imagen && (
-                        <img 
-                          src={item.imagen} 
+                        <img
+                          loading="lazy"
+                          src={item.imagen}
                           alt={item.nombre}
                           className="h-8 w-8 object-cover rounded"
                         />

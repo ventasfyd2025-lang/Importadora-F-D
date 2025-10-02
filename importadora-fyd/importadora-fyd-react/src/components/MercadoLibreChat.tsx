@@ -100,14 +100,30 @@ export default function MercadoLibreChat({ orderId, className = '' }: MercadoLib
         cleanNumber = '56' + cleanNumber;
       }
 
-      const finalUrl = `https://wa.me/${cleanNumber}?text=Hola,%20me%20gustaría%20hacer%20una%20consulta`;
+      const message = encodeURIComponent(
+        `¡Hola Importadora FyD! 👋\n\n` +
+        `Me gustaría obtener información sobre sus productos.\n\n` +
+        `🕒 *Horario de atención:*\n` +
+        `Lunes a Viernes: 9:00 - 18:00\n` +
+        `Sábados: 10:00 - 14:00\n\n` +
+        `¡Espero su pronta respuesta!`
+      );
+      const finalUrl = `https://wa.me/${cleanNumber}?text=${message}`;
       console.log('Clean number:', cleanNumber);
       console.log('Constructed URL:', finalUrl);
       return finalUrl;
     }
     // Fallback con número por defecto
     console.log('Using fallback URL');
-    return 'https://wa.me/56912345678?text=Hola,%20me%20gustaría%20hacer%20una%20consulta';
+    const fallbackMessage = encodeURIComponent(
+      `¡Hola Importadora FyD! 👋\n\n` +
+      `Me gustaría obtener información sobre sus productos.\n\n` +
+      `🕒 *Horario de atención:*\n` +
+      `Lunes a Viernes: 9:00 - 18:00\n` +
+      `Sábados: 10:00 - 14:00\n\n` +
+      `¡Espero su pronta respuesta!`
+    );
+    return `https://wa.me/56912345678?text=${fallbackMessage}`;
   };
 
   const handleChatButtonClick = () => {

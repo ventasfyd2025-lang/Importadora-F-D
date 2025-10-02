@@ -53,118 +53,96 @@ const HorizontalProductCard = ({ product }: { product: ProductWithExtras }) => {
     : 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden group border border-gray-100 hover:-translate-y-2">
-      <div className="flex h-32 sm:h-36 lg:h-40">
-        {/* Image Section - 40% width */}
-        <div className="relative w-2/5 bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="absolute inset-0 p-2 flex items-center justify-center">
-            {product.imagen ? (
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-200 hover:border-orange-400 relative">
+      <div className="flex h-32 sm:h-36">
+        {/* Badges */}
+        {discountPercentage > 0 && (
+          <div className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
+            -{discountPercentage}%
+          </div>
+        )}
+        {product.nuevo && (
+          <div className="absolute top-2 right-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
+            NUEVO
+          </div>
+        )}
+
+        {/* Image Section - 35% width */}
+        <div className="relative w-[35%] bg-white p-3 flex items-center justify-center">
+          {product.imagen ? (
+            <div className="relative w-full h-full">
               <Image
                 src={product.imagen}
                 alt={product.nombre || 'Producto'}
                 fill
-                className="object-contain transition-transform duration-700 group-hover:scale-110"
-                sizes="(max-width: 768px) 50vw, 33vw"
+                className="object-contain"
+                sizes="(max-width: 768px) 35vw, 20vw"
+                loading="lazy"
               />
-            ) : (
-              <div className="text-gray-400 text-6xl">📦</div>
-            )}
-          </div>
-          
-          {/* Badges */}
-          {discountPercentage > 0 && (
-            <div className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-bold px-3 py-2 rounded-full shadow-lg">
-              -{discountPercentage}%
             </div>
-          )}
-          
-          {product.nuevo && (
-            <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold px-3 py-2 rounded-full shadow-lg">
-              NUEVO
-            </div>
+          ) : (
+            <div className="text-gray-300 text-4xl">📦</div>
           )}
         </div>
 
-        {/* Content Section - 60% width */}
+        {/* Content Section - 65% width */}
         <div className="flex-1 p-3 flex flex-col justify-between">
-          <div className="space-y-1">
-            {/* Category */}
-            <div className="text-xs text-orange-500 uppercase tracking-wide font-semibold">
-              {product.categoria}
-            </div>
-            
-            {/* Title */}
-            <h3 className="text-sm sm:text-base font-bold text-gray-900 line-clamp-2 leading-tight">
-              {product.nombre || 'Producto sin nombre'}
-            </h3>
-            
-            {/* Description */}
-            {product.descripcion && (
-              <p className="text-gray-600 line-clamp-2 leading-relaxed">
-                {product.descripcion}
-              </p>
-            )}
-            
-            {/* Rating */}
-            {product.rating && (
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center">
-                  {[0, 1, 2, 3, 4].map((rating) => (
-                    <span
-                      key={rating}
-                      className={`text-lg ${rating < Math.floor(product.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <span className="text-sm text-gray-500">
-                  ({product.reviewCount || 0} reseñas)
-                </span>
-              </div>
-            )}
-          </div>
+          {/* Title */}
+          <h3 className="text-sm font-medium text-gray-700 line-clamp-2 leading-tight mb-2">
+            {product.nombre || 'Producto sin nombre'}
+          </h3>
 
           {/* Price and Button */}
           <div className="space-y-2">
-            <div className="space-y-1">
-              {/* Original Price */}
-              {product.precioOriginal && product.precioOriginal > (product.precio || 0) && (
-                <div className="text-sm text-gray-400 line-through">
-                  {formatPrice(product.precioOriginal)}
-                </div>
-              )}
-              
-              {/* Current Price */}
-              <div className="text-sm sm:text-base font-bold text-gray-900">
-                {formatPrice(product.precio ?? 0)}
+            {/* Original Price */}
+            {product.precioOriginal && product.precioOriginal > (product.precio || 0) && (
+              <div className="text-xs text-gray-400 line-through">
+                {formatPrice(product.precioOriginal)}
               </div>
-              
-              {/* Stock warning */}
-              {product.stock && product.stock <= 5 && product.stock > 0 && (
-                <p className="text-sm text-red-600 font-medium">
-                  ¡Solo quedan {product.stock} unidades!
-                </p>
+            )}
+
+            {/* Current Price with discount badge */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg font-bold text-gray-900">
+                {formatPrice(product.precio ?? 0)}
+              </span>
+              {discountPercentage > 0 && (
+                <span className="text-xs font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                  {discountPercentage}% OFF
+                </span>
               )}
             </div>
+
+            {/* Stock warning */}
+            {product.stock && product.stock <= 5 && product.stock > 0 && (
+              <p className="text-xs text-orange-600 font-medium">
+                Quedan {product.stock} disponibles
+              </p>
+            )}
 
             {/* Add to Cart Button */}
             <button
               onClick={handleAddToCart}
               disabled={(product.stock ?? 1) === 0}
-              style={{ padding: '6px 10px', fontSize: '11px' }}
-              className={`w-full rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-1 ${
+              className={`w-full py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center gap-1.5 ${
                 (product.stock ?? 1) === 0
                   ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md'
+                  : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] group'
               }`}
             >
               {(product.stock ?? 1) === 0 ? (
-                'Sin Stock'
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>Agotado</span>
+                </>
               ) : (
                 <>
-                  <span className="text-sm">🛒</span>
-                  <span>Agregar al Carrito</span>
+                  <svg className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>Agregar</span>
                 </>
               )}
             </button>

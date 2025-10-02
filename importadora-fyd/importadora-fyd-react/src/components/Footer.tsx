@@ -97,29 +97,43 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-white/20 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center text-sm">
-          <p className="text-white/80">
-            &copy; {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
-          </p>
-          <div className="flex space-x-4 mt-4 sm:mt-0">
-            <Link
-              href="/legal/terminos"
-              className="text-white/70 hover:text-white transition-colors"
-            >
-              Términos
-            </Link>
-            <Link
-              href="/legal/privacidad"
-              className="text-white/70 hover:text-white transition-colors"
-            >
-              Privacidad
-            </Link>
-            <Link
-              href="/admin"
-              className="text-white/50 hover:text-white/70 transition-colors text-xs"
-            >
-              Admin
-            </Link>
+        <div className="border-t border-white/20 mt-8 pt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center text-sm mb-3">
+            <p className="text-white/80">
+              &copy; {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
+            </p>
+            <div className="flex space-x-4 mt-4 sm:mt-0">
+              <Link
+                href="/legal/terminos"
+                className="text-white/70 hover:text-white transition-colors"
+              >
+                Términos
+              </Link>
+              <Link
+                href="/legal/privacidad"
+                className="text-white/70 hover:text-white transition-colors"
+              >
+                Privacidad
+              </Link>
+              <Link
+                href="/admin"
+                className="text-white/50 hover:text-white/70 transition-colors text-xs"
+              >
+                Admin
+              </Link>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-white/60 text-xs">
+              Layout actualizado: {new Date().toLocaleDateString('es-CL', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              })}
+            </p>
           </div>
         </div>
       </div>

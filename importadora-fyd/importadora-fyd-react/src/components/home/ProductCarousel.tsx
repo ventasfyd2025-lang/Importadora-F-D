@@ -25,7 +25,6 @@ const formatPrice = (price: number) => {
 };
 
 const ProductCard = memo(({ product }: { product: Product }) => {
-  const { t } = useI18n();
   const { addItem } = useCart();
 
   const discountPercentage = product.oferta && product.precioOriginal
@@ -33,70 +32,61 @@ const ProductCard = memo(({ product }: { product: Product }) => {
     : 0;
 
   return (
-    <div className="group relative flex flex-col sm:flex-row bg-white/90 backdrop-blur-sm rounded-2xl border border-orange-100 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 h-full focus-within:ring-2 focus-within:ring-[#F16529] focus-within:ring-offset-2 hover:-translate-y-2">
-      <div className="relative w-full sm:w-2/5 flex-shrink-0">
-        <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full overflow-hidden">
-          {product.imagen ? (
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-orange-400 overflow-hidden h-full flex flex-col">
+      {/* Badges */}
+      {discountPercentage > 0 && (
+        <div className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
+          -{discountPercentage}%
+        </div>
+      )}
+      {product.nuevo && (
+        <div className="absolute top-2 right-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
+          NUEVO
+        </div>
+      )}
+
+      {/* Imagen cuadrada */}
+      <div className="relative w-full aspect-square bg-white p-4">
+        {product.imagen ? (
+          <div className="relative w-full h-full">
             <Image
               src={product.imagen}
               alt={product.nombre || 'Producto'}
               fill
-              className="object-cover object-center transition-transform duration-700 group-hover:scale-110"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              className="object-contain"
+              sizes="(max-width: 768px) 50vw, 25vw"
+              loading="lazy"
             />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-orange-100 to-pink-100 flex items-center justify-center">
-              <span className="text-orange-400 text-sm font-medium">Sin imagen</span>
-            </div>
-          )}
-        </div>
-
-        {discountPercentage > 0 && (
-          <span className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-            -{discountPercentage}%
-          </span>
-        )}
-
-        {product.nuevo && (
-          <span className="absolute top-2 right-2 bg-gradient-to-r from-[#F16529] to-[#E67E22] text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-            {t('productCard.new')}
-          </span>
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+            <span className="text-gray-300 text-5xl">📦</span>
+          </div>
         )}
       </div>
 
-      <div className="flex-1 p-3 sm:p-4 flex flex-col min-h-0">
-        <div className="flex-grow">
-          <div className="text-xs text-orange-500 uppercase tracking-wide font-semibold mb-1">{product.categoria}</div>
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-2 sm:mb-3">{product.nombre}</h3>
-        </div>
+      {/* Información */}
+      <div className="p-2 flex flex-col flex-grow">
+        <h3 className="text-xs text-gray-700 line-clamp-2 mb-1.5 min-h-[2rem] leading-tight">
+          {product.nombre || 'Producto sin nombre'}
+        </h3>
 
-        <div className="space-y-2 mt-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              {discountPercentage > 0 && product.precioOriginal && (
-                <span className="text-xs text-gray-400 line-through">
-                  {formatPrice(product.precioOriginal)}
-                </span>
-              )}
-              <span className="text-lg sm:text-xl font-bold text-gray-900">
-                {formatPrice(product.precio)}
-              </span>
+        <div className="mt-auto space-y-1.5">
+          {product.precioOriginal && product.precioOriginal > product.precio && (
+            <div className="text-[10px] text-gray-400 line-through">
+              {formatPrice(product.precioOriginal)}
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              {[0, 1, 2, 3, 4].map((rating) => (
-                <StarIcon
-                  key={rating}
-                  className={`h-3 w-3 ${rating < Math.floor(product.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}
-                  aria-hidden="true"
-                />
-              ))}
-              <span className="text-xs text-gray-500 ml-1">
-                ({product.reviews || 0})
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-bold text-gray-900">
+              {formatPrice(product.precio)}
+            </span>
+            {discountPercentage > 0 && (
+              <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                {discountPercentage}% OFF
               </span>
-            </div>
+            )}
           </div>
 
           <button
@@ -111,21 +101,13 @@ const ProductCard = memo(({ product }: { product: Product }) => {
                 1,
                 product.sku,
               );
-              // Mostrar notificación
-              const notification = document.createElement('div');
-              notification.textContent = 'Producto agregado al carrito';
-              notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-50 transition-all duration-300';
-              document.body.appendChild(notification);
-              setTimeout(() => notification.remove(), 3000);
             }}
-            className="w-full text-center text-xs sm:text-sm text-white py-2 sm:py-3 px-2 sm:px-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-1 sm:gap-2"
-            style={{ backgroundColor: '#F16529' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2.5 px-3 rounded-xl transition-all duration-300 text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group"
           >
-            <span>🛒</span>
-            <span className="hidden xs:inline sm:hidden md:inline">Agregar al Carrito</span>
-            <span className="xs:hidden sm:inline md:hidden">Agregar</span>
+            <svg className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span>Agregar</span>
           </button>
         </div>
       </div>
@@ -156,9 +138,9 @@ const ProductCarousel = memo(({
       if (window.innerWidth < 640) {
         setItemsToShow(2);
       } else if (window.innerWidth < 1024) {
-        setItemsToShow(3);
-      } else {
         setItemsToShow(4);
+      } else {
+        setItemsToShow(5);
       }
     };
 

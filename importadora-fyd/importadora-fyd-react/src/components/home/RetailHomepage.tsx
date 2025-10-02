@@ -408,7 +408,28 @@ export default function RetailHomepage() {
   };
 
   const enabledSections = (productSections as ProductSectionConfig[]).filter((section) => section.enabled);
-  const sectionsWithProducts = enabledSections
+
+  // Check if we need to add featured products automatically
+  const hasFeaturedProducts = homepageConfig.featuredProducts && homepageConfig.featuredProducts.length > 0;
+  const hasFeaturedSection = enabledSections.some(s => s.type === 'featured');
+
+  let sectionsToProcess = [...enabledSections];
+
+  if (!hasFeaturedSection && hasFeaturedProducts) {
+    // No featured section exists, create one automatically
+    const featuredSection: ProductSectionConfig = {
+      id: 'auto-featured',
+      name: 'Productos Destacados',
+      description: 'Productos seleccionados como destacados',
+      enabled: true,
+      type: 'featured',
+      selectedProducts: homepageConfig.featuredProducts,
+      order: -1
+    };
+    sectionsToProcess = [featuredSection, ...sectionsToProcess];
+  }
+
+  const sectionsWithProducts = sectionsToProcess
     .map((section) => {
       const sectionProducts = getProductsForSection(section);
       return { section, sectionProducts };
@@ -523,19 +544,20 @@ export default function RetailHomepage() {
         </section>
 
         {/* Category Promotions Pinterest Grid */}
-        <section className="space-y-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
-            <div className="flex items-center justify-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
-                <span className="text-white text-lg">🔥</span>
+        {homepageConfig.promotionalSections && homepageConfig.promotionalSections.length > 0 && (
+          <section className="space-y-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                  <span className="text-white text-lg">🔥</span>
+                </div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                  Promociones por Categoría
+                </h2>
               </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                Promociones por Categoría
-              </h2>
             </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-            {homepageConfig.promotionalSections.map((section) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+              {homepageConfig.promotionalSections.map((section) => {
               // Generate link based on section configuration
               const getLink = () => {
                 switch (section.linkType) {
@@ -616,9 +638,10 @@ export default function RetailHomepage() {
                   </div>
                 </Link>
               );
-            })}
-          </div>
-        </section>
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Dynamic Product Sections - Configured from Admin */}
         {sectionsWithProducts.map(({ section, sectionProducts }, index) => {
@@ -703,11 +726,6 @@ export default function RetailHomepage() {
                     Todos los Productos
                   </h2>
                 </div>
-                {layoutPatternsConfig.updatedAt && (
-                  <span className="text-sm text-gray-500">
-                    Layout actualizado: {formatDateTime(layoutPatternsConfig.updatedAt)}
-                  </span>
-                )}
               </div>
             </div>
             <MasonryProductGrid

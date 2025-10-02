@@ -13,12 +13,12 @@ import CartButton from '@/components/header/CartButton';
 import UserMenu from '@/components/header/UserMenu';
 import NotificationBadge from '@/components/header/NotificationBadge';
 import {
-  Bars3Icon,
-  MagnifyingGlassIcon,
-  ShoppingCartIcon,
-  UserIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
+  Menu,
+  Search,
+  ShoppingCart,
+  User,
+  X
+} from 'lucide-react';
 
 export default function UnifiedHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -184,7 +184,7 @@ export default function UnifiedHeader() {
                   href="/perfil"
                   className="relative p-1.5 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
                 >
-                  <UserIcon className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                   {hasUnreadMessages && (
                     <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -198,7 +198,7 @@ export default function UnifiedHeader() {
                   href="/carrito"
                   className="relative p-1.5 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
                 >
-                  <ShoppingCartIcon className="h-5 w-5" />
+                  <ShoppingCart className="h-5 w-5" />
                   {getTotalItems() > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold"
                           style={{ backgroundColor: '#D64541' }}>
@@ -242,7 +242,7 @@ export default function UnifiedHeader() {
                   aria-haspopup="true"
                   aria-expanded={isDesktopCategoriesOpen}
                 >
-                  <Bars3Icon className="h-3.5 w-3.5" />
+                  <Menu className="h-3.5 w-3.5" />
                   <span>Categorías</span>
                 </button>
 
@@ -393,9 +393,9 @@ export default function UnifiedHeader() {
                 aria-label="Menú de categorías"
               >
                 {isMobileMenuOpen ? (
-                  <XMarkIcon className="h-7 w-7 text-white font-bold" />
+                  <X className="h-7 w-7 text-white font-bold" />
                 ) : (
-                  <Bars3Icon className="h-7 w-7 text-white font-bold" />
+                  <Menu className="h-7 w-7 text-white font-bold" />
                 )}
               </button>
             </div>
@@ -415,7 +415,7 @@ export default function UnifiedHeader() {
                   className="px-4 py-2 text-white rounded-r-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   style={{ backgroundColor: '#F16529' }}
                 >
-                  <MagnifyingGlassIcon className="h-5 w-5" />
+                  <Search className="h-5 w-5" />
                 </button>
               </form>
             </div>
@@ -430,7 +430,7 @@ export default function UnifiedHeader() {
                   className="relative flex items-center space-x-2 p-3 text-white hover:text-orange-100 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   <div className="relative">
-                    <UserIcon className="h-6 w-6" />
+                    <User className="h-6 w-6" />
                     {hasUnreadMessages && (
                       <span className="absolute -top-1 -right-1 flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -538,7 +538,7 @@ export default function UnifiedHeader() {
                 href="/carrito"
                 className="relative p-2 text-white hover:text-orange-100 hover:bg-white/20 rounded-md transition-colors"
               >
-                <ShoppingCartIcon className="h-6 w-6" />
+                <ShoppingCart className="h-6 w-6" />
                 {getTotalItems() > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
                         style={{ backgroundColor: '#D64541' }}>
@@ -564,7 +564,7 @@ export default function UnifiedHeader() {
                 className="px-3 py-2 text-white rounded-r-lg hover:opacity-90"
                 style={{ backgroundColor: '#F16529' }}
               >
-                <MagnifyingGlassIcon className="h-4 w-4" />
+                <Search className="h-4 w-4" />
               </button>
             </form>
           </div>

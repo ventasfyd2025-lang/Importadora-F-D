@@ -80,79 +80,85 @@ const ProductCard = memo(function ProductCard({ product, customHeight, isSpecial
 
   return (
     <Link href={`/producto/${product.id}`} className="block h-full">
-      <div className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-100 flex flex-col overflow-hidden ${customHeight || 'h-full'} hover:-translate-y-1 cursor-pointer`}>
-      <div className={`relative ${imageHeight}`}>
-        {product.imagen ? (
-          <Image
-            src={product.imagen || ''}
-            alt={product.nombre || 'Producto'}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F4F4F4' }}>
-            <span className="text-gray-400 text-5xl">📦</span>
-          </div>
-        )}
+      <div className={`bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 group border border-gray-200 flex flex-col ${customHeight || 'h-full'} hover:border-orange-400 cursor-pointer relative`}>
 
-        {/* Etiqueta de oferta en esquina - Responsive */}
-        {product.oferta && (
-          <div className="absolute top-2 left-2 z-10">
-            <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg backdrop-blur-sm">
-              OFERTA
-            </span>
+      {/* Badges flotantes */}
+      {product.oferta && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
+            OFERTA
+          </span>
+        </div>
+      )}
+      {product.nuevo && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
+            NUEVO
+          </span>
+        </div>
+      )}
+
+      {/* Contenedor de imagen */}
+      <div className="relative w-full aspect-square bg-white overflow-hidden p-4">
+        {product.imagen ? (
+          <div className="relative w-full h-full">
+            <Image
+              src={product.imagen || ''}
+              alt={product.nombre || 'Producto'}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              loading="lazy"
+            />
           </div>
-        )}
-        
-        {product.nuevo && (
-          <div className="absolute top-2 right-2 z-10">
-            <span className="bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg backdrop-blur-sm">
-              NUEVO
-            </span>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+            <span className="text-gray-300 text-5xl">📦</span>
           </div>
         )}
 
         {product.stock === 0 && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <span className="text-white px-3 py-1 rounded-lg font-medium text-sm" style={{ backgroundColor: '#D64541' }}>
-              Sin Stock
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+            <span className="bg-red-600 text-white px-4 py-2 rounded font-semibold text-sm">
+              Agotado
             </span>
           </div>
         )}
       </div>
 
-      <div className="p-3 flex flex-col flex-grow justify-between">
-        <div className="flex-grow space-y-2">
-          <h3 className="text-sm font-semibold line-clamp-2 text-left leading-tight" style={{ color: '#333333' }}>
-            {product.nombre || 'Producto sin nombre'}
-          </h3>
-          {product.sku && (
-            <p className="text-xs text-gray-500">SKU: {product.sku}</p>
-          )}
+      {/* Información del producto */}
+      <div className="p-2 flex flex-col flex-grow">
+        {/* Título */}
+        <h3 className="text-xs text-gray-700 line-clamp-2 mb-1.5 min-h-[2rem] leading-tight">
+          {product.nombre || 'Producto sin nombre'}
+        </h3>
 
-          <div className="space-y-2">
-            {/* Precio tachado si hay oferta */}
-            {originalPrice && (
-              <div className="text-sm line-through text-gray-400">
-                {formatPrice(originalPrice)}
-              </div>
-            )}
-            
-            {/* Precio final - Más prominente */}
-            <div className="text-xl font-bold text-gray-900">
-              {formatPrice(currentPrice)}
+        {/* Precio */}
+        <div className="mt-auto">
+          {originalPrice && (
+            <div className="text-[10px] text-gray-400 line-through mb-1">
+              {formatPrice(originalPrice)}
             </div>
-            
-            {product.stock <= 5 && product.stock > 0 && (
-              <p className="text-xs" style={{ color: '#D64541' }}>
-                ¡Últimas {product.stock}!
-              </p>
+          )}
+          <div className="flex items-baseline gap-1.5 mb-2">
+            <span className="text-lg font-bold text-gray-900">
+              {formatPrice(currentPrice)}
+            </span>
+            {originalPrice && (
+              <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% OFF
+              </span>
             )}
           </div>
-        </div>
 
-        <div className="mt-4">
+          {/* Stock bajo */}
+          {product.stock <= 5 && product.stock > 0 && (
+            <p className="text-[10px] text-orange-600 font-medium mb-1.5">
+              Quedan {product.stock} disponibles
+            </p>
+          )}
+
+          {/* Botón de agregar */}
           {product.stock > 0 ? (
             <button
               onClick={(e) => {
@@ -160,19 +166,22 @@ const ProductCard = memo(function ProductCard({ product, customHeight, isSpecial
                 e.stopPropagation();
                 handleAddToCart(e);
               }}
-              style={{ padding: '8px 12px', fontSize: '12px', backgroundColor: '#1d4ed8' }}
-              className="w-full text-white font-medium rounded-md transition-all duration-300 flex items-center justify-center gap-1 shadow-sm hover:shadow-md hover:bg-blue-800"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2.5 px-3 rounded-xl transition-all duration-300 text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 group"
             >
-              <span>🛒</span>
-              <span>Agregar al Carrito</span>
+              <svg className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Agregar</span>
             </button>
           ) : (
             <button
               disabled
-              style={{ padding: '8px 12px', fontSize: '12px' }}
-              className="w-full rounded-md font-medium bg-gray-200 text-gray-500 cursor-not-allowed"
+              className="w-full bg-gray-200 text-gray-500 font-semibold py-2.5 px-3 rounded-xl cursor-not-allowed text-sm flex items-center justify-center gap-1.5"
             >
-              Sin Stock
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Agotado</span>
             </button>
           )}
         </div>

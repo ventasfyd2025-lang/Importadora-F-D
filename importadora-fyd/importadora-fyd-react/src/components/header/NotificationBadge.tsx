@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import Link from 'next/link';
-import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { MessageCircle } from 'lucide-react';
 
 interface NotificationBadgeProps {
   hasUnreadMessages: boolean;
@@ -18,12 +18,12 @@ const NotificationBadge = memo(function NotificationBadge({
   return (
     <Link
       href="/mis-pedidos"
-      className="relative inline-flex items-center p-2 text-gray-700 hover:text-orange-600 transition-colors"
+      className="relative inline-flex items-center p-2 text-gray-700 hover:text-orange-600 transition-all duration-200 hover:scale-110"
       aria-label="Notificaciones de pedidos"
     >
-      <ChatBubbleLeftIcon className="h-6 w-6" />
+      <MessageCircle className="h-6 w-6" strokeWidth={2.5} />
       {hasUnreadMessages && (
-        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+        <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg border-2 border-white"></span>
       )}
     </Link>
   );

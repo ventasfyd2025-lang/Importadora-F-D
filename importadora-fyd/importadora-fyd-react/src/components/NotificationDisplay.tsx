@@ -1,7 +1,7 @@
 'use client';
 
 import { useNotification } from '@/context/NotificationContext';
-import { XMarkIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { X, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 export default function NotificationDisplay() {
   const { notifications, removeNotification } = useNotification();
@@ -14,15 +14,15 @@ export default function NotificationDisplay() {
         const getIcon = () => {
           switch (notification.type) {
             case 'success':
-              return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+              return <CheckCircle className="h-5 w-5 text-green-500" strokeWidth={2.5} />;
             case 'error':
-              return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
+              return <AlertTriangle className="h-5 w-5 text-red-500" strokeWidth={2.5} />;
             case 'warning':
-              return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
+              return <AlertTriangle className="h-5 w-5 text-yellow-500" strokeWidth={2.5} />;
             case 'info':
-              return <InformationCircleIcon className="h-5 w-5 text-blue-500" />;
+              return <Info className="h-5 w-5 text-blue-500" strokeWidth={2.5} />;
             default:
-              return <InformationCircleIcon className="h-5 w-5 text-gray-500" />;
+              return <Info className="h-5 w-5 text-gray-500" strokeWidth={2.5} />;
           }
         };
 
@@ -65,7 +65,7 @@ export default function NotificationDisplay() {
                   className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none"
                   onClick={() => removeNotification(notification.id)}
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <X className="h-4 w-4" strokeWidth={2.5} />
                 </button>
               </div>
             </div>

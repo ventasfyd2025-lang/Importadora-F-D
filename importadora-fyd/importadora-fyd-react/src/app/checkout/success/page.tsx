@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircleIcon, ClockIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { CheckCircle, Clock, Banknote } from 'lucide-react';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useCart } from '@/context/CartContext';
 import { doc, getDoc } from 'firebase/firestore';
@@ -131,9 +131,9 @@ function PaymentSuccessContent() {
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
               {orderInfo?.paymentMethod === 'transferencia' ? (
-                <ClockIcon className="w-8 h-8 text-orange-600" />
+                <Clock className="w-8 h-8 text-orange-600" />
               ) : (
-                <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                <CheckCircle className="w-8 h-8 text-green-600" />
               )}
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
@@ -185,7 +185,7 @@ function PaymentSuccessContent() {
                         <div className="flex items-center mt-1">
                           {orderInfo.paymentMethod === 'transferencia' ? (
                             <>
-                              <BanknotesIcon className="w-5 h-5 text-blue-600 mr-2" />
+                              <Banknote className="w-5 h-5 text-blue-600 mr-2" />
                               <span className="text-base text-gray-900">Transferencia Bancaria</span>
                             </>
                           ) : (
@@ -263,7 +263,7 @@ function PaymentSuccessContent() {
                   {orderInfo.paymentMethod === 'transferencia' ? (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
                       <div className="flex items-start">
-                        <ClockIcon className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
+                        <Clock className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
                         <div>
                           <h3 className="text-lg font-medium text-blue-800 mb-2">
                             Próximos pasos
@@ -279,7 +279,7 @@ function PaymentSuccessContent() {
                   ) : (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
                       <div className="flex items-start">
-                        <CheckCircleIcon className="w-5 h-5 text-green-600 mt-0.5 mr-3" />
+                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3" />
                         <div>
                           <h3 className="text-lg font-medium text-green-800 mb-2">
                             Pago confirmado

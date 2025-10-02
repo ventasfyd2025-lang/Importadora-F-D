@@ -167,7 +167,7 @@ export default function UsuariosAdminPage() {
                     <tr key={user.uid} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-base font-semibold text-gray-900">
+                          <div className="text-lg font-bold text-gray-900">
                             {user.firstName} {user.lastName}
                           </div>
                           <div className="text-sm text-gray-500">{user.email}</div>
@@ -200,7 +200,7 @@ export default function UsuariosAdminPage() {
                           }
                         })() : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-base font-semibold space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-lg font-bold space-x-2">
                         {editingUser === user.uid ? (
                           <button
                             onClick={() => setEditingUser(null)}
@@ -212,14 +212,14 @@ export default function UsuariosAdminPage() {
                           <>
                             <button
                               onClick={() => setEditingUser(user.uid)}
-                              className="text-base font-semibold text-indigo-600 hover:text-indigo-900"
+                              className="text-lg font-bold text-indigo-600 hover:text-indigo-900"
                             >
                               Editar Rol
                             </button>
                             {user.uid !== userProfile?.uid && (
                               <button
                                 onClick={() => deleteUser(user.uid)}
-                                className="text-base font-semibold text-red-600 hover:text-red-900"
+                                className="text-lg font-bold text-red-600 hover:text-red-900"
                               >
                                 Eliminar
                               </button>
@@ -263,7 +263,7 @@ export default function UsuariosAdminPage() {
                     <tr key={user.uid} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-base font-semibold text-gray-900">
+                          <div className="text-lg font-bold text-gray-900">
                             {user.firstName} {user.lastName}
                           </div>
                           <div className="text-sm text-gray-500">{user.email}</div>
@@ -296,7 +296,7 @@ export default function UsuariosAdminPage() {
                           }
                         })() : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-base font-semibold space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-lg font-bold space-x-2">
                         {editingUser === user.uid ? (
                           <button
                             onClick={() => setEditingUser(null)}
@@ -308,14 +308,14 @@ export default function UsuariosAdminPage() {
                           <>
                             <button
                               onClick={() => setEditingUser(user.uid)}
-                              className="text-base font-semibold text-indigo-600 hover:text-indigo-900"
+                              className="text-lg font-bold text-indigo-600 hover:text-indigo-900"
                             >
                               Editar Rol
                             </button>
                             {user.uid !== userProfile?.uid && (
                               <button
                                 onClick={() => deleteUser(user.uid)}
-                                className="text-base font-semibold text-red-600 hover:text-red-900"
+                                className="text-lg font-bold text-red-600 hover:text-red-900"
                               >
                                 Eliminar
                               </button>

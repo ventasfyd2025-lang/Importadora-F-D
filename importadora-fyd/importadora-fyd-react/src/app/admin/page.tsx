@@ -11,19 +11,20 @@ import { useFooterConfig } from '@/hooks/useFooterConfig';
 import { useBankConfig } from '@/hooks/useBankConfig';
 import { useLayoutPatterns, DEFAULT_LAYOUT_PATTERNS } from '@/hooks/useLayoutPatterns';
 import { useUserAuth, UserProfile } from '@/hooks/useUserAuth';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
   addDoc,
   setDoc,
   getDoc,
   query,
+  where,
   orderBy,
   onSnapshot,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -376,11 +377,17 @@ export default function AdminPage() {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [ordersFilter, setOrdersFilter] = useState<'active' | 'completed'>('active');
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
 
   // Users management state
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [showClientes, setShowClientes] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [selectedUserDetails, setSelectedUserDetails] = useState<any>(null);
+  const [selectedUserOrders, setSelectedUserOrders] = useState<Order[]>([]);
 
   // Banner management state
   const [bannerForm, setBannerForm] = useState({
@@ -1006,6 +1013,74 @@ export default function AdminPage() {
       case 'vendedor': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'cliente': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Cargar detalles del usuario y sus pedidos
+  const loadUserDetails = async (user: UserProfile) => {
+    try {
+      setSelectedUserDetails({
+        ...user,
+        uid: user.uid
+      });
+
+      // Cargar pedidos del usuario
+      const ordersRef = collection(db, 'orders');
+      const ordersQuery = query(ordersRef, where('userId', '==', user.uid));
+      const ordersSnapshot = await getDocs(ordersQuery);
+
+      const userOrders = ordersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Order));
+
+      // Ordenar por fecha más reciente
+      userOrders.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setSelectedUserOrders(userOrders);
+    } catch (error) {
+      console.error('Error loading user details:', error);
+      alert('Error al cargar detalles del usuario');
+    }
+  };
+
+  // Buscar usuario y cargar sus pedidos
+  const searchUserByEmail = async (email: string) => {
+    if (!email.trim()) {
+      setSelectedUserDetails(null);
+      setSelectedUserOrders([]);
+      return;
+    }
+
+    try {
+      // Buscar usuario por email
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', email.toLowerCase().trim()));
+      const userSnapshot = await getDocs(q);
+
+      if (userSnapshot.empty) {
+        alert('No se encontró ningún usuario con ese correo');
+        setSelectedUserDetails(null);
+        setSelectedUserOrders([]);
+        return;
+      }
+
+      const userData = userSnapshot.docs[0].data();
+      const userId = userSnapshot.docs[0].id;
+
+      const user = {
+        ...userData,
+        uid: userId
+      } as UserProfile;
+
+      loadUserDetails(user);
+    } catch (error) {
+      console.error('Error searching user:', error);
+      alert('Error al buscar usuario');
     }
   };
 
@@ -1863,8 +1938,14 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-red-50/20 to-orange-100/40">
-      
+    <>
+      <style jsx global>{`
+        #admin-container * {
+          font-size: 1.02em !important;
+        }
+      `}</style>
+      <div id="admin-container" className="min-h-screen bg-gradient-to-br from-orange-50/30 via-red-50/20 to-orange-100/40">
+
       <header className="bg-white/80 backdrop-blur-lg shadow-xl border-b border-orange-100">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -2782,6 +2863,199 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              {/* Buscador de usuarios */}
+              <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">🔍 Buscar Usuario por Correo</h3>
+                <div className="flex gap-3">
+                  <input
+                    type="email"
+                    placeholder="Ingresa el correo electrónico..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        searchUserByEmail(userSearchQuery);
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => searchUserByEmail(userSearchQuery)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                  >
+                    Buscar
+                  </button>
+                  {selectedUserDetails && (
+                    <button
+                      onClick={() => {
+                        setUserSearchQuery('');
+                        setSelectedUserDetails(null);
+                        setSelectedUserOrders([]);
+                      }}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Modal de detalles del usuario */}
+              {selectedUserDetails && (
+                <div
+                  className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                  onClick={() => {
+                    setSelectedUserDetails(null);
+                    setSelectedUserOrders([]);
+                  }}
+                >
+                  <div
+                    className="bg-white rounded-xl border-2 border-blue-300 shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 flex justify-between items-center">
+                      <h3 className="text-xl font-bold">📋 Información del Usuario</h3>
+                      <button
+                        onClick={() => {
+                          setSelectedUserDetails(null);
+                          setSelectedUserOrders([]);
+                        }}
+                        className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Nombre Completo</label>
+                        <p className="text-lg font-medium text-gray-900">
+                          {selectedUserDetails.firstName} {selectedUserDetails.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Correo Electrónico</label>
+                        <p className="text-lg font-medium text-gray-900">{selectedUserDetails.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Teléfono</label>
+                        <p className="text-lg font-medium text-gray-900">{selectedUserDetails.phone || 'No registrado'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Rol</label>
+                        <p>
+                          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getRoleColor(selectedUserDetails.role || 'cliente')}`}>
+                            {selectedUserDetails.role || 'cliente'}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Estado</label>
+                        <p>
+                          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${
+                            selectedUserDetails.blocked
+                              ? 'bg-red-100 text-red-800 border-red-200'
+                              : 'bg-green-100 text-green-800 border-green-200'
+                          }`}>
+                            {selectedUserDetails.blocked ? '🚫 Bloqueado' : '✅ Activo'}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Fecha de Registro</label>
+                        <p className="text-lg font-medium text-gray-900">
+                          {selectedUserDetails.createdAt ? new Date(selectedUserDetails.createdAt.toDate()).toLocaleDateString('es-CL') : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Historial de compras */}
+                    <div className="border-t pt-6">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4">
+                        🛒 Historial de Compras ({selectedUserOrders.length})
+                      </h4>
+
+                      {selectedUserOrders.length === 0 ? (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <p className="text-gray-500">Este usuario no ha realizado ninguna compra</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {selectedUserOrders.map((order) => (
+                            <div key={order.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-sm font-bold text-gray-700">
+                                      Pedido #{order.id.slice(-8).toUpperCase()}
+                                    </span>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                      order.status === 'delivered' || order.status === 'completed'
+                                        ? 'bg-green-100 text-green-800'
+                                        : order.status === 'cancelled'
+                                        ? 'bg-red-100 text-red-800'
+                                        : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {order.status === 'pending' && '⏳ Pendiente'}
+                                      {order.status === 'confirmed' && '✅ Confirmado'}
+                                      {order.status === 'preparing' && '📦 Preparando'}
+                                      {order.status === 'shipped' && '🚚 Enviado'}
+                                      {(order.status === 'delivered' || order.status === 'completed') && '✔️ Entregado'}
+                                      {order.status === 'cancelled' && '❌ Cancelado'}
+                                    </span>
+                                  </div>
+
+                                  <div className="text-sm text-gray-600">
+                                    <p>Fecha: {new Date(order.createdAt).toLocaleDateString('es-CL')} - {new Date(order.createdAt).toLocaleTimeString('es-CL')}</p>
+                                    <p>Total: <span className="font-bold text-gray-900">{formatPrice(order.total)}</span></p>
+                                    <p>Productos: {order.items?.length || 0} artículo(s)</p>
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => window.open(`/admin/pedido/${order.id}`, '_blank')}
+                                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-xs transition-colors"
+                                >
+                                  Ver Detalles
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Resumen estadístico */}
+                      {selectedUserOrders.length > 0 && (
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                            <p className="text-sm font-semibold text-blue-800">Total Gastado</p>
+                            <p className="text-2xl font-bold text-blue-900">
+                              {formatPrice(selectedUserOrders.reduce((sum, order) => sum + order.total, 0))}
+                            </p>
+                          </div>
+                          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                            <p className="text-sm font-semibold text-green-800">Pedidos Completados</p>
+                            <p className="text-2xl font-bold text-green-900">
+                              {selectedUserOrders.filter(o => o.status === 'delivered' || o.status === 'completed').length}
+                            </p>
+                          </div>
+                          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                            <p className="text-sm font-semibold text-orange-800">Promedio por Pedido</p>
+                            <p className="text-2xl font-bold text-orange-900">
+                              {formatPrice(selectedUserOrders.reduce((sum, order) => sum + order.total, 0) / selectedUserOrders.length)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  </div>
+                </div>
+              )}
+
               {usersLoading ? (
                 <div className="text-center py-8">
                   <div className="text-xl">Cargando usuarios...</div>
@@ -2802,111 +3076,257 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Usuario
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Rol
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Estado
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Fecha Registro
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Acciones
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {users.map((user) => (
-                          <tr key={user.uid} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {user.firstName} {user.lastName}
+                  {/* Admins y Vendedores - Siempre visibles */}
+                  <div className="mb-6">
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 mb-3">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        👑 Administradores y Vendedores ({users.filter(u => u.role === 'admin' || u.role === 'vendedor').length})
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Usuario
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Rol
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Estado
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Fecha Registro
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {users
+                            .filter(user => user.role === 'admin' || user.role === 'vendedor')
+                            .map((user) => (
+                            <tr
+                              key={user.uid}
+                              className="hover:bg-blue-50 cursor-pointer transition-colors"
+                              onClick={() => loadUserDetails(user)}
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{user.email}</div>
                                 </div>
-                                <div className="text-sm text-gray-500">{user.email}</div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editingUser === user.uid ? (
-                                <select
-                                  defaultValue={user.role}
-                                  onChange={(e) => updateUserRole(user.uid, e.target.value as any)}
-                                  className="text-sm border border-gray-300 rounded px-2 py-1"
-                                >
-                                  <option value="cliente">Cliente</option>
-                                  <option value="vendedor">Vendedor</option>
-                                  <option value="admin">Admin</option>
-                                </select>
-                              ) : (
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getRoleColor(user.role || 'cliente')}`}>
-                                  {user.role || 'cliente'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingUser === user.uid ? (
+                                  <select
+                                    defaultValue={user.role}
+                                    onChange={(e) => updateUserRole(user.uid, e.target.value as any)}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                                  >
+                                    <option value="cliente">Cliente</option>
+                                    <option value="vendedor">Vendedor</option>
+                                    <option value="admin">Admin</option>
+                                  </select>
+                                ) : (
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getRoleColor(user.role || 'cliente')}`}>
+                                    {user.role || 'cliente'}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                                  user.blocked
+                                    ? 'bg-red-100 text-red-800 border-red-200'
+                                    : 'bg-green-100 text-green-800 border-green-200'
+                                }`}>
+                                  {user.blocked ? '🚫 Bloqueado' : '✅ Activo'}
                                 </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                                user.blocked
-                                  ? 'bg-red-100 text-red-800 border-red-200'
-                                  : 'bg-green-100 text-green-800 border-green-200'
-                              }`}>
-                                {user.blocked ? '🚫 Bloqueado' : '✅ Activo'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString('es-CL') : 'N/A'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                              {editingUser === user.uid ? (
-                                <button
-                                  onClick={() => setEditingUser(null)}
-                                  className="text-gray-600 hover:text-gray-900"
-                                >
-                                  Cancelar
-                                </button>
-                              ) : (
-                                <>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString('es-CL') : 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2" onClick={(e) => e.stopPropagation()}>
+                                {editingUser === user.uid ? (
                                   <button
-                                    onClick={() => setEditingUser(user.uid)}
-                                    className="text-indigo-600 hover:text-indigo-900"
+                                    onClick={() => setEditingUser(null)}
+                                    className="text-gray-600 hover:text-gray-900"
                                   >
-                                    Editar Rol
+                                    Cancelar
                                   </button>
-                                  <button
-                                    onClick={() => deleteUser(user.uid)}
-                                    className="text-red-600 hover:text-red-900"
-                                  >
-                                    Eliminar
-                                  </button>
-                                  {user.blocked ? (
+                                ) : (
+                                  <>
                                     <button
-                                      onClick={() => unblockUser(user.uid)}
-                                      className="text-green-600 hover:text-green-900"
+                                      onClick={() => setEditingUser(user.uid)}
+                                      className="text-indigo-600 hover:text-indigo-900"
                                     >
-                                      ✅ Desbloquear
+                                      Editar Rol
+                                    </button>
+                                    <button
+                                      onClick={() => deleteUser(user.uid)}
+                                      className="text-red-600 hover:text-red-900"
+                                    >
+                                      Eliminar
+                                    </button>
+                                    {user.blocked ? (
+                                      <button
+                                        onClick={() => unblockUser(user.uid)}
+                                        className="text-green-600 hover:text-green-900"
+                                      >
+                                        ✅ Desbloquear
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => blockUser(user.uid)}
+                                        className="text-orange-600 hover:text-orange-900"
+                                      >
+                                        🚫 Bloquear
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Clientes - Colapsable */}
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowClientes(!showClientes)}
+                      className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-3 hover:from-blue-100 hover:to-indigo-100 transition-all"
+                    >
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          👤 Clientes ({users.filter(u => !u.role || u.role === 'cliente').length})
+                        </h3>
+                        <span className="text-2xl">
+                          {showClientes ? '▼' : '▶'}
+                        </span>
+                      </div>
+                    </button>
+
+                    {showClientes && (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Usuario
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Rol
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Estado
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Fecha Registro
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Acciones
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {users
+                              .filter(user => !user.role || user.role === 'cliente')
+                              .map((user) => (
+                              <tr
+                                key={user.uid}
+                                className="hover:bg-blue-50 cursor-pointer transition-colors"
+                                onClick={() => loadUserDetails(user)}
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {user.firstName} {user.lastName}
+                                    </div>
+                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {editingUser === user.uid ? (
+                                    <select
+                                      defaultValue={user.role}
+                                      onChange={(e) => updateUserRole(user.uid, e.target.value as any)}
+                                      className="text-sm border border-gray-300 rounded px-2 py-1"
+                                    >
+                                      <option value="cliente">Cliente</option>
+                                      <option value="vendedor">Vendedor</option>
+                                      <option value="admin">Admin</option>
+                                    </select>
+                                  ) : (
+                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getRoleColor(user.role || 'cliente')}`}>
+                                      {user.role || 'cliente'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                                    user.blocked
+                                      ? 'bg-red-100 text-red-800 border-red-200'
+                                      : 'bg-green-100 text-green-800 border-green-200'
+                                  }`}>
+                                    {user.blocked ? '🚫 Bloqueado' : '✅ Activo'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString('es-CL') : 'N/A'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2" onClick={(e) => e.stopPropagation()}>
+                                  {editingUser === user.uid ? (
+                                    <button
+                                      onClick={() => setEditingUser(null)}
+                                      className="text-gray-600 hover:text-gray-900"
+                                    >
+                                      Cancelar
                                     </button>
                                   ) : (
-                                    <button
-                                      onClick={() => blockUser(user.uid)}
-                                      className="text-orange-600 hover:text-orange-900"
-                                    >
-                                      🚫 Bloquear
-                                    </button>
+                                    <>
+                                      <button
+                                        onClick={() => setEditingUser(user.uid)}
+                                        className="text-indigo-600 hover:text-indigo-900"
+                                      >
+                                        Editar Rol
+                                      </button>
+                                      <button
+                                        onClick={() => deleteUser(user.uid)}
+                                        className="text-red-600 hover:text-red-900"
+                                      >
+                                        Eliminar
+                                      </button>
+                                      {user.blocked ? (
+                                        <button
+                                          onClick={() => unblockUser(user.uid)}
+                                          className="text-green-600 hover:text-green-900"
+                                        >
+                                          ✅ Desbloquear
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => blockUser(user.uid)}
+                                          className="text-orange-600 hover:text-orange-900"
+                                        >
+                                          🚫 Bloquear
+                                        </button>
+                                      )}
+                                    </>
                                   )}
-                                </>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-8 bg-blue-50 rounded-lg p-6">
@@ -3001,6 +3421,82 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Búsqueda y Filtros */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 p-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Búsqueda */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    🔍 Buscar pedido
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre, email, teléfono o ID..."
+                    value={orderSearchQuery}
+                    onChange={(e) => setOrderSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                  />
+                </div>
+
+                {/* Filtro por Estado */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    📊 Filtrar por estado
+                  </label>
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                  >
+                    <option value="all">Todos los estados</option>
+                    <option value="pending">⏳ Pendiente</option>
+                    <option value="pending_verification">🔍 Pendiente Verificación</option>
+                    <option value="pending_payment">💳 Pendiente de Pago</option>
+                    <option value="confirmed">✅ Confirmado</option>
+                    <option value="preparing">📦 Preparando</option>
+                    <option value="processing">⚙️ Procesando</option>
+                    <option value="shipped">🚚 Enviado</option>
+                    <option value="delivered">✔️ Entregado</option>
+                    <option value="completed">🎉 Completado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Contador de resultados */}
+              {(orderSearchQuery || orderStatusFilter !== 'all') && (
+                <div className="mt-4 text-sm text-gray-600">
+                  {orders.filter(order => {
+                    // Filtro base (activos/completados)
+                    let passesMainFilter = false;
+                    if (ordersFilter === 'active') {
+                      passesMainFilter = ['pending', 'pending_verification', 'pending_payment', 'confirmed', 'preparing', 'processing', 'shipped'].includes(order.status);
+                    } else {
+                      passesMainFilter = ['delivered', 'completed'].includes(order.status);
+                    }
+                    if (!passesMainFilter) return false;
+
+                    // Filtro por búsqueda
+                    if (orderSearchQuery) {
+                      const searchLower = orderSearchQuery.toLowerCase();
+                      const matchesSearch =
+                        order.customerName?.toLowerCase().includes(searchLower) ||
+                        order.customerEmail?.toLowerCase().includes(searchLower) ||
+                        order.customerPhone?.toLowerCase().includes(searchLower) ||
+                        order.id?.toLowerCase().includes(searchLower);
+                      if (!matchesSearch) return false;
+                    }
+
+                    // Filtro por estado
+                    if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) {
+                      return false;
+                    }
+
+                    return true;
+                  }).length} pedidos encontrados
+                </div>
+              )}
+            </div>
+
             {/* Modern Orders Table */}
             <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 overflow-hidden">
               <div className="overflow-x-auto">
@@ -3014,27 +3510,45 @@ export default function AdminPage() {
                         Total
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#F16529' }}>
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#F16529' }}>
-                        Línea de Tiempo
+                        Estado & Progreso
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#F16529' }}>
                         Fecha
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#F16529' }}>
-                        Estado de la Venta
+                        Acciones
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {groupOrdersByUser(
                       orders.filter(order => {
+                        // Filtro base (activos/completados)
+                        let passesMainFilter = false;
                         if (ordersFilter === 'active') {
-                          return ['pending', 'pending_verification', 'pending_payment', 'confirmed', 'preparing', 'processing', 'shipped'].includes(order.status);
+                          passesMainFilter = ['pending', 'pending_verification', 'pending_payment', 'confirmed', 'preparing', 'processing', 'shipped'].includes(order.status);
                         } else {
-                          return ['delivered', 'completed'].includes(order.status);
+                          passesMainFilter = ['delivered', 'completed'].includes(order.status);
                         }
+                        if (!passesMainFilter) return false;
+
+                        // Filtro por búsqueda
+                        if (orderSearchQuery) {
+                          const searchLower = orderSearchQuery.toLowerCase();
+                          const matchesSearch =
+                            order.customerName?.toLowerCase().includes(searchLower) ||
+                            order.customerEmail?.toLowerCase().includes(searchLower) ||
+                            order.customerPhone?.toLowerCase().includes(searchLower) ||
+                            order.id?.toLowerCase().includes(searchLower);
+                          if (!matchesSearch) return false;
+                        }
+
+                        // Filtro por estado
+                        if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) {
+                          return false;
+                        }
+
+                        return true;
                       })
                     ).map((userOrders, groupIndex) => {
                       const mainOrder = userOrders[0]; // Usar el pedido más reciente como principal
@@ -3082,62 +3596,54 @@ export default function AdminPage() {
                             formatPrice(mainOrder.total)
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           {totalUserOrders > 1 ? (
                             <div className="text-xs text-gray-600">
-                              <div>Estados múltiples</div>
-                              <div className="text-xs">Ver individual</div>
+                              <div className="font-medium">Estados múltiples</div>
+                              <div className="text-xs text-gray-400">Ver detalles individuales</div>
                             </div>
                           ) : (
-                            <select
-                              value={mainOrder.status}
-                              onChange={(e) => updateOrderStatus(mainOrder.id, e.target.value)}
-                              className="text-xs border border-gray-300 rounded px-2 py-1"
-                            >
-                              <option value="pending">Pendiente</option>
-                              <option value="confirmed">Confirmado</option>
-                              <option value="preparing">Preparando</option>
-                              <option value="shipped">Enviado</option>
-                              <option value="delivered">Entregado</option>
-                              <option value="cancelled">Cancelado</option>
-                            </select>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {totalUserOrders > 1 ? (
-                            <div className="text-xs text-gray-600 text-center">
-                              <div>Líneas múltiples</div>
-                              <div>Ver individual</div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center py-2">
-                              <div className="flex items-center space-x-1">
+                            <div className="space-y-3">
+                              {/* Selector de estado */}
+                              <div>
+                                <select
+                                  value={mainOrder.status}
+                                  onChange={(e) => updateOrderStatus(mainOrder.id, e.target.value)}
+                                  className="w-full text-xs border-2 border-orange-200 rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none font-medium"
+                                >
+                                  <option value="pending">⏳ Pendiente</option>
+                                  <option value="confirmed">✅ Confirmado</option>
+                                  <option value="preparing">📦 Preparando</option>
+                                  <option value="shipped">🚚 Enviado</option>
+                                  <option value="delivered">✔️ Entregado</option>
+                                  <option value="cancelled">❌ Cancelado</option>
+                                </select>
+                              </div>
+
+                              {/* Timeline compacto horizontal */}
+                              <div className="flex items-center justify-start">
                                 {getOrderTimeline(mainOrder).map((step, index) => {
-                                const IconComponent = step.icon;
-                                return (
-                                  <div key={step.status} className="flex items-center">
-                                    <div className="flex flex-col items-center">
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shadow-sm ${
-                                        step.completed 
-                                          ? 'bg-green-500 text-white border-green-500' 
-                                          : 'bg-gray-200 text-gray-500 border-gray-300'
-                                      }`}>
-                                        <IconComponent className="h-4 w-4" />
+                                  const IconComponent = step.icon;
+                                  return (
+                                    <React.Fragment key={step.status}>
+                                      <div
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                                          step.completed
+                                            ? 'bg-green-500 text-white border-green-500 shadow-md'
+                                            : 'bg-gray-100 text-gray-400 border-gray-300'
+                                        }`}
+                                        title={step.title}
+                                      >
+                                        <IconComponent className="h-3 w-3" />
                                       </div>
-                                      <span className={`text-xs mt-1 font-medium ${
-                                        step.completed ? 'text-green-600' : 'text-gray-500'
-                                      }`}>
-                                        {step.title}
-                                      </span>
-                                    </div>
-                                    {index < getOrderTimeline(mainOrder).length - 1 && (
-                                      <div className={`flex-1 h-0.5 mx-2 ${
-                                        step.completed ? 'bg-green-500' : 'bg-gray-300'
-                                      }`} style={{width: '20px'}}></div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                      {index < getOrderTimeline(mainOrder).length - 1 && (
+                                        <div className={`h-0.5 w-4 ${
+                                          step.completed ? 'bg-green-500' : 'bg-gray-300'
+                                        }`}></div>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -3176,48 +3682,49 @@ export default function AdminPage() {
                           <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {formatPrice(order.total)}
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap">
-                            <select
-                              value={order.status}
-                              onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                              className="text-xs border border-gray-300 rounded px-2 py-1"
-                            >
-                              <option value="pending">Pendiente</option>
-                              <option value="confirmed">Confirmado</option>
-                              <option value="preparing">Preparando</option>
-                              <option value="shipped">Enviado</option>
-                              <option value="delivered">Entregado</option>
-                              <option value="cancelled">Cancelado</option>
-                            </select>
-                          </td>
-                          <td className="px-6 py-3 whitespace-nowrap">
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                              {getOrderTimeline(order).map((step, index) => {
-                                const IconComponent = step.icon;
-                                return (
-                                  <div key={step.status} className="flex items-center">
-                                    <div className="flex flex-col items-center">
-                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 shadow-sm ${
-                                        step.completed
-                                          ? 'bg-green-500 text-white border-green-500'
-                                          : 'bg-gray-200 text-gray-500 border-gray-300'
-                                      }`}>
+                          <td className="px-6 py-3">
+                            <div className="space-y-3">
+                              {/* Selector de estado */}
+                              <div>
+                                <select
+                                  value={order.status}
+                                  onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                                  className="w-full text-xs border-2 border-orange-200 rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none font-medium"
+                                >
+                                  <option value="pending">⏳ Pendiente</option>
+                                  <option value="confirmed">✅ Confirmado</option>
+                                  <option value="preparing">📦 Preparando</option>
+                                  <option value="shipped">🚚 Enviado</option>
+                                  <option value="delivered">✔️ Entregado</option>
+                                  <option value="cancelled">❌ Cancelado</option>
+                                </select>
+                              </div>
+
+                              {/* Timeline compacto horizontal */}
+                              <div className="flex items-center justify-start">
+                                {getOrderTimeline(order).map((step, index) => {
+                                  const IconComponent = step.icon;
+                                  return (
+                                    <React.Fragment key={step.status}>
+                                      <div
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                                          step.completed
+                                            ? 'bg-green-500 text-white border-green-500 shadow-md'
+                                            : 'bg-gray-100 text-gray-400 border-gray-300'
+                                        }`}
+                                        title={step.title}
+                                      >
                                         <IconComponent className="h-3 w-3" />
                                       </div>
-                                      <span className={`text-xs mt-1 font-medium ${
-                                        step.completed ? 'text-green-600' : 'text-gray-500'
-                                      }`}>
-                                        {step.title}
-                                      </span>
-                                    </div>
-                                    {index < getOrderTimeline(order).length - 1 && (
-                                      <div className={`flex-1 h-0.5 mx-1 ${
-                                        step.completed ? 'bg-green-500' : 'bg-gray-300'
-                                      }`} style={{width: '15px'}}></div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                      {index < getOrderTimeline(order).length - 1 && (
+                                        <div className={`h-0.5 w-4 ${
+                                          step.completed ? 'bg-green-500' : 'bg-gray-300'
+                                        }`}></div>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -3304,8 +3811,9 @@ export default function AdminPage() {
                           />
                           {image && (
                             <div className="mt-2">
-                              <img 
-                                src={image} 
+                              <img
+                                loading="lazy"
+                                src={image}
                                 alt={`Banner ${index + 1}`}
                                 className="h-20 w-32 object-cover rounded border"
                               />
@@ -3646,6 +4154,7 @@ export default function AdminPage() {
                               />
                             ) : (
                               <img
+                                loading="lazy"
                                 src={popupForm.mediaUrl}
                                 alt="Popup"
                                 className="w-20 h-20 rounded-lg object-cover border-2 border-green-200 shadow-sm"
@@ -4080,17 +4589,11 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="pt-4">
-                  <button
-                    onClick={saveProductSections}
-                    className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors"
-                    style={{ backgroundColor: '#F16529' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
-                  >
-                    Guardar Configuración
-                  </button>
+                  <div className="text-sm text-green-600 flex items-center">
+                    ✅ Guardado automático activo - Los cambios se guardan al seleccionar productos
+                  </div>
                 </div>
               </div>
             </div>
@@ -4186,8 +4689,9 @@ export default function AdminPage() {
                           
                           {slide.imageUrl && (
                             <div className="mt-2">
-                              <img 
-                                src={slide.imageUrl} 
+                              <img
+                                loading="lazy"
+                                src={slide.imageUrl}
                                 alt={`Banner ${index + 1}`}
                                 className="w-full h-32 object-cover rounded border"
                               />
@@ -4303,8 +4807,9 @@ export default function AdminPage() {
                             const selectedProduct = products.find(p => p.id === slide.productId);
                             return selectedProduct && (
                               <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center space-x-3">
-                                <img 
-                                  src={selectedProduct.imagen || ''} 
+                                <img
+                                  loading="lazy"
+                                  src={selectedProduct.imagen || ''}
                                   alt={selectedProduct.nombre || 'Producto'}
                                   className="w-16 h-16 object-cover rounded"
                                 />
@@ -4444,9 +4949,10 @@ export default function AdminPage() {
                   </p>
                   {logoForm.image && (
                     <div className="mt-2">
-                      <img 
-                        src={logoForm.image} 
-                        alt="Logo actual" 
+                      <img
+                        loading="lazy"
+                        src={logoForm.image}
+                        alt="Logo actual"
                         className="h-12 w-12 object-cover rounded"
                       />
                     </div>
@@ -4515,7 +5021,7 @@ export default function AdminPage() {
                 <div className="bg-white p-4 border rounded-lg">
                   <div className="flex items-center space-x-2">
                     {logoForm.image ? (
-                      <img src={logoForm.image} alt="Logo" className="h-8 w-8 object-contain" />
+                      <img loading="lazy" src={logoForm.image} alt="Logo" className="h-8 w-8 object-contain" />
                     ) : (
                       <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
                         Sin logo
@@ -5719,95 +6225,6 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
-            
-            
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">⭐ Productos Destacados</h3>
-                <div className="text-sm text-green-600">
-                  {homepageContent.featuredProducts.length} seleccionados
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-blue-700 text-sm">
-                  💡 <strong>Tip:</strong> Los productos que selecciones aquí aparecerán en una sección especial &quot;⭐ Productos Destacados&quot; en la página principal.
-                </p>
-              </div>
-              
-              {products.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-6xl mb-4">📦</div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No hay productos disponibles</h4>
-                  <p className="text-gray-600 mb-4">
-                    Primero necesitas crear productos para poder destacarlos
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('products')}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    ➕ Ir a crear productos
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
-                  {products.map((product) => {
-                  const isSelected = homepageContent.featuredProducts.includes(product.id);
-                  return (
-                    <div 
-                      key={product.id} 
-                      className={`border rounded-lg p-3 cursor-pointer transition-all ${
-                        isSelected 
-                          ? 'border-orange-300 bg-orange-50 shadow-md' 
-                          : 'border-gray-200 hover:border-orange-200'
-                      }`}
-                      onClick={() => {
-                        const newFeaturedProducts = isSelected
-                          ? homepageContent.featuredProducts.filter(id => id !== product.id)
-                          : [...homepageContent.featuredProducts, product.id];
-                        
-                        const newContent = { ...homepageContent, featuredProducts: newFeaturedProducts };
-                        setHomepageContent(newContent);
-                        
-                        // Auto-save
-                        setTimeout(async () => {
-                          setIsAutoSaving(true);
-                          try {
-                            await setDoc(doc(db, 'config', 'homepage-content'), newContent);                          } catch (error) {
-                            console.error('❌ Error auto-saving:', error);
-                          } finally {
-                            setIsAutoSaving(false);
-                          }
-                        }, 500);
-                      }}
-                    >
-                      <div className="relative h-24 bg-gray-100 rounded mb-2">
-                        {product.imagen ? (
-                          <img
-                            src={product.imagen}
-                            alt={product.nombre}
-                            className="w-full h-full object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">📦</div>
-                        )}
-                        {isSelected && (
-                          <div className="absolute top-1 right-1 bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                            ✓
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">{product.nombre}</h4>
-                      <div className="text-xs text-gray-600">${product.precio}</div>
-                      <div className={`text-xs mt-1 font-medium ${isSelected ? 'text-orange-600' : 'text-gray-500'}`}>
-                        {isSelected ? '⭐ Destacado' : 'Hacer clic para destacar'}
-                      </div>
-                    </div>
-                  );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -6289,7 +6706,7 @@ export default function AdminPage() {
 
       
       {showProductSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-full w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
@@ -6467,7 +6884,7 @@ export default function AdminPage() {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const newSections = productSections.map(section => {
                               if (section.id === currentSectionId) {
                                 const selectedProducts = e.target.checked
@@ -6478,6 +6895,16 @@ export default function AdminPage() {
                               return section;
                             });
                             setProductSections(newSections as any);
+
+                            // Auto-save to Firebase
+                            try {
+                              await setDoc(doc(db, 'config', 'productSections'), {
+                                sections: newSections,
+                                updatedAt: new Date().toISOString()
+                              });
+                            } catch (error) {
+                              console.error('Error auto-saving product selection:', error);
+                            }
                           }}
                           className="mt-1 h-4 w-4 text-orange-500 rounded"
                         />
@@ -6515,5 +6942,6 @@ export default function AdminPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
