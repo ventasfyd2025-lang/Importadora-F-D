@@ -180,13 +180,16 @@ export default function OrderDetailPage() {
       setOrder({ ...order, status: newStatus });
 
       // Send automatic message about status change
-      const statusMessages = {
+      const statusMessages: Record<string, string> = {
         'pending': 'Pedido en estado pendiente',
         'pending_verification': 'Verificando comprobante de pago',
+        'pending_payment': 'Pendiente de pago',
         'confirmed': 'Pago confirmado, preparando pedido',
         'preparing': 'Pedido en preparación',
+        'processing': 'Pedido en procesamiento',
         'shipped': 'Pedido enviado',
         'delivered': 'Pedido entregado',
+        'completed': 'Pedido completado',
         'cancelled': 'Pedido cancelado'
       };
 
