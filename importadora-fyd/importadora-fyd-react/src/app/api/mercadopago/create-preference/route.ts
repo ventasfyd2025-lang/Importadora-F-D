@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
     // Obtener la URL base correcta
     const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     
+    // Calcular total desde los items
+    const total = mpItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+
     // Configurar preferencia simplificada
     const preferenceData = {
       items: mpItems,
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest) {
         email: userInfo?.email || ''
       },
       back_urls: {
-        success: `${baseUrl}/checkout/success?orderId=${orderId}&paymentMethod=mercadopago&customerName=${encodeURIComponent(userInfo?.firstName + ' ' + userInfo?.lastName)}&customerEmail=${encodeURIComponent(userInfo?.email || '')}`,
+        success: `${baseUrl}/checkout/success?orderId=${orderId}&paymentMethod=mercadopago&customerName=${encodeURIComponent(userInfo?.firstName + ' ' + userInfo?.lastName)}&customerEmail=${encodeURIComponent(userInfo?.email || '')}&total=${total}`,
         failure: `${baseUrl}/checkout/failure?orderId=${orderId}`,
         pending: `${baseUrl}/checkout/pending?orderId=${orderId}`
       },

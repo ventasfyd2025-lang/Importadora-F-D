@@ -76,11 +76,13 @@ export default function HomeClient() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
-          <div className="text-red-500 text-xl mb-4">❌</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error al cargar productos</h2>
-          <p className="text-gray-600">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 py-16">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-12 border border-red-200 text-center">
+            <div className="text-red-500 text-6xl mb-4">❌</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Error al cargar productos</h2>
+            <p className="text-gray-600 text-lg">{error}</p>
+          </div>
         </div>
       </div>
     );
@@ -118,7 +120,7 @@ export default function HomeClient() {
       {/* PRIORIDAD 1.5: Layouts Pinterest de categorías promocionales - solo en página principal */}
       {shouldShowBanner && (
         <section className="py-8 sm:py-12 lg:py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div className="space-y-6">
               <h2 className="text-3xl font-bold text-gray-900 text-center bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
                 🔥 Promociones por Categoría
@@ -261,59 +263,67 @@ export default function HomeClient() {
       )}
 
       {/* PRIORIDAD 2: Productos cargan después en segundo plano */}
-      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header - Responsive */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 lg:mb-10">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-0" style={{ color: '#333333' }}>
-              {getPageTitle()}
-            </h2>
-            
-            {/* Filter Controls - Responsive */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-              <select 
-                className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': '#F16529' } as any}
-                value={sortBy}
-                onChange={(e) => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  if (e.target.value) {
-                    params.set('sort', e.target.value);
-                  } else {
-                    params.delete('sort');
-                  }
-                  window.history.pushState(null, '', `?${params.toString()}`);
-                  window.location.reload();
-                }}
-              >
-                <option value="">Ordenar por</option>
-                <option value="name">Nombre</option>
-                <option value="price-low">Precio: menor a mayor</option>
-                <option value="price-high">Precio: mayor a menor</option>
-                <option value="newest">Más nuevos</option>
-              </select>
+      <section className="py-8 sm:py-12 lg:py-16 bg-gradient-to-br from-orange-50 via-white to-orange-50">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header - Modern Admin Style */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100 mb-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                  <span className="text-white text-lg">🛍️</span>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {getPageTitle()}
+                  </h2>
+                  <p className="text-gray-600 text-sm">Descubre nuestros productos</p>
+                </div>
+              </div>
 
-              <select 
-                className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': '#F16529' } as any}
-                value={priceRange}
-                onChange={(e) => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  if (e.target.value) {
-                    params.set('price', e.target.value);
-                  } else {
-                    params.delete('price');
-                  }
-                  window.history.pushState(null, '', `?${params.toString()}`);
-                  window.location.reload();
-                }}
-              >
-                <option value="">Todos los precios</option>
-                <option value="0-50000">$0 - $50.000</option>
-                <option value="50000-100000">$50.000 - $100.000</option>
-                <option value="100000-200000">$100.000 - $200.000</option>
-                <option value="200000-+">$200.000+</option>
-              </select>
+              {/* Filter Controls - Modern Style */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <select
+                  className="px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white hover:border-orange-300 transition-all shadow-sm"
+                  value={sortBy}
+                  onChange={(e) => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    if (e.target.value) {
+                      params.set('sort', e.target.value);
+                    } else {
+                      params.delete('sort');
+                    }
+                    window.history.pushState(null, '', `?${params.toString()}`);
+                    window.location.reload();
+                  }}
+                >
+                  <option value="">📊 Ordenar por</option>
+                  <option value="name">🔤 Nombre</option>
+                  <option value="price-low">💰 Precio: menor a mayor</option>
+                  <option value="price-high">💎 Precio: mayor a menor</option>
+                  <option value="newest">✨ Más nuevos</option>
+                </select>
+
+                <select
+                  className="px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white hover:border-orange-300 transition-all shadow-sm"
+                  value={priceRange}
+                  onChange={(e) => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    if (e.target.value) {
+                      params.set('price', e.target.value);
+                    } else {
+                      params.delete('price');
+                    }
+                    window.history.pushState(null, '', `?${params.toString()}`);
+                    window.location.reload();
+                  }}
+                >
+                  <option value="">💵 Todos los precios</option>
+                  <option value="0-50000">$0 - $50.000</option>
+                  <option value="50000-100000">$50.000 - $100.000</option>
+                  <option value="100000-200000">$100.000 - $200.000</option>
+                  <option value="200000-+">$200.000+</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -369,12 +379,12 @@ export default function HomeClient() {
               )}
             </>
           ) : (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-12 border border-orange-100 text-center">
+              <div className="text-orange-400 text-6xl mb-4">🔍</div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
                 No se encontraron productos
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-lg">
                 Intenta ajustar los filtros o buscar otro término
               </p>
             </div>

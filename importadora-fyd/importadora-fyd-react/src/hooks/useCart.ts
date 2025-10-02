@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CartItem } from '@/types';
 import { useStockManager } from './useStockManager';
+import { useNotification } from '@/context/NotificationContext';
 
 export function useCartState() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [reservedOrderId, setReservedOrderId] = useState<string | null>(null);
   const { reserveStock, releaseStock, confirmSale, loading: stockLoading } = useStockManager();
+  const { addNotification } = useNotification();
 
   // Load cart from localStorage on initial load
   useEffect(() => {
@@ -34,8 +36,11 @@ export function useCartState() {
     cantidad: number = 1,
     sku?: string,
   ) => {
+    let isExisting = false;
+
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.productId === productId);
+      isExisting = !!existingItem;
 
       if (existingItem) {
         return prevItems.map(item =>
@@ -56,7 +61,26 @@ export function useCartState() {
         return [...prevItems, newItem];
       }
     });
-  }, []);
+
+    // Mostrar notificación después de actualizar el estado
+    setTimeout(() => {
+      if (isExisting) {
+        addNotification({
+          type: 'success',
+          title: 'Producto actualizado',
+          message: `Se agregaron ${cantidad} unidad(es) más de ${nombre}`,
+          duration: 3000
+        });
+      } else {
+        addNotification({
+          type: 'success',
+          title: '¡Producto agregado!',
+          message: `${nombre} se agregó al carrito`,
+          duration: 3000
+        });
+      }
+    }, 0);
+  }, [addNotification]);
 
   const removeItem = useCallback((productId: string) => {
     setItems(prevItems => prevItems.filter(item => item.productId !== productId));

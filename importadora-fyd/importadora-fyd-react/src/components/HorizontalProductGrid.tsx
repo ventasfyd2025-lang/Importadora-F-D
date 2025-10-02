@@ -179,7 +179,7 @@ export default function HorizontalProductGrid({ products, title }: HorizontalPro
   return (
     <div className="space-y-6">
       {title && (
-        <h2 className="text-3xl font-bold text-gray-900 text-center bg-gradient-to-r from-[#D95D22] to-[#E67E22] bg-clip-text text-transparent">
+        <h2 className="text-3xl font-bold text-gray-900 text-center bg-gradient-to-r from-[#F16529] to-[#E67E22] bg-clip-text text-transparent">
           {title}
         </h2>
       )}

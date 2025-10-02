@@ -308,8 +308,11 @@ function CheckoutContent() {
   // Show processing screen while order is being processed
   if (!mounted || (items.length === 0 && !orderSuccess)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">Cargando...</p>
+        </div>
       </div>
     );
   }
@@ -317,26 +320,28 @@ function CheckoutContent() {
   // Show success screen if order was completed
   if (orderSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center p-8">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-green-800 mb-4">¡Pedido Exitoso!</h1>
-          <p className="text-lg text-gray-600 mb-4">
-            Tu pedido #{successOrderId.slice(-8).toUpperCase()} ha sido recibido correctamente.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Hemos recibido tu comprobante de transferencia y te contactaremos pronto para confirmar el pago.
-          </p>
-          <div className="space-y-3">
-            <div className="text-sm text-gray-500">
-              Redirigiendo a la página de confirmación en 3 segundos...
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center py-16">
+        <div className="max-w-md mx-auto px-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-12 border border-green-200 text-center">
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-green-600 h-2 rounded-full animate-pulse w-full"></div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">¡Pedido Exitoso!</h1>
+            <p className="text-lg text-gray-600 mb-4">
+              Tu pedido <span className="font-bold text-green-600">#{successOrderId.slice(-8).toUpperCase()}</span> ha sido recibido correctamente.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Hemos recibido tu comprobante de transferencia y te contactaremos pronto para confirmar el pago.
+            </p>
+            <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-sm text-green-700 font-medium">
+                Redirigiendo a la página de confirmación en 3 segundos...
+              </div>
+              <div className="w-full bg-green-200 rounded-full h-2 overflow-hidden">
+                <div className="bg-green-600 h-2 rounded-full animate-pulse w-full"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -345,33 +350,44 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/carrito"
-          className="inline-flex items-center text-orange-600 hover:text-orange-700 mb-4"
-        >
-          <ArrowLeftIcon className="w-5 h-5 mr-2" />
-          Volver al carrito
-        </Link>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-          Finalizar compra
-        </h1>
-        <p className="text-lg text-gray-600">
-          Completa los datos para procesar tu pedido
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link
+            href="/carrito"
+            className="inline-flex items-center text-orange-600 hover:text-orange-700 mb-6 font-medium transition-colors"
+          >
+            <ArrowLeftIcon className="w-5 h-5 mr-2" />
+            Volver al carrito
+          </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Checkout Form */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
-                  <h2 className="text-xl font-semibold text-white">
-                    Datos de entrega
-                  </h2>
-                </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                <span className="text-white text-lg">💳</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Finalizar compra
+                </h1>
+                <p className="text-gray-600 text-sm">
+                  Completa los datos para procesar tu pedido
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Checkout Form */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+                <h2 className="text-xl font-semibold text-white">
+                  📝 Datos de entrega
+                </h2>
+              </div>
 
                 <form onSubmit={handleCheckout} className="p-6 space-y-6">
                   {isGuest && (
@@ -548,7 +564,7 @@ function CheckoutContent() {
                             type="button"
                             onClick={handleMercadoPagoCheckout}
                             disabled={isProcessing || mpLoading}
-                            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full py-3 px-6 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isProcessing || mpLoading ? 'Procesando...' : 'Continuar con MercadoPago'}
                           </button>
@@ -661,66 +677,67 @@ function CheckoutContent() {
                 </form>
               </div>
             </div>
+          </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden sticky top-8">
-                <div className="bg-gradient-to-r from-gray-500 to-gray-600 px-6 py-4">
-                  <h2 className="text-xl font-semibold text-white">
-                    Resumen del pedido
-                  </h2>
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 overflow-hidden sticky top-8">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+                <h2 className="text-xl font-semibold text-white">
+                  📦 Resumen del pedido
+                </h2>
+              </div>
+
+              <div className="p-6">
+                {/* Cart Items */}
+                <div className="space-y-4 mb-6">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        {item.imagen ? (
+                          <img
+                            src={item.imagen}
+                            alt={item.nombre}
+                            className="w-full h-full object-cover rounded-md"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+                            <span className="text-gray-400 text-lg">📦</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {item.nombre}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          Cantidad: {item.cantidad}
+                        </p>
+                      </div>
+
+                      <div className="text-sm font-semibold text-gray-900">
+                        {formatPrice(item.precio * item.cantidad)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="p-6">
-                  {/* Cart Items */}
-                  <div className="space-y-4 mb-6">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex items-center space-x-3">
-                        <div className="relative w-12 h-12 flex-shrink-0">
-                          {item.imagen ? (
-                            <img
-                              src={item.imagen}
-                              alt={item.nombre}
-                              className="w-full h-full object-cover rounded-md"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                              <span className="text-gray-400 text-lg">📦</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
-                            {item.nombre}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Cantidad: {item.cantidad}
-                          </p>
-                        </div>
-
-                        <div className="text-sm font-semibold text-gray-900">
-                          {formatPrice(item.precio * item.cantidad)}
-                        </div>
-                      </div>
-                    ))}
+                {/* Totals */}
+                <div className="border-t border-orange-100 pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Subtotal</span>
+                    <span className="font-semibold text-gray-800">{formatPrice(getTotalPrice())}</span>
                   </div>
-
-                  {/* Totals */}
-                  <div className="border-t pt-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span className="font-medium">{formatPrice(getTotalPrice())}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold border-t pt-2">
-                      <span>Total</span>
-                      <span>{formatPrice(getTotalPrice())}</span>
-                    </div>
+                  <div className="flex justify-between items-center bg-orange-50 px-4 py-3 rounded-lg border border-orange-200">
+                    <span className="text-lg font-bold text-gray-800">Total</span>
+                    <span className="text-2xl font-bold text-orange-600">{formatPrice(getTotalPrice())}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -16,9 +16,26 @@ export default function UsuariosAdminPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
 
   // Verificar acceso de admin
+  useEffect(() => {
+    if (!currentUser) {
+      router.push('/auth');
+    }
+  }, [currentUser, router]);
+
+  useEffect(() => {
+    if (currentUser) {
+      loadUsers();
+    }
+  }, [currentUser]);
+
   if (!currentUser) {
-    router.push('/auth');
-    return null;
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-xl">Cargando...</div>
+        </div>
+      </Layout>
+    );
   }
 
   if (userProfile && !isAdmin) {
@@ -41,10 +58,6 @@ export default function UsuariosAdminPage() {
       </Layout>
     );
   }
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
 
   const loadUsers = async () => {
     try {
@@ -119,7 +132,7 @@ export default function UsuariosAdminPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-full mx-auto px-4">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
             <p className="text-gray-600">Administra roles y permisos de usuarios</p>

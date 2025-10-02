@@ -8,7 +8,7 @@ export const defaultHeroBanners = [
     ctaText: 'Ver Ofertas',
     ctaLink: '/categoria/tecnologia',
     badgeText: '40% DCTO',
-    badgeColor: '#D95D22'
+    badgeColor: '#F16529'
   },
   {
     id: 'banner-2',
@@ -18,7 +18,7 @@ export const defaultHeroBanners = [
     ctaText: 'Descubrir',
     ctaLink: '/categoria/calzado',
     badgeText: 'NUEVO',
-    badgeColor: '#D95D22'
+    badgeColor: '#F16529'
   },
   {
     id: 'banner-3',
@@ -28,7 +28,7 @@ export const defaultHeroBanners = [
     ctaText: 'Explorar',
     ctaLink: '/categoria/electrohogar',
     badgeText: 'SMART HOME',
-    badgeColor: '#D95D22'
+    badgeColor: '#F16529'
   }
 ];
 
@@ -51,7 +51,7 @@ export const defaultMiddleBanners = [
     ctaText: 'Ver Promociones',
     ctaLink: '/?filter=ofertas',
     badgeText: 'ENVÍO GRATIS',
-    badgeColor: '#D95D22'
+    badgeColor: '#F16529'
   },
   {
     id: 'middle-3',

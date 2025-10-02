@@ -178,8 +178,11 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">Cargando...</p>
+        </div>
       </div>
     );
   }
@@ -189,28 +192,29 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100 mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-orange-100 p-3 rounded-full">
-                <ShoppingBagIcon className="h-8 w-8 text-orange-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                <span className="text-white text-lg">📦</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Mis Pedidos</h1>
-                <p className="text-gray-600">Historial y seguimiento de tus compras</p>
+                <h1 className="text-2xl font-bold text-gray-800">Mis Pedidos</h1>
+                <p className="text-gray-600 text-sm">Historial y seguimiento de tus compras</p>
               </div>
             </div>
-            
+
             {/* Botón volver al home */}
-            <Link 
-              href="/" 
-              className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 shadow-md hover:shadow-lg"
+            <Link
+              href="/"
+              className="inline-flex items-center px-6 py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:scale-105 shadow-lg gap-2"
+              style={{ background: 'linear-gradient(to right, #F16529, #E94E1B)' }}
             >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              <HomeIcon className="h-5 w-5 mr-2" />
+              <ArrowLeftIcon className="h-5 w-5" />
+              <HomeIcon className="h-5 w-5" />
               Volver al Home
             </Link>
           </div>
@@ -218,29 +222,30 @@ export default function OrdersPage() {
 
         {loadingOrders ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500"></div>
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <ShoppingBagIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No tienes pedidos aún</h3>
-            <p className="text-gray-600 mb-6">¡Explora nuestra tienda y realiza tu primera compra!</p>
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-12 border border-orange-100 text-center">
+            <ShoppingBagIcon className="h-24 w-24 text-orange-400 mx-auto mb-6" />
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">No tienes pedidos aún</h3>
+            <p className="text-lg text-gray-600 mb-8">¡Explora nuestra tienda y realiza tu primera compra!</p>
             <button
               onClick={() => router.push('/')}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              className="px-8 py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
+              style={{ background: 'linear-gradient(to right, #F16529, #E94E1B)' }}
             >
-              Ir a la Tienda
+              🛍️ Ir a la Tienda
             </button>
           </div>
         ) : (
           <div className="space-y-6">
             {orders.map((order) => {
               const StatusIcon = statusConfig[order.status].icon;
-              
+
               return (
-                <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div key={order.id} className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 overflow-hidden hover:shadow-2xl transition-all">
                   {/* Order Header */}
-                  <div className="bg-gray-50 px-6 py-4 border-b">
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div>

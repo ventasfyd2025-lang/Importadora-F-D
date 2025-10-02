@@ -159,7 +159,7 @@ export default function UnifiedHeader() {
     return (
       <div
         className={`${containerClass} ${sizeClass}`}
-        style={{ backgroundColor: '#D95D22' }}
+        style={{ backgroundColor: '#F16529' }}
       >
         <span className="font-semibold text-white text-xs sm:text-sm lg:text-base">
           F&D
@@ -170,11 +170,11 @@ export default function UnifiedHeader() {
 
   return (
     <>
-      <header id="main-header" className="fixed inset-x-0 top-0 z-[100] shadow-xl">
-        <div className="relative">
+      <header id="main-header" className="fixed inset-x-0 top-0 z-[100] backdrop-blur-lg shadow-2xl border-b border-orange-100">
+        <div className="relative bg-white/80">
           {/* Top Banner */}
-          <div className="text-[11px] uppercase tracking-[0.32em] text-white bg-gradient-to-r from-[#D95D22] to-[#E67E22]">
-            <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
+          <div className="text-[11px] uppercase tracking-[0.32em] text-white bg-gradient-to-r from-[#F16529] to-[#E67E22]">
+            <div className="mx-auto flex max-w-full items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
               <span className="font-medium">{t('header.welcome')}</span>
 
               {/* Mobile User + Cart Icons in Top Banner */}
@@ -223,7 +223,7 @@ export default function UnifiedHeader() {
           </div>
 
           {/* Main Header */}
-          <div className="text-white backdrop-blur-sm" style={{ background: 'linear-gradient(to right, #D95D22, #E67E22)' }}>
+          <div className="text-white bg-gradient-to-r from-orange-500 to-red-500 shadow-xl">
             <div className="mx-auto flex flex-col gap-2 sm:gap-4 px-4 py-2 sm:py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
             
             {/* Logo + Desktop Categories + Mobile Hamburger */}
@@ -238,7 +238,7 @@ export default function UnifiedHeader() {
                     }
                   }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-white font-semibold text-sm hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-lg backdrop-blur-sm border border-orange-400/50"
-                  style={{ backgroundColor: '#D95D22' }}
+                  style={{ backgroundColor: '#F16529' }}
                   aria-haspopup="true"
                   aria-expanded={isDesktopCategoriesOpen}
                 >
@@ -413,7 +413,7 @@ export default function UnifiedHeader() {
                 <button
                   type="submit"
                   className="px-4 py-2 text-white rounded-r-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  style={{ backgroundColor: '#D95D22' }}
+                  style={{ backgroundColor: '#F16529' }}
                 >
                   <MagnifyingGlassIcon className="h-5 w-5" />
                 </button>
@@ -562,7 +562,7 @@ export default function UnifiedHeader() {
               <button
                 type="submit"
                 className="px-3 py-2 text-white rounded-r-lg hover:opacity-90"
-                style={{ backgroundColor: '#D95D22' }}
+                style={{ backgroundColor: '#F16529' }}
               >
                 <MagnifyingGlassIcon className="h-4 w-4" />
               </button>
@@ -572,7 +572,7 @@ export default function UnifiedHeader() {
           {/* Mobile Menu - Categorías reales */}
           {isMobileMenuOpen && (
             <div className="lg:hidden absolute left-0 right-0 top-full bg-white border-b shadow-2xl">
-              <div className="mx-auto max-w-7xl px-6 py-6 max-h-[calc(100vh-180px)] overflow-y-auto">
+              <div className="mx-auto max-w-full px-6 py-6 max-h-[calc(100vh-180px)] overflow-y-auto">
               <div className="space-y-3">
                 <div className="text-lg font-bold text-gray-800 mb-4 px-2 flex items-center gap-2">
                   <span className="text-orange-500">🏷️</span>

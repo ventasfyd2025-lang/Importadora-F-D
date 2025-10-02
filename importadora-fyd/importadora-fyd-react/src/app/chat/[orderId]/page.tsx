@@ -654,7 +654,7 @@ export default function ChatPage() {
                   <button
                     onClick={sendMessage}
                     disabled={(!newMessage.trim() && !selectedImage) || sendingMessage || uploadingImage}
-                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white p-3 rounded-xl transition-all duration-200 disabled:cursor-not-allowed hover:scale-105"
+                    className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-white p-3 rounded-xl transition-all duration-200 disabled:cursor-not-allowed hover:scale-105"
                   >
                     {sendingMessage || uploadingImage ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />

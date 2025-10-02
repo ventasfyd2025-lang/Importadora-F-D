@@ -4,6 +4,8 @@ import "./globals.css";
 import CartProviderClient from "@/components/CartProviderClient";
 import ChatProvider from "@/components/ChatProvider";
 import { I18nProvider } from "@/context/I18nContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import NotificationDisplay from "@/components/NotificationDisplay";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,16 +35,23 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        {/* Preconnect para mejorar rendimiento */}
+        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+        <link rel="preconnect" href="https://sdk.mercadopago.com" />
+        <link rel="dns-prefetch" href="https://firebaseapp.com" />
         <script src="https://sdk.mercadopago.com/js/v2" async></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <I18nProvider>
-          <CartProviderClient>
-            {children}
-            <ChatProvider />
-          </CartProviderClient>
+          <NotificationProvider>
+            <CartProviderClient>
+              {children}
+              <ChatProvider />
+              <NotificationDisplay />
+            </CartProviderClient>
+          </NotificationProvider>
         </I18nProvider>
       </body>
     </html>

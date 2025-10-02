@@ -1866,7 +1866,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-red-50/20 to-orange-100/40">
       
       <header className="bg-white/80 backdrop-blur-lg shadow-xl border-b border-orange-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
@@ -1892,7 +1892,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Compact Admin Header */}
         <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-xl p-4 mb-6 border border-orange-200" style={{ backgroundColor: '#F16529' }}>
@@ -2309,7 +2309,7 @@ export default function AdminPage() {
                                             updateProduct(product.id, { stock: parseInt(newStock) });
                                           }
                                         }}
-                                        className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition-colors"
+                                        className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-2 py-1 rounded transition-colors"
                                         title="Ajustar Stock"
                                       >
                                         📈
@@ -2370,7 +2370,7 @@ export default function AdminPage() {
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2"
                 >
                   <span>⚙️</span>
                   <span>{showFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}</span>
@@ -2776,7 +2776,7 @@ export default function AdminPage() {
                 <button
                   onClick={loadUsers}
                   disabled={usersLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
                 >
                   {usersLoading ? 'Cargando...' : '🔄 Recargar Usuarios'}
                 </button>
@@ -2795,7 +2795,7 @@ export default function AdminPage() {
                   </p>
                   <button
                     onClick={loadUsers}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md"
                   >
                     🔄 Intentar de nuevo
                   </button>
@@ -3149,7 +3149,7 @@ export default function AdminPage() {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => window.open(`/admin/pedido/${mainOrder.id}`, '_blank')}
-                              className="relative bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-xs transition-colors"
+                              className="relative bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-xs transition-colors"
                             >
                               📋 Ver Detalles
                               {getOrderMessageCount(mainOrder.id) > 0 && (
@@ -3227,7 +3227,7 @@ export default function AdminPage() {
                             <div className="flex items-center space-x-2">
                               <button
                                 onClick={() => window.open(`/admin/pedido/${order.id}`, '_blank')}
-                                className="relative bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-xs transition-colors"
+                                className="relative bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded-md text-xs transition-colors"
                               >
                                 📋 Ver Detalles
                                 {getOrderMessageCount(order.id) > 0 && (
@@ -4384,7 +4384,7 @@ export default function AdminPage() {
               
               <div className="mt-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa del Carrusel:</h3>
-                <div className="relative w-full max-w-4xl mx-auto">
+                <div className="relative w-full max-w-full mx-auto">
                   <MainBannerCarousel
                     config={{
                       active: mainBannerForm.active,
@@ -5279,7 +5279,7 @@ export default function AdminPage() {
                       autoSaveHomepageContent(newContent);
                       alert('✅ Imágenes por defecto restauradas!');
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded transition-colors"
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-1 rounded transition-colors"
                   >
                     🔄 Restaurar Imágenes
                   </button>
@@ -5548,7 +5548,7 @@ export default function AdminPage() {
                       autoSaveHomepageContent(newContent);
                       alert('✅ Banners intermedios restaurados');
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-2 rounded transition-colors"
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-2 rounded transition-colors"
                   >
                     🔄 Restaurar banners
                   </button>
@@ -6290,7 +6290,7 @@ export default function AdminPage() {
       
       {showProductSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-full w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">

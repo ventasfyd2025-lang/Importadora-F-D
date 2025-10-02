@@ -53,17 +53,31 @@ function PaymentSuccessContent() {
 
         if (orderDoc.exists()) {
           const orderData = orderDoc.data();
+          console.log('📦 Datos de la orden:', orderData);
+          console.log('🛍️ Items de la orden:', orderData.items);
+
+          // Calcular total desde items si el total guardado es 0
+          const savedTotal = orderData.total || 0;
+          const calculatedTotal = orderData.items?.reduce((sum: number, item: any) =>
+            sum + (item.precio * item.cantidad), 0) || 0;
+          const finalTotal = savedTotal > 0 ? savedTotal : (calculatedTotal > 0 ? calculatedTotal : parseInt(total));
+
+          console.log('💰 Total guardado:', savedTotal);
+          console.log('💰 Total calculado desde items:', calculatedTotal);
+          console.log('💰 Total final:', finalTotal);
+
           setOrderInfo({
             orderId,
             paymentMethod: orderData.paymentMethod || paymentMethod,
             customerName: orderData.customerName || customerName,
             customerEmail: orderData.customerEmail || customerEmail,
-            total: orderData.total || parseInt(total),
+            total: finalTotal,
             paymentId: paymentId || undefined,
             status: status || orderData.status,
             items: orderData.items || []
           });
         } else {
+          console.log('⚠️ Orden no encontrada en Firebase, usando datos de URL');
           // Fallback a datos de URL si no existe en Firebase
           setOrderInfo({
             orderId,
@@ -72,11 +86,12 @@ function PaymentSuccessContent() {
             customerEmail,
             total: parseInt(total),
             paymentId: paymentId || undefined,
-            status: status || undefined
+            status: status || undefined,
+            items: []
           });
         }
       } catch (error) {
-        console.error('Error cargando detalles de orden:', error);
+        console.error('❌ Error cargando detalles de orden:', error);
         // Usar datos de URL como fallback
         setOrderInfo({
           orderId,
@@ -85,7 +100,8 @@ function PaymentSuccessContent() {
           customerEmail,
           total: parseInt(total),
           paymentId: paymentId || undefined,
-          status: status || undefined
+          status: status || undefined,
+          items: []
         });
       }
     };
@@ -197,8 +213,8 @@ function PaymentSuccessContent() {
                   </div>
 
                   {/* Products List */}
-                  {orderInfo.items && orderInfo.items.length > 0 && (
-                    <div className="mt-6">
+                  {orderInfo.items && orderInfo.items.length > 0 ? (
+                    <div className="mt-6 border-t pt-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Productos comprados</h3>
                       <div className="space-y-3">
                         {orderInfo.items.map((item, index) => (
@@ -217,7 +233,7 @@ function PaymentSuccessContent() {
                                 {item.nombre}
                               </p>
                               <p className="text-sm text-gray-500">
-                                Cantidad: {item.cantidad}
+                                Cantidad: {item.cantidad} × {formatPrice(item.precio)}
                               </p>
                             </div>
                             <div className="text-sm font-semibold text-gray-900">
@@ -225,7 +241,21 @@ function PaymentSuccessContent() {
                             </div>
                           </div>
                         ))}
+
+                        {/* Total */}
+                        <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
+                          <span className="text-lg font-bold text-gray-900">Total</span>
+                          <span className="text-xl font-bold text-orange-600">
+                            {formatPrice(orderInfo.total)}
+                          </span>
+                        </div>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="mt-6 border-t pt-6">
+                      <p className="text-sm text-gray-500 italic">
+                        Los detalles de productos se pueden ver en la sección "Mis Pedidos"
+                      </p>
                     </div>
                   )}
 

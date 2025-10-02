@@ -62,7 +62,7 @@ export default function ProductBanner({
     // Fallback to gradient banner if no products
     return (
       <section className="text-white py-16" style={{ background: 'linear-gradient(135deg, #F16529 0%, #D64541 100%)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             {title}
           </h1>
@@ -77,7 +77,7 @@ export default function ProductBanner({
   return (
     <section className="relative bg-gradient-to-r from-orange-50 to-red-50 py-8">
       {/* Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <div className="text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#F16529' }}>
             {title}
@@ -89,7 +89,7 @@ export default function ProductBanner({
       </div>
 
       {/* Products Container */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden">
           {/* Products Slider */}
           <div 

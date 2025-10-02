@@ -47,7 +47,7 @@ export default function BannerCarousel({
     // Fallback to gradient banner if no images
     return (
       <section className="text-white py-16" style={{ background: 'linear-gradient(135deg, #F16529 0%, #D64541 100%)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             {title}
           </h1>
@@ -80,7 +80,7 @@ export default function BannerCarousel({
       
       {/* Content */}
       <div className="relative z-10 flex items-center justify-center h-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white drop-shadow-lg">
             {title}
           </h1>

@@ -28,7 +28,7 @@ interface Order {
   customerPhone: string;
   total: number;
   status: string;
-  createdAt: string;
+  createdAt: any; // Puede ser Timestamp de Firebase o string
   paymentMethod: string;
   items: Array<{
     nombre: string;
@@ -159,6 +159,40 @@ export default function VendedorPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('orders');
 
+  // Calculate stats function - defined before useEffect
+  const calculateStats = (ordersData: Order[]) => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const pendingOrders = ordersData.filter(order =>
+      order.status === 'pending' || order.status === 'pending_verification'
+    ).length;
+
+    const todayOrders = ordersData.filter(order => {
+      try {
+        // Manejar tanto Timestamp de Firebase como strings
+        const orderDate = order.createdAt?.toDate ?
+          order.createdAt.toDate().toISOString().split('T')[0] :
+          (typeof order.createdAt === 'string' ? order.createdAt.split('T')[0] : '');
+        return orderDate === today;
+      } catch {
+        return false;
+      }
+    }).length;
+
+    const totalRevenue = ordersData
+      .filter(order => order.status === 'confirmed' || order.status === 'shipped')
+      .reduce((sum, order) => sum + order.total, 0);
+
+    const uniqueCustomers = new Set(ordersData.map(order => order.customerEmail)).size;
+
+    setStats({
+      pendingOrders,
+      todayOrders,
+      totalRevenue,
+      totalCustomers: uniqueCustomers
+    });
+  };
+
   // Load orders - moved before conditional returns
   useEffect(() => {
     if (!currentUser) return;
@@ -211,31 +245,6 @@ export default function VendedorPage() {
       </Layout>
     );
   }
-
-  const calculateStats = (ordersData: Order[]) => {
-    const today = new Date().toISOString().split('T')[0];
-
-    const pendingOrders = ordersData.filter(order =>
-      order.status === 'pending' || order.status === 'pending_verification'
-    ).length;
-
-    const todayOrders = ordersData.filter(order =>
-      order.createdAt.startsWith(today)
-    ).length;
-
-    const totalRevenue = ordersData
-      .filter(order => order.status === 'confirmed' || order.status === 'shipped')
-      .reduce((sum, order) => sum + order.total, 0);
-
-    const uniqueCustomers = new Set(ordersData.map(order => order.customerEmail)).size;
-
-    setStats({
-      pendingOrders,
-      todayOrders,
-      totalRevenue,
-      totalCustomers: uniqueCustomers
-    });
-  };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -415,7 +424,16 @@ export default function VendedorPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(order.createdAt).toLocaleDateString('es-CL')}
+                          {(() => {
+                            try {
+                              const date = order.createdAt?.toDate ?
+                                order.createdAt.toDate() :
+                                new Date(order.createdAt);
+                              return date.toLocaleDateString('es-CL');
+                            } catch {
+                              return 'Fecha inválida';
+                            }
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <select

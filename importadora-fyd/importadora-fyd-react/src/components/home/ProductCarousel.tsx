@@ -33,7 +33,7 @@ const ProductCard = memo(({ product }: { product: Product }) => {
     : 0;
 
   return (
-    <div className="group relative flex flex-col sm:flex-row bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 h-full focus-within:ring-2 focus-within:ring-[#D95D22] focus-within:ring-offset-2 hover:-translate-y-1">
+    <div className="group relative flex flex-col sm:flex-row bg-white/90 backdrop-blur-sm rounded-2xl border border-orange-100 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 h-full focus-within:ring-2 focus-within:ring-[#F16529] focus-within:ring-offset-2 hover:-translate-y-2">
       <div className="relative w-full sm:w-2/5 flex-shrink-0">
         <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 aspect-[4/3] w-full overflow-hidden">
           {product.imagen ? (
@@ -58,7 +58,7 @@ const ProductCard = memo(({ product }: { product: Product }) => {
         )}
 
         {product.nuevo && (
-          <span className="absolute top-2 right-2 bg-gradient-to-r from-[#D95D22] to-[#E67E22] text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+          <span className="absolute top-2 right-2 bg-gradient-to-r from-[#F16529] to-[#E67E22] text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
             {t('productCard.new')}
           </span>
         )}
@@ -118,7 +118,10 @@ const ProductCard = memo(({ product }: { product: Product }) => {
               document.body.appendChild(notification);
               setTimeout(() => notification.remove(), 3000);
             }}
-            className="w-full text-center text-xs sm:text-sm bg-blue-700 hover:bg-blue-800 text-white py-2 sm:py-3 px-2 sm:px-4 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-1 sm:gap-2"
+            className="w-full text-center text-xs sm:text-sm text-white py-2 sm:py-3 px-2 sm:px-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-1 sm:gap-2"
+            style={{ backgroundColor: '#F16529' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
           >
             <span>🛒</span>
             <span className="hidden xs:inline sm:hidden md:inline">Agregar al Carrito</span>
@@ -224,17 +227,26 @@ const ProductCarousel = memo(({
 
   return (
     <section className="space-y-3 sm:space-y-4 lg:space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-        {showViewAll && (
-          <Link 
-            href={viewAllLink} 
-            className="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center gap-1 focus:outline-none focus:underline"
-          >
-            {t('homepage.viewAll')}
-            <ChevronRightIcon className="h-4 w-4" />
-          </Link>
-        )}
+      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-4 sm:p-6 border border-orange-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+              <span className="text-white text-lg">{title.split(' ')[0]}</span>
+            </div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">{title}</h2>
+          </div>
+          {showViewAll && (
+            <Link
+              href={viewAllLink}
+              className="px-4 py-2 rounded-xl text-white font-semibold transition-all duration-200 hover:scale-105 shadow-lg text-sm"
+              style={{ backgroundColor: '#F16529' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+            >
+              {t('homepage.viewAll')} →
+            </Link>
+          )}
+        </div>
       </div>
       
       <div className="relative">
@@ -276,7 +288,7 @@ const ProductCarousel = memo(({
               >
                 <Link
                   href={`/producto/${product.id}`}
-                  className="block h-full focus:outline-none focus:ring-2 focus:ring-[#D95D22] focus:ring-offset-2"
+                  className="block h-full focus:outline-none focus:ring-2 focus:ring-[#F16529] focus:ring-offset-2"
                 >
                   <ProductCard product={product} />
                 </Link>

@@ -43,15 +43,15 @@ const palette = {
   background: '#FAFAFA',
   surface: '#F8F9FA',
   card: '#FFFFFF',
-  primary: '#D95D22', // Burnt Orange / Main
+  primary: '#F16529', // Burnt Orange / Main
   primaryHover: '#C24C1A', // Dark Orange / Buttons
   secondary: '#FF0000', // Red / Offer Label
-  accent: '#D95D22', // Burnt Orange / Primary
+  accent: '#F16529', // Burnt Orange / Primary
   success: '#10B981', // Modern Green / Prices
   neutralText: '#1F2937', // Modern Dark Gray / Text
   mutedText: '#6B7280', // Modern Gray / Secondary Text
   divider: '#E5E7EB',
-  headerBg: 'linear-gradient(135deg, #D95D22 0%, #E67E22 100%)', // Gradient Header
+  headerBg: 'linear-gradient(135deg, #F16529 0%, #E67E22 100%)', // Gradient Header
   discountTag: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', // Gradient Red
 };
 
@@ -247,7 +247,7 @@ export default function RetailHomepage() {
   if (productsLoading) {
     return (
       <>
-        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20">
+        <main className="w-full flex flex-col gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
           {/* Hero Banner Carousel */}
           <BannerSkeleton count={1} />
 
@@ -298,7 +298,7 @@ export default function RetailHomepage() {
   if (productsError) {
     return (
       <>
-        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20">
+        <main className="w-full flex flex-col gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <h2 className="text-xl font-bold text-red-800 mb-2">Error al cargar productos</h2>
             <p className="text-red-600">{productsError}</p>
@@ -461,7 +461,7 @@ export default function RetailHomepage() {
   if (hasActiveFilters) {
     return (
       <>
-        <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 lg:gap-8 px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20">
+        <main className="w-full flex flex-col gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {getFilterTitle()}
@@ -509,7 +509,7 @@ export default function RetailHomepage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-7xl px-2 sm:px-4 lg:px-6 pb-12 sm:pb-16 lg:pb-20 space-y-6 sm:space-y-8 lg:space-y-10">
+      <main className="w-full px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20 space-y-6 sm:space-y-8 lg:space-y-10 bg-gradient-to-br from-orange-50/30 via-red-50/20 to-orange-100/40 min-h-screen">
         {/* Hero Banner Carousel */}
         <section className="mt-4 sm:mt-6">
           {(() => {            return bannerSlides?.length > 0 ? (
@@ -524,9 +524,16 @@ export default function RetailHomepage() {
 
         {/* Category Promotions Pinterest Grid */}
         <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-gray-900 text-center bg-gradient-to-r from-[#D95D22] to-[#E67E22] bg-clip-text text-transparent">
-            🔥 Promociones por Categoría
-          </h2>
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                <span className="text-white text-lg">🔥</span>
+              </div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                Promociones por Categoría
+              </h2>
+            </div>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
             {homepageConfig.promotionalSections.map((section) => {
               // Generate link based on section configuration
@@ -686,15 +693,22 @@ export default function RetailHomepage() {
         {/* Main Masonry Product Grid */}
         {products.length > 0 && (
           <section className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
-              <h2 className="text-3xl font-bold text-gray-900 text-center sm:text-left">
-                🧱 Todos los Productos
-              </h2>
-              {layoutPatternsConfig.updatedAt && (
-                <span className="text-sm text-gray-500">
-                  Layout actualizado: {formatDateTime(layoutPatternsConfig.updatedAt)}
-                </span>
-              )}
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-orange-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#F16529' }}>
+                    <span className="text-white text-lg">🛍️</span>
+                  </div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                    Todos los Productos
+                  </h2>
+                </div>
+                {layoutPatternsConfig.updatedAt && (
+                  <span className="text-sm text-gray-500">
+                    Layout actualizado: {formatDateTime(layoutPatternsConfig.updatedAt)}
+                  </span>
+                )}
+              </div>
             </div>
             <MasonryProductGrid
               products={products}
@@ -786,7 +800,7 @@ export default function RetailHomepage() {
                       }}
                       disabled={product.stock <= 0}
                       aria-label={product.stock > 0 ? `Agregar ${product.nombre} al carrito` : 'Producto sin stock'}
-                      className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105">
+                      className="w-full py-3 px-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105">
                       <span aria-hidden="true">🛒</span>
                       <span>{product.stock > 0 ? 'Agregar al Carrito' : 'Sin Stock'}</span>
                     </button>
