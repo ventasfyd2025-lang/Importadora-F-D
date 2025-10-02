@@ -1036,16 +1036,25 @@ export default function AdminPage() {
 
       // Ordenar por fecha más reciente
       userOrders.sort((a, b) => {
-        const dateA = a.createdAt && typeof a.createdAt === 'object' && 'toDate' in a.createdAt
-          ? (a.createdAt as any).toDate()
-          : a.createdAt instanceof Date
-          ? a.createdAt
-          : new Date(a.createdAt as any);
-        const dateB = b.createdAt && typeof b.createdAt === 'object' && 'toDate' in b.createdAt
-          ? (b.createdAt as any).toDate()
-          : b.createdAt instanceof Date
-          ? b.createdAt
-          : new Date(b.createdAt as any);
+        let dateA: Date;
+        let dateB: Date;
+
+        if (a.createdAt && typeof a.createdAt === 'object' && 'toDate' in a.createdAt) {
+          dateA = (a.createdAt as any).toDate();
+        } else if (a.createdAt) {
+          dateA = new Date(a.createdAt as any);
+        } else {
+          dateA = new Date();
+        }
+
+        if (b.createdAt && typeof b.createdAt === 'object' && 'toDate' in b.createdAt) {
+          dateB = (b.createdAt as any).toDate();
+        } else if (b.createdAt) {
+          dateB = new Date(b.createdAt as any);
+        } else {
+          dateB = new Date();
+        }
+
         return dateB.getTime() - dateA.getTime();
       });
 
