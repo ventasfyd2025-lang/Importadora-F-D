@@ -1852,7 +1852,7 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={loggingIn}
-              className="w-full text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+              className="w-full text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
             >
               {loggingIn ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
@@ -3403,7 +3403,7 @@ export default function AdminPage() {
                     }
                   }}
                   disabled={updatingBanner}
-                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                  className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
                 >
                   {updatingBanner ? 'Actualizando...' : 'Actualizar Banner'}
                 </button>
@@ -3899,7 +3899,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={handleSaveLayoutPatterns}
-                        className="text-white font-medium py-2 px-4 rounded-md transition-colors text-sm disabled:opacity-60"
+                        className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors text-base disabled:opacity-60"
                         style={{ backgroundColor: '#F16529' }}
                         onMouseEnter={(e) => {
                           if (!e.currentTarget.hasAttribute('disabled')) {
@@ -4017,7 +4017,7 @@ export default function AdminPage() {
                         setEditingSection(null);
                         setShowSectionModal(true);
                       }}
-                      className="text-white font-medium py-2 px-4 rounded-md transition-colors text-sm"
+                      className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors text-sm"
                       style={{ backgroundColor: '#F16529' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -4084,7 +4084,7 @@ export default function AdminPage() {
                 <div className="pt-4">
                   <button
                     onClick={saveProductSections}
-                    className="text-white font-medium py-2 px-4 rounded-md transition-colors"
+                    className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors"
                     style={{ backgroundColor: '#F16529' }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -4375,7 +4375,7 @@ export default function AdminPage() {
                     }
                   }}
                   disabled={updatingMainBanner}
-                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                  className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
                 >
                   {updatingMainBanner ? 'Actualizando...' : 'Guardar Configuración'}
                 </button>
@@ -4500,7 +4500,7 @@ export default function AdminPage() {
                     }
                   }}
                   disabled={updatingLogo}
-                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+                  className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50"
                   style={{ backgroundColor: '#F16529' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -4703,7 +4703,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => setShowCategoryModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-base py-3 px-6 rounded-md transition-colors"
                     >
                       Cancelar
                     </button>
@@ -4739,7 +4739,7 @@ export default function AdminPage() {
                           }
                         }
                       }}
-                      className="flex-1 text-white font-semibold py-2 px-4 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                      className="flex-1 text-white font-semibold py-3 px-6 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
                     >
                       Guardar
                     </button>
@@ -4797,7 +4797,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => setShowSubcategoryModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-base py-3 px-6 rounded-md transition-colors"
                     >
                       Cancelar
                     </button>
@@ -4843,7 +4843,7 @@ export default function AdminPage() {
                           }
                         }
                       }}
-                      className="flex-1 text-white font-semibold py-2 px-4 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                      className="flex-1 text-white font-semibold py-3 px-6 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
                     >
                       Guardar
                     </button>
@@ -5960,7 +5960,7 @@ export default function AdminPage() {
                     }
                   }}
                   disabled={updatingFooter}
-                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+                  className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50"
                   style={{ backgroundColor: '#F16529' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -6116,7 +6116,7 @@ export default function AdminPage() {
                     }
                   }}
                   disabled={updatingBank}
-                  className="text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+                  className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50"
                   style={{ backgroundColor: '#F16529' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
@@ -6266,13 +6266,13 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => setShowSectionModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-base py-3 px-6 rounded-md transition-colors"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 text-white font-semibold py-2 px-4 rounded-md transition-colors"
+                      className="flex-1 text-white font-semibold py-3 px-6 rounded-md transition-colors"
                       style={{ backgroundColor: '#F16529' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}

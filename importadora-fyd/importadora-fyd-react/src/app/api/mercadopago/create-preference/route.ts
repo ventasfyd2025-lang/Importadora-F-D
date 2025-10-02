@@ -115,13 +115,23 @@ export async function POST(request: NextRequest) {
       sandboxInitPoint: response.sandbox_init_point
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logError('Error creando preferencia MercadoPago', error);
-    
+
+    // Log más detallado del error
+    console.error('Error completo:', {
+      message: error?.message,
+      cause: error?.cause,
+      stack: error?.stack,
+      status: error?.status,
+      statusCode: error?.statusCode
+    });
+
     return NextResponse.json(
-      { 
+      {
         error: 'Error interno del servidor',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        message: error?.message || 'Error desconocido',
+        details: error?.cause || error?.response?.data || undefined
       },
       { status: 500 }
     );

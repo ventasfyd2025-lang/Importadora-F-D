@@ -310,7 +310,7 @@ export default function OrderDetailPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-base font-semibold text-gray-700 mb-2">
                     Actualizar Estado
                   </label>
                   <select
@@ -335,25 +335,25 @@ export default function OrderDetailPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h3>
               <div className="space-y-2">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Nombre</p>
+                  <p className="text-base font-semibold text-gray-500">Nombre</p>
                   <p className="text-gray-900">{order.customerName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Email</p>
+                  <p className="text-base font-semibold text-gray-500">Email</p>
                   <p className="text-gray-900">{order.customerEmail}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Teléfono</p>
+                  <p className="text-base font-semibold text-gray-500">Teléfono</p>
                   <p className="text-gray-900">{order.customerPhone}</p>
                 </div>
 
                 <div className="sm:col-span-1">
-                  <dt className="text-sm font-medium text-gray-500">RUT</dt>
+                  <dt className="text-base font-semibold text-gray-500">RUT</dt>
                   <p className="text-gray-900">{order.customerRut || 'No proporcionado'}</p>
                 </div>
                 {order.shippingAddress && (
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Dirección</p>
+                    <p className="text-base font-semibold text-gray-500">Dirección</p>
                     <p className="text-gray-900 text-sm">{order.shippingAddress}</p>
                   </div>
                 )}
@@ -374,7 +374,7 @@ export default function OrderDetailPage() {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{item.nombre}</p>
+                      <p className="text-base font-semibold text-gray-900">{item.nombre}</p>
                       <p className="text-xs text-gray-600">
                         {item.cantidad} × {formatPrice(item.precio)}
                       </p>
@@ -394,7 +394,7 @@ export default function OrderDetailPage() {
               <div className="mt-4 pt-3 border-t">
                 <div className="space-y-2">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Método de Pago</p>
+                    <p className="text-base font-semibold text-gray-500">Método de Pago</p>
                     <p className="text-gray-900">{order.paymentMethod || 'No especificado'}</p>
                   </div>
                   {order.paymentProof && (

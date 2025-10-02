@@ -133,7 +133,7 @@ function VendedorLogin() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center py-3 px-6 border border-transparent text-base font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
               </button>
@@ -316,7 +316,7 @@ export default function VendedorPage() {
               <div className="flex items-center">
                 <ClockIcon className="h-8 w-8 text-yellow-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pedidos Pendientes</p>
+                  <p className="text-base font-semibold text-gray-600">Pedidos Pendientes</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.pendingOrders}</p>
                 </div>
               </div>
@@ -326,7 +326,7 @@ export default function VendedorPage() {
               <div className="flex items-center">
                 <ShoppingBagIcon className="h-8 w-8 text-blue-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pedidos Hoy</p>
+                  <p className="text-base font-semibold text-gray-600">Pedidos Hoy</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
                 </div>
               </div>
@@ -336,7 +336,7 @@ export default function VendedorPage() {
               <div className="flex items-center">
                 <CurrencyDollarIcon className="h-8 w-8 text-green-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Ingresos Totales</p>
+                  <p className="text-base font-semibold text-gray-600">Ingresos Totales</p>
                   <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString('es-CL')}</p>
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function VendedorPage() {
               <div className="flex items-center">
                 <UsersIcon className="h-8 w-8 text-purple-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Clientes Únicos</p>
+                  <p className="text-base font-semibold text-gray-600">Clientes Únicos</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalCustomers}</p>
                 </div>
               </div>
@@ -406,15 +406,15 @@ export default function VendedorPage() {
                     {orders.slice(0, 20).map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">#{order.id.slice(-8)}</div>
+                          <div className="text-base font-semibold text-gray-900">#{order.id.slice(-8)}</div>
                           <div className="text-sm text-gray-500">{order.paymentMethod}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
+                          <div className="text-base font-semibold text-gray-900">{order.customerName}</div>
                           <div className="text-sm text-gray-500">{order.customerEmail}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-base font-semibold text-gray-900">
                             ${order.total.toLocaleString('es-CL')}
                           </div>
                         </td>
@@ -435,7 +435,7 @@ export default function VendedorPage() {
                             }
                           })()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <td className="px-6 py-4 whitespace-nowrap text-base font-semibold space-x-2">
                           <select
                             value={order.status}
                             onChange={(e) => updateOrderStatus(order.id, e.target.value)}
@@ -451,7 +451,7 @@ export default function VendedorPage() {
 
                           <button
                             onClick={() => resendEmail(order.id, order.customerEmail)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-base font-semibold text-blue-600 hover:text-blue-900"
                             title="Reenviar email"
                           >
                             <EnvelopeIcon className="h-4 w-4" />
@@ -459,7 +459,7 @@ export default function VendedorPage() {
 
                           <button
                             onClick={() => router.push(`/chat/${order.id}`)}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-base font-semibold text-green-600 hover:text-green-900"
                             title="Ver chat"
                           >
                             💬

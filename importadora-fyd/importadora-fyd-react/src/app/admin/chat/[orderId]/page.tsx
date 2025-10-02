@@ -312,19 +312,19 @@ export default function AdminChatPage() {
               
               <div className="space-y-2">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Nombre:</span>
+                  <span className="text-base font-semibold text-gray-700">Nombre:</span>
                   <p className="text-sm text-gray-900">{order.customerName}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Email:</span>
+                  <span className="text-base font-semibold text-gray-700">Email:</span>
                   <p className="text-sm text-gray-900">{order.customerEmail}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Teléfono:</span>
+                  <span className="text-base font-semibold text-gray-700">Teléfono:</span>
                   <p className="text-sm text-gray-900">{order.customerPhone}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Dirección:</span>
+                  <span className="text-base font-semibold text-gray-700">Dirección:</span>
                   <p className="text-sm text-gray-900">{order.shippingAddress}</p>
                 </div>
               </div>
@@ -347,7 +347,7 @@ export default function AdminChatPage() {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{item.nombre}</p>
+                      <p className="text-base font-semibold text-gray-900">{item.nombre}</p>
                       <p className="text-xs text-gray-600">
                         {item.cantidad} × {formatPrice(item.precio)}
                       </p>
