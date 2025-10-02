@@ -53,7 +53,7 @@ export interface Order {
   customerRut?: string; // RUT del cliente
   items: CartItem[];
   total: number;
-  status: 'pending' | 'pending_verification' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'pending_verification' | 'pending_payment' | 'confirmed' | 'preparing' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
   createdAt: string;
   shippingAddress?: string;
   paymentMethod?: string;
