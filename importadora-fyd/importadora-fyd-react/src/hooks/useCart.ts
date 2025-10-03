@@ -4,29 +4,85 @@ import { useState, useEffect, useCallback } from 'react';
 import { CartItem } from '@/types';
 import { useStockManager } from './useStockManager';
 import { useNotification } from '@/context/NotificationContext';
+import { useUserAuth } from './useUserAuth';
+import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export function useCartState() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [reservedOrderId, setReservedOrderId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { reserveStock, releaseStock, confirmSale, loading: stockLoading } = useStockManager();
   const { addNotification } = useNotification();
+  const { currentUser } = useUserAuth();
 
-  // Load cart from localStorage on initial load
+  // Load cart from Firebase or localStorage
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
+    const loadCart = async () => {
       try {
-        setItems(JSON.parse(savedCart));
-      } catch (error) {
-        // Error loading cart from localStorage
-      }
-    }
-  }, []);
+        // Verificar si es un usuario real (no invitado) con uid
+        const userId = currentUser && 'uid' in currentUser ? currentUser.uid : null;
 
-  // Save cart to localStorage whenever items change
+        if (userId) {
+          // Usuario autenticado - cargar desde Firebase
+          const cartRef = doc(db, 'carts', userId);
+          const cartDoc = await getDoc(cartRef);
+
+          if (cartDoc.exists()) {
+            setItems(cartDoc.data().items || []);
+          } else {
+            setItems([]);
+          }
+        } else {
+          // Usuario no autenticado o invitado - cargar desde localStorage
+          const savedCart = localStorage.getItem('cart');
+          if (savedCart) {
+            try {
+              setItems(JSON.parse(savedCart));
+            } catch (error) {
+              setItems([]);
+            }
+          } else {
+            setItems([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        setItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCart();
+  }, [currentUser]);
+
+  // Save cart to Firebase or localStorage whenever items change
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    if (isLoading) return; // No guardar durante la carga inicial
+
+    const saveCart = async () => {
+      try {
+        const userId = currentUser && 'uid' in currentUser ? currentUser.uid : null;
+
+        if (userId) {
+          // Usuario autenticado - guardar en Firebase
+          const cartRef = doc(db, 'carts', userId);
+          await setDoc(cartRef, {
+            items,
+            updatedAt: new Date()
+          });
+        } else {
+          // Usuario no autenticado - guardar en localStorage
+          localStorage.setItem('cart', JSON.stringify(items));
+        }
+      } catch (error) {
+        console.error('Error saving cart:', error);
+      }
+    };
+
+    saveCart();
+  }, [items, currentUser, isLoading]);
 
   const addItem = useCallback((
     productId: string,
@@ -101,9 +157,24 @@ export function useCartState() {
     );
   }, [removeItem]);
 
-  const clearCart = useCallback(() => {
+  const clearCart = useCallback(async () => {
     setItems([]);
-  }, []);
+
+    const userId = currentUser && 'uid' in currentUser ? currentUser.uid : null;
+
+    // Eliminar carrito de Firebase si el usuario está autenticado
+    if (userId) {
+      try {
+        const cartRef = doc(db, 'carts', userId);
+        await deleteDoc(cartRef);
+      } catch (error) {
+        console.error('Error clearing cart from Firebase:', error);
+      }
+    }
+
+    // Limpiar localStorage también
+    localStorage.removeItem('cart');
+  }, [currentUser]);
 
   const getTotalItems = useCallback(() => {
     return items.reduce((total, item) => total + item.cantidad, 0);

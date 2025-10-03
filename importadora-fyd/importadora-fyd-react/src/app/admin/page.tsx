@@ -962,17 +962,31 @@ export default function AdminPage() {
   };
 
   const deleteUser = async (userId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?\n\nSe eliminará de Auth y Firestore.')) {
       return;
     }
 
     try {
-      await deleteDoc(doc(db, 'users', userId));
+      // Llamar al API para eliminar el usuario
+      const response = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al eliminar usuario');
+      }
+
+      // Actualizar la lista local
       setUsers(prev => prev.filter(user => user.uid !== userId));
       alert('Usuario eliminado exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      alert('Error al eliminar usuario');
+      alert(error.message || 'Error al eliminar usuario');
     }
   };
 
@@ -4672,19 +4686,7 @@ export default function AdminPage() {
                             Imagen del Banner
                           </label>
                           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                            <p className="text-blue-800 font-medium mb-1">📐 Tamaño óptimo universal:</p>
-                            <ul className="text-blue-700 space-y-1">
-                              <li>• <strong>Tamaño:</strong> 1200x600px (ratio 2:1)</li>
-                              <li>• <strong>Formato:</strong> JPG o PNG</li>
-                              <li>• <strong>Zona segura:</strong> Centro 800px para texto</li>
-                              <li>• <strong>Tamaño máximo:</strong> 5MB</li>
-                            </ul>
-                            <div className="mt-2 p-2 bg-blue-100 rounded">
-                              <p className="text-blue-800 text-xs font-medium">💡 Diseño responsivo:</p>
-                              <p className="text-blue-700 text-xs">• Desktop: se ve completo (1200x600px)</p>
-                              <p className="text-blue-700 text-xs">• Mobile: se recorta a cuadrado (600x600px del centro)</p>
-                              <p className="text-blue-700 text-xs">• Coloca elementos importantes en el centro</p>
-                            </div>
+                            <p className="text-blue-800 font-medium">📐 Tamaño: 1200x600px | Formato: JPG/PNG | Peso máx: 5MB</p>
                           </div>
                           <input
                             type="file"
@@ -5465,9 +5467,9 @@ export default function AdminPage() {
                           onChange={(e) => setProductForm({ ...productForm, precio: parseFloat(e.target.value) || 0 })}
                           required
                           min="0"
-                          step="0.01"
+                          step="1"
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-200 bg-white/70" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties} onFocus={(e) => e.target.style.borderColor = '#F16529'} onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-                          placeholder="0.00"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -5492,6 +5494,7 @@ export default function AdminPage() {
                           onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })}
                           required
                           min="0"
+                          step="1"
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none transition-all duration-200 bg-white/70"
                           placeholder="0"
                         />
@@ -5507,6 +5510,7 @@ export default function AdminPage() {
                           onChange={(e) => setProductForm({ ...productForm, minStock: Number(e.target.value) })}
                           required
                           min="0"
+                          step="1"
                           placeholder="5"
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none transition-all duration-200 bg-white/70"
                         />

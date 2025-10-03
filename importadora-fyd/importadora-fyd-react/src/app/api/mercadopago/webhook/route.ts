@@ -89,20 +89,20 @@ export async function POST(request: NextRequest) {
 
           // Mapear estados de MercadoPago a nuestros estados
           let orderStatus = 'pending';
-          
+
           switch (status) {
             case 'approved':
-              orderStatus = 'completed';
+              orderStatus = 'confirmed';
               break;
             case 'pending':
               orderStatus = 'pending';
               break;
             case 'in_process':
-              orderStatus = 'processing';
+              orderStatus = 'pending';
               break;
             case 'rejected':
             case 'cancelled':
-              orderStatus = 'failed';
+              orderStatus = 'cancelled';
               break;
             default:
               orderStatus = 'pending';
@@ -113,8 +113,11 @@ export async function POST(request: NextRequest) {
             try {
               const orderRef = doc(db, 'orders', orderId);
               const orderDoc = await getDoc(orderRef);
-              
+
               if (orderDoc.exists()) {
+                const orderData = orderDoc.data();
+                const previousStatus = orderData.status;
+
                 await updateDoc(orderRef, {
                   status: orderStatus,
                   paymentStatus: status,
@@ -130,6 +133,26 @@ export async function POST(request: NextRequest) {
                   },
                   updatedAt: new Date()
                 });
+
+                // Si el pago fue aprobado y el estado anterior era pending_payment, descontar stock
+                if (status === 'approved' && previousStatus === 'pending_payment') {
+                  const items = orderData.items || [];
+                  for (const item of items) {
+                    const productRef = doc(db, 'products', item.productId);
+                    const productDoc = await getDoc(productRef);
+
+                    if (productDoc.exists()) {
+                      const currentStock = productDoc.data().stock || 0;
+                      const newStock = Math.max(0, currentStock - item.cantidad);
+
+                      await updateDoc(productRef, {
+                        stock: newStock
+                      });
+
+                      console.log(`✅ Stock descontado: ${item.nombre} - ${currentStock} → ${newStock}`);
+                    }
+                  }
+                }
               } else {
                 // console.warn('⚠️ Orden no encontrada para actualizar con pago MP', { orderId, paymentId });
               }

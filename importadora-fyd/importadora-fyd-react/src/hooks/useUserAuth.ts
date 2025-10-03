@@ -199,6 +199,10 @@ export function useUserAuth() {
       await signOut(auth);
       setGuestUser(null);
       localStorage.removeItem('guestUser');
+
+      // Limpiar carrito al cerrar sesión
+      localStorage.removeItem('cart');
+
     } catch (error: unknown) {
       setError('Error al cerrar sesión');
       throw error;

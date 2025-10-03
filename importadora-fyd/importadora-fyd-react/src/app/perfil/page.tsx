@@ -5,14 +5,22 @@ import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import Layout from '@/components/Layout';
-import { UserIcon, MapPinIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { UserIcon, MapPinIcon, PhoneIcon, EnvelopeIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function ProfilePage() {
   const { currentUser, userProfile, updateUserProfile, isRegistered, loading } = useUserAuth();
   const unreadOrderNotifications = useOrderNotifications();
   const router = useRouter();
-  
+
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -102,6 +110,74 @@ export default function ProfilePage() {
       });
     }
     setIsEditing(false);
+  };
+
+  const handlePasswordChange = async () => {
+    setMessage('');
+
+    // Validaciones
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setMessage('Por favor completa todos los campos');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setMessage('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage('Las contraseñas nuevas no coinciden');
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      setMessage('La nueva contraseña debe ser diferente a la actual');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const user = auth.currentUser;
+
+      if (!user || !user.email) {
+        setMessage('Error: Usuario no autenticado');
+        return;
+      }
+
+      // Reautenticar usuario
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        passwordData.currentPassword
+      );
+
+      await reauthenticateWithCredential(user, credential);
+
+      // Actualizar contraseña
+      await updatePassword(user, passwordData.newPassword);
+
+      // Limpiar formulario y cerrar modal
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordModal(false);
+      setMessage('Contraseña actualizada correctamente');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+
+      if (error.code === 'auth/wrong-password') {
+        setMessage('La contraseña actual es incorrecta');
+      } else if (error.code === 'auth/requires-recent-login') {
+        setMessage('Por seguridad, debes iniciar sesión nuevamente');
+      } else {
+        setMessage('Error al cambiar la contraseña');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -370,6 +446,13 @@ export default function ProfilePage() {
           <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+            >
+              <KeyIcon className="h-5 w-5 mr-2 text-gray-600" />
+              <span className="text-gray-700">Cambiar Contraseña</span>
+            </button>
+            <button
               onClick={() => router.push('/mis-pedidos')}
               className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base relative"
             >
@@ -382,12 +465,109 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base"
+              className="flex items-center justify-center px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base sm:col-span-2"
             >
               <span>Continuar Comprando</span>
             </button>
           </div>
         </div>
+
+        {/* Password Change Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <KeyIcon className="h-6 w-6 mr-2 text-orange-600" />
+                  Cambiar Contraseña
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                    setMessage('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contraseña Actual
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Ingresa tu contraseña actual"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nueva Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirmar Nueva Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Repite la nueva contraseña"
+                  />
+                </div>
+
+                {message && (
+                  <div className={`p-3 rounded ${
+                    message.includes('Error') || message.includes('incorrecta') || message.includes('coinciden')
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : 'bg-green-50 text-green-700 border border-green-200'
+                  }`}>
+                    {message}
+                  </div>
+                )}
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                      setMessage('');
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handlePasswordChange}
+                    disabled={saving}
+                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Cambiando...' : 'Cambiar Contraseña'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       </div>
     </Layout>

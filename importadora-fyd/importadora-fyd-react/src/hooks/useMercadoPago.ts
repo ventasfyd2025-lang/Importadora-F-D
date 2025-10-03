@@ -50,6 +50,7 @@ export function useMercadoPago() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Error del servidor MercadoPago:', errorData);
         throw new Error(errorData.error || 'Error creando preferencia de pago');
       }
 

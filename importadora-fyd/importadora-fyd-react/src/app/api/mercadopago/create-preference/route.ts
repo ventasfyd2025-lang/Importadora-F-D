@@ -31,8 +31,14 @@ interface RequestBody {
 }
 
 // Configurar MercadoPago con el access token
+const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim();
+
+if (!accessToken) {
+  throw new Error('MERCADOPAGO_ACCESS_TOKEN no está configurado');
+}
+
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
+  accessToken: accessToken,
   options: {
     timeout: 5000,
   }
@@ -69,22 +75,33 @@ export async function POST(request: NextRequest) {
       picture_url: item.image
     }));
 
-    // Obtener la URL base correcta
-    const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // Obtener la URL base correcta y limpiarla
+    const baseUrl = (process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').trim();
     
     // Calcular total desde los items
     const total = mpItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+
+    // Preparar datos del usuario de forma segura
+    const customerName = `${userInfo?.firstName || ''} ${userInfo?.lastName || ''}`.trim();
+    const customerEmail = userInfo?.email || '';
+
+    // Crear URLs de retorno
+    const successUrl = `${baseUrl}/checkout/success?orderId=${encodeURIComponent(orderId || '')}&paymentMethod=mercadopago&customerName=${encodeURIComponent(customerName)}&customerEmail=${encodeURIComponent(customerEmail)}&total=${total}`;
+    const failureUrl = `${baseUrl}/checkout/failure?orderId=${encodeURIComponent(orderId || '')}`;
+    const pendingUrl = `${baseUrl}/checkout/pending?orderId=${encodeURIComponent(orderId || '')}`;
+
+    console.log('URLs generadas:', { successUrl, failureUrl, pendingUrl, baseUrl });
 
     // Configurar preferencia simplificada
     const preferenceData = {
       items: mpItems,
       payer: {
-        email: userInfo?.email || ''
+        email: customerEmail
       },
       back_urls: {
-        success: `${baseUrl}/checkout/success?orderId=${orderId}&paymentMethod=mercadopago&customerName=${encodeURIComponent(userInfo?.firstName + ' ' + userInfo?.lastName)}&customerEmail=${encodeURIComponent(userInfo?.email || '')}&total=${total}`,
-        failure: `${baseUrl}/checkout/failure?orderId=${orderId}`,
-        pending: `${baseUrl}/checkout/pending?orderId=${orderId}`
+        success: successUrl,
+        failure: failureUrl,
+        pending: pendingUrl
       },
       external_reference: orderId || `order_${Date.now()}`,
       notification_url: `${baseUrl}/api/mercadopago/webhook`,
@@ -124,14 +141,27 @@ export async function POST(request: NextRequest) {
       cause: error?.cause,
       stack: error?.stack,
       status: error?.status,
-      statusCode: error?.statusCode
+      statusCode: error?.statusCode,
+      apiResponse: error?.apiResponse,
+      response: error?.response
     });
+
+    // Extraer mensaje de error más específico de MercadoPago
+    let errorMessage = error?.message || 'Error desconocido';
+    let errorDetails = error?.cause || error?.response?.data;
+
+    // Si hay respuesta de la API de MercadoPago
+    if (error?.apiResponse) {
+      errorMessage = error.apiResponse.message || errorMessage;
+      errorDetails = error.apiResponse;
+    }
 
     return NextResponse.json(
       {
         error: 'Error interno del servidor',
-        message: error?.message || 'Error desconocido',
-        details: error?.cause || error?.response?.data || undefined
+        message: errorMessage,
+        details: errorDetails,
+        hasAccessToken: !!process.env.MERCADOPAGO_ACCESS_TOKEN
       },
       { status: 500 }
     );

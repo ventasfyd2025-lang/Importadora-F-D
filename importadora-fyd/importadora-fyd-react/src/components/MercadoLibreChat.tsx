@@ -113,7 +113,7 @@ export default function MercadoLibreChat({ orderId, className = '' }: MercadoLib
       console.log('Constructed URL:', finalUrl);
       return finalUrl;
     }
-    // Fallback con número por defecto
+    // Fallback con número por defecto (número de contacto de Importadora F&D)
     console.log('Using fallback URL');
     const fallbackMessage = encodeURIComponent(
       `¡Hola Importadora FyD! 👋\n\n` +
@@ -123,7 +123,7 @@ export default function MercadoLibreChat({ orderId, className = '' }: MercadoLib
       `Sábados: 10:00 - 14:00\n\n` +
       `¡Espero su pronta respuesta!`
     );
-    return `https://wa.me/56912345678?text=${fallbackMessage}`;
+    return `https://wa.me/56935302796?text=${fallbackMessage}`;
   };
 
   const handleChatButtonClick = () => {

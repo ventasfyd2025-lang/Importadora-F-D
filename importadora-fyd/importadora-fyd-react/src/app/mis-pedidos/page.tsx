@@ -240,7 +240,8 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-6">
             {orders.map((order) => {
-              const StatusIcon = statusConfig[order.status].icon;
+              const statusInfo = statusConfig[order.status] || statusConfig.pending;
+              const StatusIcon = statusInfo.icon;
 
               return (
                 <div key={order.id} className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-orange-100 overflow-hidden hover:shadow-2xl transition-all">
@@ -259,9 +260,9 @@ export default function OrdersPage() {
                       </div>
                       
                       <div className="flex items-center space-x-4">
-                        <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusConfig[order.status].color}`}>
+                        <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}>
                           <StatusIcon className="h-4 w-4 mr-1" />
-                          {statusConfig[order.status].label}
+                          {statusInfo.label}
                         </div>
                         
                         <div className="text-right">
