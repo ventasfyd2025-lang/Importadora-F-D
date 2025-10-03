@@ -485,8 +485,9 @@ export default function AdminPage() {
   // Total unread count for notifications
   const unreadCount = unreadChatCount + newOrdersCount;
   
-  // Order chat states
-  const [cleaningData, setCleaningData] = useState(false);
+  // Order selection and deletion states
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [deletingOrders, setDeletingOrders] = useState(false);
   
   // Popup chat states
   const [chatPopupOrder, setChatPopupOrder] = useState<Order | null>(null);
@@ -1814,21 +1815,57 @@ export default function AdminPage() {
     setChatPopupOrder(null);
   };
 
-  const handleCleanData = async () => {
-    if (!confirm('⚠️ ¿Estás seguro de que quieres eliminar TODOS los pedidos y mensajes de chat?\n\nEsta acción no se puede deshacer.')) {
+  const handleDeleteSelectedOrders = async () => {
+    if (selectedOrders.length === 0) {
+      alert('⚠️ No has seleccionado ningún pedido para eliminar.');
       return;
     }
 
-    setCleaningData(true);
+    if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar ${selectedOrders.length} pedido(s)?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    setDeletingOrders(true);
     try {
-      await cleanAllData();
-      alert('✅ Datos limpiados exitosamente. La página se recargará para reflejar los cambios.');
-      window.location.reload();
+      // Eliminar pedidos seleccionados
+      for (const orderId of selectedOrders) {
+        await deleteDoc(doc(db, 'orders', orderId));
+
+        // Eliminar mensajes de chat asociados
+        const messagesQuery = query(
+          collection(db, 'chat_messages'),
+          where('orderId', '==', orderId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        for (const messageDoc of messagesSnapshot.docs) {
+          await deleteDoc(messageDoc.ref);
+        }
+      }
+
+      alert(`✅ ${selectedOrders.length} pedido(s) eliminado(s) exitosamente.`);
+      setSelectedOrders([]);
+      refetch();
     } catch (error) {
-      alert('❌ Error al limpiar datos');
-      console.error('Error cleaning data:', error);
+      alert('❌ Error al eliminar pedidos');
+      console.error('Error deleting orders:', error);
     } finally {
-      setCleaningData(false);
+      setDeletingOrders(false);
+    }
+  };
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  const toggleSelectAllOrders = () => {
+    if (selectedOrders.length === orders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(orders.map(order => order.id));
     }
   };
 
@@ -3407,26 +3444,33 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="flex space-x-3">
+                  {selectedOrders.length > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-xl border border-blue-200">
+                      <span className="text-sm font-medium text-blue-700">
+                        {selectedOrders.length} seleccionado(s)
+                      </span>
+                    </div>
+                  )}
                   <button
-                    onClick={handleCleanData}
-                    disabled={cleaningData}
+                    onClick={handleDeleteSelectedOrders}
+                    disabled={deletingOrders || selectedOrders.length === 0}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold transition-all duration-200 hover:scale-105 shadow-lg disabled:opacity-50 disabled:transform-none"
-                    style={{ backgroundColor: '#dc2626' }}
-                    onMouseEnter={(e) => !cleaningData && (e.currentTarget.style.backgroundColor = '#b91c1c')}
-                    onMouseLeave={(e) => !cleaningData && (e.currentTarget.style.backgroundColor = '#dc2626')}
+                    style={{ backgroundColor: selectedOrders.length > 0 ? '#dc2626' : '#9ca3af' }}
+                    onMouseEnter={(e) => selectedOrders.length > 0 && !deletingOrders && (e.currentTarget.style.backgroundColor = '#b91c1c')}
+                    onMouseLeave={(e) => selectedOrders.length > 0 && !deletingOrders && (e.currentTarget.style.backgroundColor = '#dc2626')}
                   >
-                    {cleaningData ? (
+                    {deletingOrders ? (
                       <>
                         <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Limpiando...
+                        Eliminando...
                       </>
                     ) : (
                       <>
-                        <span>🧹</span>
-                        Limpiar Datos
+                        <span>🗑️</span>
+                        Eliminar Seleccionados
                       </>
                     )}
                   </button>
@@ -3540,6 +3584,14 @@ export default function AdminPage() {
                 <table className="min-w-full divide-y divide-orange-100">
                   <thead className="bg-gradient-to-r from-orange-50 to-red-50">
                     <tr>
+                      <th className="px-3 py-3 text-left">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.length === orders.length && orders.length > 0}
+                          onChange={toggleSelectAllOrders}
+                          className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                        />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#F16529' }}>
                         Cliente
                       </th>
@@ -3595,6 +3647,14 @@ export default function AdminPage() {
                       return (
                         <React.Fragment key={`group-${groupIndex}`}>
                           <tr key={mainOrder.id} className={totalUserOrders > 1 ? 'bg-blue-50' : ''}>
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedOrders.includes(mainOrder.id)}
+                            onChange={() => toggleOrderSelection(mainOrder.id)}
+                            className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {totalUserOrders > 1 && (
@@ -3708,6 +3768,14 @@ export default function AdminPage() {
                       {/* Show individual orders when expanded */}
                       {totalUserOrders > 1 && expandedGroups.has(groupIndex) && userOrders.slice(1).map((order, orderIndex) => (
                         <tr key={`${groupIndex}-${orderIndex + 1}`} className="bg-blue-25 border-l-4 border-blue-300">
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedOrders.includes(order.id)}
+                              onChange={() => toggleOrderSelection(order.id)}
+                              className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                            />
+                          </td>
                           <td className="px-6 py-3 whitespace-nowrap pl-12">
                             <div className="text-sm text-gray-700">
                               <div className="font-medium">Pedido #{order.id.slice(-8).toUpperCase()}</div>
