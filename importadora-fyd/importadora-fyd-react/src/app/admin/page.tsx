@@ -968,11 +968,21 @@ export default function AdminPage() {
     }
 
     try {
+      // Obtener el token del usuario actual
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert('Debes estar autenticado para realizar esta acción');
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+
       // Llamar al API para eliminar el usuario
       const response = await fetch('/api/admin/delete-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ userId }),
       });
