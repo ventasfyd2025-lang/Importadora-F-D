@@ -6047,71 +6047,84 @@ export default function AdminPage() {
                       
                       
                       <div className="space-y-2">
+                        <label className="block text-xs font-medium text-gray-700">Tipo de enlace</label>
                         <select
                           value={section.linkType}
                           onChange={(e) => {
-                            updateSection(index, { ...section, linkType: e.target.value as any });
+                            updateSection(index, { ...section, linkType: e.target.value as any, linkValue: '' });
                           }}
-                          className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                          className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
                         >
-                          <option value="category">Categoría</option>
-                          <option value="product">Producto</option>
-                          <option value="filter">Filtro</option>
-                          <option value="url">URL personalizada</option>
+                          <option value="category">📁 Categoría</option>
+                          <option value="product">📦 Producto</option>
+                          <option value="filter">🔍 Filtro</option>
+                          <option value="url">🔗 URL personalizada</option>
                         </select>
-                        
+
                         {section.linkType === 'category' ? (
-                          <select
-                            value={section.linkValue}
-                            onChange={(e) => {
-                              updateSection(index, { ...section, linkValue: e.target.value });
-                            }}
-                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                          >
-                            <option value="">Selecciona una categoría</option>
-                            {availableCategories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </option>
-                            ))}
-                          </select>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Seleccionar categoría</label>
+                            <select
+                              value={section.linkValue}
+                              onChange={(e) => {
+                                updateSection(index, { ...section, linkValue: e.target.value });
+                              }}
+                              className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                            >
+                              <option value="">-- Selecciona una categoría --</option>
+                              {availableCategories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                  {cat.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         ) : section.linkType === 'product' ? (
-                          <select
-                            value={section.linkValue}
-                            onChange={(e) => {
-                              updateSection(index, { ...section, linkValue: e.target.value });
-                            }}
-                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                          >
-                            <option value="">Selecciona un producto</option>
-                            {products.slice(0, 20).map(product => (
-                              <option key={product.id} value={product.id}>
-                                {product.nombre} - ${product.precio}
-                              </option>
-                            ))}
-                          </select>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Seleccionar producto</label>
+                            <select
+                              value={section.linkValue}
+                              onChange={(e) => {
+                                updateSection(index, { ...section, linkValue: e.target.value });
+                              }}
+                              className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                            >
+                              <option value="">-- Selecciona un producto --</option>
+                              {products.map(product => (
+                                <option key={product.id} value={product.id}>
+                                  {product.nombre}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         ) : section.linkType === 'filter' ? (
-                          <select
-                            value={section.linkValue}
-                            onChange={(e) => {
-                              updateSection(index, { ...section, linkValue: e.target.value });
-                            }}
-                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                          >
-                            <option value="">Selecciona un filtro</option>
-                            <option value="ofertas">Ofertas</option>
-                            <option value="nuevos">Nuevos</option>
-                          </select>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Seleccionar filtro</label>
+                            <select
+                              value={section.linkValue}
+                              onChange={(e) => {
+                                updateSection(index, { ...section, linkValue: e.target.value });
+                              }}
+                              className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                            >
+                              <option value="">-- Selecciona un filtro --</option>
+                              <option value="ofertas">🏷️ Ofertas</option>
+                              <option value="nuevos">✨ Nuevos</option>
+                            </select>
+                          </div>
                         ) : (
-                          <input
-                            type="url"
-                            value={section.linkValue}
-                            onChange={(e) => {
-                              updateSection(index, { ...section, linkValue: e.target.value });
-                            }}
-                            placeholder="https://ejemplo.com"
-                            className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                          />
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">URL personalizada</label>
+                            <input
+                              type="text"
+                              value={section.linkValue}
+                              onChange={(e) => {
+                                updateSection(index, { ...section, linkValue: e.target.value });
+                              }}
+                              placeholder="https://ejemplo.com"
+                              className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                            />
+                          </div>
                         )}
                       </div>
                       
