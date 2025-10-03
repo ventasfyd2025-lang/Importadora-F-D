@@ -89,6 +89,9 @@ export function useProducts() {
   const filterProducts = (searchQuery?: string, category?: string, priceRange?: string, sortBy?: string, subcategory?: string) => {
     let filtered = [...products];
 
+    // Filter out products without stock
+    filtered = filtered.filter(product => (product.stock || 0) > 0);
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -154,15 +157,18 @@ export function useProducts() {
   };
 
   const getProductsByFilter = (filter: string) => {
+    // Filter out products without stock first
+    const inStockProducts = products.filter(product => (product.stock || 0) > 0);
+
     switch (filter) {
       case 'ofertas':
-        return products.filter(product => product.oferta);
+        return inStockProducts.filter(product => product.oferta);
       case 'nuevos':
-        return products.filter(product => product.nuevo);
+        return inStockProducts.filter(product => product.nuevo);
       case 'popular':
-        return products;
+        return inStockProducts;
       default:
-        return products;
+        return inStockProducts;
     }
   };
 
