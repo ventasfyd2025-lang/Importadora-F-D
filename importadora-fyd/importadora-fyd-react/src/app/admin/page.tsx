@@ -6138,7 +6138,7 @@ export default function AdminPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">🖼️ Banners Intermedios</h3>
                     <p className="text-sm text-gray-600">
-                      Estos banners aparecen entre el carrusel y el resto de secciones de la home. Son independientes del carrusel principal.
+                      Banners que aparecen entre secciones de la página principal.
                     </p>
                   </div>
                   <button
@@ -6147,12 +6147,16 @@ export default function AdminPage() {
                       const newContent: HomepageContentState = { ...homepageContent, middleBanners: restored };
                       setHomepageContent(newContent);
                       autoSaveHomepageContent(newContent);
-                      alert('✅ Banners intermedios restaurados');
+                      alert('✅ Banners restaurados');
                     }}
                     className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-2 rounded transition-colors"
                   >
-                    🔄 Restaurar banners
+                    🔄 Restaurar
                   </button>
+                </div>
+
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 text-sm font-medium">📐 Tamaño: 1200x400px | Formato: JPG/PNG | Peso máx: 5MB</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -6165,131 +6169,76 @@ export default function AdminPage() {
                     const stateKey = `middle-${banner.id}`;
 
                     return (
-                      <div key={banner.id || `middle-${index}`} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium text-gray-900">Banner #{index + 1}</h4>
-                            <p className="text-xs text-gray-500">{placementLabel}</p>
-                          </div>
-                          <span className="text-xs text-gray-400">ID: {banner.id}</span>
-                        </div>
+                      <div key={banner.id || `middle-${index}`} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+                        <h4 className="font-medium text-gray-900">Banner #{index + 1}</h4>
 
                         <div className="space-y-3">
-                          <div className="relative h-36 sm:h-40 bg-gray-900 rounded-lg overflow-hidden">
-                            {banner.imageUrl ? (
+                          {/* Preview */}
+                          {banner.imageUrl && (
+                            <div className="relative h-32 bg-gray-100 rounded overflow-hidden">
                               <img
                                 src={banner.imageUrl}
                                 alt={banner.title}
                                 className="h-full w-full object-cover"
                               />
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gray-300">
-                                <span className="text-3xl">🖼️</span>
-                                <span className="text-xs">Sin imagen</span>
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                            <span className="absolute top-2 left-2 bg-white/90 text-xs font-semibold text-gray-800 px-2 py-1 rounded-full">
-                              {banner.badgeText || 'PROMO'}
-                            </span>
-                            <div className="absolute bottom-2 left-2 right-2 text-white">
-                              <p className="text-sm font-semibold leading-tight">{banner.title || 'Título del banner'}</p>
-                              <p className="text-xs opacity-90 leading-tight">{banner.subtitle || 'Subtítulo del banner'}</p>
                             </div>
-                          </div>
+                          )}
 
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-gray-700">Título</label>
+                          {/* Título */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Título</label>
                             <input
                               type="text"
                               value={banner.title}
                               onChange={(e) => updateMiddleBanner(index, { ...banner, title: e.target.value })}
-                              className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                              placeholder="Black Friday Anticipado"
+                              className="w-full text-sm border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                              placeholder="Ej: Ofertas Especiales"
                             />
                           </div>
 
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-gray-700">Subtítulo</label>
-                            <textarea
+                          {/* Subtítulo */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Subtítulo</label>
+                            <input
+                              type="text"
                               value={banner.subtitle}
                               onChange={(e) => updateMiddleBanner(index, { ...banner, subtitle: e.target.value })}
-                              rows={2}
-                              className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                              placeholder="Texto descriptivo para el banner"
+                              className="w-full text-sm border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                              placeholder="Ej: Hasta 50% de descuento"
                             />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <label className="block text-xs font-semibold text-gray-700">Badge</label>
-                              <input
-                                type="text"
-                                value={banner.badgeText}
-                                onChange={(e) => updateMiddleBanner(index, { ...banner, badgeText: e.target.value })}
-                                className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                                placeholder="BLACK FRIDAY"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="block text-xs font-semibold text-gray-700">Texto botón</label>
-                              <input
-                                type="text"
-                                value={banner.ctaText}
-                                onChange={(e) => updateMiddleBanner(index, { ...banner, ctaText: e.target.value })}
-                                className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                                placeholder="Comprar ahora"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-gray-700">Link del botón</label>
+                          {/* Link */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Enlace</label>
                             <input
                               type="text"
                               value={banner.ctaLink}
                               onChange={(e) => updateMiddleBanner(index, { ...banner, ctaLink: e.target.value })}
-                              className="w-full text-sm border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                              className="w-full text-sm border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
                               placeholder="/?filter=ofertas"
                             />
-                            <div className="flex flex-wrap gap-2">
-                              {MIDDLE_BANNER_LINK_OPTIONS.map((option) => (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  onClick={() => updateMiddleBanner(index, { ...banner, ctaLink: option.value })}
-                                  className={`text-xs px-2 py-1 rounded border transition-colors ${
-                                    banner.ctaLink === option.value
-                                      ? 'bg-orange-500 text-white border-orange-500'
-                                      : 'border-gray-300 text-gray-600 hover:border-orange-400'
-                                  }`}
-                                >
-                                  {option.label}
-                                </button>
-                              ))}
-                            </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-gray-700">Imagen</label>
-                            <div className="flex gap-2">
-                              <input
-                                type="file"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleMiddleBannerImageUpload(file, index, banner);
-                                  }
-                                }}
-                                className="flex-1 text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
-                              />
-                              {uploadingImages[stateKey] && (
-                                <div className="flex items-center text-orange-600 text-xs">
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600 mr-1"></div>
-                                  Subiendo...
-                                </div>
-                              )}
-                            </div>
+                          {/* Subir Imagen */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Imagen del Banner</label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleMiddleBannerImageUpload(file, index, banner);
+                                }
+                              }}
+                              className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                            />
+                            {uploadingImages[stateKey] && (
+                              <p className="text-xs text-orange-600 mt-1">
+                                <span className="animate-pulse">⏳</span> Subiendo...
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
