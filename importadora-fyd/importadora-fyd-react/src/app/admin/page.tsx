@@ -6016,8 +6016,13 @@ export default function AdminPage() {
                       
                       
                       <div className="mb-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
-                        <p className="text-purple-800 font-medium">📐 Promociones:</p>
-                        <p className="text-purple-700">600x400px • JPG/PNG • Max 3MB</p>
+                        <p className="text-purple-800 font-medium">📐 Resolución recomendada:</p>
+                        <p className="text-purple-700">
+                          {section.position === 'large' ? '1200x1200px (1:1)' :
+                           section.position === 'tall' ? '800x1600px (1:2)' :
+                           section.position === 'wide' ? '1600x800px (2:1)' : '1200x900px (4:3)'}
+                          {' • JPG/PNG • Max 3MB'}
+                        </p>
                       </div>
 
                       <div className="flex gap-2">
