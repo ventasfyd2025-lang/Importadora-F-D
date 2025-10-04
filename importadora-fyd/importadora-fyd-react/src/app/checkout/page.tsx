@@ -8,6 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { useUserAuth } from '@/hooks/useUserAuth';
 import { useBankConfig } from '@/hooks/useBankConfig';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
+import { useEmailNotifications } from '@/hooks/useEmailNotifications';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { addDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -32,6 +33,7 @@ function CheckoutContent() {
   const { currentUser, userProfile, isRegistered } = useUserAuth();
   const { bankConfig, loading: bankLoading } = useBankConfig();
   const { createPreference, loading: mpLoading } = useMercadoPago();
+  const { notifyNewOrder } = useEmailNotifications();
   const [isProcessing, setIsProcessing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -47,6 +49,13 @@ function CheckoutContent() {
   });
 
   const isGuest = !isRegistered;
+
+  // Verificar si el perfil está completo
+  const isProfileComplete = isRegistered && userProfile &&
+    userProfile.firstName &&
+    userProfile.lastName &&
+    userProfile.phone &&
+    userProfile.address;
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -125,6 +134,25 @@ function CheckoutContent() {
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
+      // Enviar notificación por email
+      console.log('📧 Enviando notificación por email...');
+      notifyNewOrder({
+        orderId: orderRef.id,
+        customerName: checkoutData.name,
+        customerEmail: checkoutData.email,
+        customerPhone: checkoutData.phone,
+        total: getTotalPrice(),
+        paymentMethod: 'mercadopago',
+        items: items.map(item => ({
+          nombre: item.nombre,
+          cantidad: item.cantidad,
+          precio: item.precio
+        })),
+        shippingAddress: {
+          street: checkoutData.address
+        }
+      }).catch(err => console.error('Error enviando email:', err));
+
       // Crear preferencia de MercadoPago
       const mpItems = items.map(item => ({
         id: item.productId,
@@ -176,6 +204,13 @@ function CheckoutContent() {
       rut: (formData.get('rut') as string) || checkoutData.rut,
       address: (formData.get('address') as string) || checkoutData.address
     };
+
+    // Validar que todos los campos requeridos estén completos
+    if (!finalData.name || !finalData.email || !finalData.phone || !finalData.address) {
+      alert('Por favor completa todos los campos requeridos (Nombre, Email, Teléfono y Dirección).');
+      setIsProcessing(false);
+      return;
+    }
 
     // Obtener archivo del comprobante
     const comprobanteFile = formData.get('comprobante') as File;
@@ -247,6 +282,25 @@ function CheckoutContent() {
       console.log('📝 Creando orden en Firestore...');
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
       console.log('✅ Orden creada exitosamente:', orderRef.id);
+
+      // Enviar notificación por email
+      console.log('📧 Enviando notificación por email...');
+      notifyNewOrder({
+        orderId: orderRef.id,
+        customerName: finalData.name,
+        customerEmail: finalData.email,
+        customerPhone: finalData.phone,
+        total: getTotalPrice(),
+        paymentMethod: 'transferencia',
+        items: items.map(item => ({
+          nombre: item.nombre,
+          cantidad: item.cantidad,
+          precio: item.precio
+        })),
+        shippingAddress: {
+          street: finalData.address
+        }
+      }).catch(err => console.error('Error enviando email:', err));
 
       // Mensaje actualizado para transferencia
       const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n✅ Comprobante recibido exitosamente.\n🔍 Verificaremos tu pago y confirmaremos tu pedido pronto.';
@@ -406,7 +460,22 @@ function CheckoutContent() {
                     </div>
                   )}
 
-                  {isRegistered && userProfile && (
+                  {isRegistered && !isProfileComplete && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+                      <div className="flex">
+                        <div className="text-yellow-500 mr-2">⚠️</div>
+                        <div>
+                          <p className="text-sm font-medium text-yellow-800">Completa tus datos</p>
+                          <p className="text-xs text-yellow-600">
+                            Por favor completa todos los campos requeridos para procesar tu pedido.
+                            Puedes guardar estos datos en tu perfil para futuras compras.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isRegistered && isProfileComplete && (
                     <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
                       <div className="flex">
                         <div className="text-green-400 mr-2">✅</div>
