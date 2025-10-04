@@ -7,7 +7,7 @@ import { CheckCircle, Clock, Banknote } from 'lucide-react';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useCart } from '@/context/CartContext';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 
 interface OrderItem {
   productId: string;
@@ -47,63 +47,59 @@ function PaymentSuccessContent() {
     const loadOrderDetails = async () => {
       if (!orderId) return;
 
-      try {
-        // Obtener detalles completos de la orden desde Firebase
-        const orderDoc = await getDoc(doc(db, 'orders', orderId));
+      // Solo intentar leer desde Firebase si el usuario está autenticado
+      const currentUser = auth.currentUser;
 
-        if (orderDoc.exists()) {
-          const orderData = orderDoc.data();
-          console.log('📦 Datos de la orden:', orderData);
-          console.log('🛍️ Items de la orden:', orderData.items);
+      if (currentUser) {
+        try {
+          // Obtener detalles completos de la orden desde Firebase
+          const orderDoc = await getDoc(doc(db, 'orders', orderId));
 
-          // Calcular total desde items si el total guardado es 0
-          const savedTotal = orderData.total || 0;
-          const calculatedTotal = orderData.items?.reduce((sum: number, item: any) =>
-            sum + (item.precio * item.cantidad), 0) || 0;
-          const finalTotal = savedTotal > 0 ? savedTotal : (calculatedTotal > 0 ? calculatedTotal : parseInt(total));
+          if (orderDoc.exists()) {
+            const orderData = orderDoc.data();
+            console.log('📦 Datos de la orden:', orderData);
+            console.log('🛍️ Items de la orden:', orderData.items);
 
-          console.log('💰 Total guardado:', savedTotal);
-          console.log('💰 Total calculado desde items:', calculatedTotal);
-          console.log('💰 Total final:', finalTotal);
+            // Calcular total desde items si el total guardado es 0
+            const savedTotal = orderData.total || 0;
+            const calculatedTotal = orderData.items?.reduce((sum: number, item: any) =>
+              sum + (item.precio * item.cantidad), 0) || 0;
+            const finalTotal = savedTotal > 0 ? savedTotal : (calculatedTotal > 0 ? calculatedTotal : parseInt(total));
 
-          setOrderInfo({
-            orderId,
-            paymentMethod: orderData.paymentMethod || paymentMethod,
-            customerName: orderData.customerName || customerName,
-            customerEmail: orderData.customerEmail || customerEmail,
-            total: finalTotal,
-            paymentId: paymentId || undefined,
-            status: status || orderData.status,
-            items: orderData.items || []
-          });
-        } else {
-          console.log('⚠️ Orden no encontrada en Firebase, usando datos de URL');
-          // Fallback a datos de URL si no existe en Firebase
-          setOrderInfo({
-            orderId,
-            paymentMethod,
-            customerName,
-            customerEmail,
-            total: parseInt(total),
-            paymentId: paymentId || undefined,
-            status: status || undefined,
-            items: []
-          });
+            console.log('💰 Total guardado:', savedTotal);
+            console.log('💰 Total calculado desde items:', calculatedTotal);
+            console.log('💰 Total final:', finalTotal);
+
+            setOrderInfo({
+              orderId,
+              paymentMethod: orderData.paymentMethod || paymentMethod,
+              customerName: orderData.customerName || customerName,
+              customerEmail: orderData.customerEmail || customerEmail,
+              total: finalTotal,
+              paymentId: paymentId || undefined,
+              status: status || orderData.status,
+              items: orderData.items || []
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('❌ Error cargando detalles de orden:', error);
         }
-      } catch (error) {
-        console.error('❌ Error cargando detalles de orden:', error);
-        // Usar datos de URL como fallback
-        setOrderInfo({
-          orderId,
-          paymentMethod,
-          customerName,
-          customerEmail,
-          total: parseInt(total),
-          paymentId: paymentId || undefined,
-          status: status || undefined,
-          items: []
-        });
+      } else {
+        console.log('ℹ️ Usuario invitado - usando datos de URL');
       }
+
+      // Usar datos de URL para usuarios invitados o si hay error
+      setOrderInfo({
+        orderId,
+        paymentMethod,
+        customerName,
+        customerEmail,
+        total: parseInt(total),
+        paymentId: paymentId || undefined,
+        status: status || undefined,
+        items: []
+      });
     };
 
     loadOrderDetails();
