@@ -9,26 +9,30 @@ import { db } from '@/lib/firebase';
 import { UserProfile } from '@/hooks/useUserAuth';
 
 export default function UsuariosAdminPage() {
-  const { isAdmin, userProfile, currentUser } = useUserAuth();
+  const { isAdmin, userProfile, currentUser, loading: authLoading } = useUserAuth();
   const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<string | null>(null);
 
-  // Verificar acceso de admin
+  // Protección de ruta: redirigir si no es administrador
   useEffect(() => {
-    if (!currentUser) {
-      router.push('/auth');
+    if (!authLoading) {
+      if (!currentUser || !isAdmin) {
+        console.warn('⚠️ Acceso denegado a /admin/usuarios: usuario no es administrador');
+        router.push('/');
+      }
     }
-  }, [currentUser, router]);
+  }, [authLoading, currentUser, isAdmin, router]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && isAdmin) {
       loadUsers();
     }
-  }, [currentUser]);
+  }, [currentUser, isAdmin]);
 
-  if (!currentUser) {
+  // Mostrar loading mientras se verifica autenticación
+  if (authLoading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
@@ -38,7 +42,8 @@ export default function UsuariosAdminPage() {
     );
   }
 
-  if (userProfile && !isAdmin) {
+  // Bloquear acceso si no es admin
+  if (!currentUser || !isAdmin) {
     return (
       <Layout>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">

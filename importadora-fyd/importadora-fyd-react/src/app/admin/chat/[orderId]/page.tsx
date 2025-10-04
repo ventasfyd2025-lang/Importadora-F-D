@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserAuth } from '@/hooks/useUserAuth';
 import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import { 
   collection, 
@@ -110,8 +110,8 @@ export default function AdminChatPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
-  const { user, loading: authLoading } = useAuth();
-  
+  const { user, isAdmin, loading: authLoading } = useUserAuth();
+
   const [order, setOrder] = useState<Order | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -119,6 +119,14 @@ export default function AdminChatPage() {
   const [orderLoading, setOrderLoading] = useState(true);
   const { formatTime } = useClientSideFormat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Protección de ruta: redirigir si no es administrador
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      console.warn('⚠️ Acceso denegado a /admin/chat: usuario no es administrador');
+      router.push('/');
+    }
+  }, [authLoading, user, isAdmin, router]);
 
   const loadOrder = useCallback(async () => {
     if (!orderId) return;

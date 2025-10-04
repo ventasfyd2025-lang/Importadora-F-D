@@ -27,7 +27,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import optimizeImageFile from '@/utils/imageProcessing';
 import MainBannerCarousel from '@/components/MainBannerCarousel';
 import { defaultMiddleBanners } from '@/components/home/bannerData';
@@ -371,6 +371,7 @@ function getDefaultLayoutRule(variant: LayoutPatternVariant) {
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading: authLoading, login, logout } = useAuth();
+  const { userProfile, isAdmin, loading: userAuthLoading } = useUserAuth();
   const { products, refetch, removeProduct, removeProducts } = useProducts();
   const { footerConfig, updateFooterConfig, loading: footerLoading } = useFooterConfig();
   const { bankConfig, updateBankConfig, loading: bankLoading } = useBankConfig();
@@ -1289,13 +1290,23 @@ export default function AdminPage() {
     tags: [] as string[] // ['nuevo', 'oferta']
   });
 
+  // Protección de ruta: redirigir si no es administrador
+  useEffect(() => {
+    if (!authLoading && !userAuthLoading) {
+      if (!user || !isAdmin) {
+        console.warn('⚠️ Acceso denegado: usuario no es administrador');
+        router.push('/');
+      }
+    }
+  }, [authLoading, userAuthLoading, user, isAdmin, router]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       // User is not logged in, show login form
       return;
     }
 
-    if (user) {
+    if (user && isAdmin) {
       loadCategories();
       loadBannerConfig();
       loadPopupConfig();
@@ -1956,7 +1967,8 @@ export default function AdminPage() {
     }).sort((a, b) => new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime());
   };
 
-  if (authLoading) {
+  // Mostrar loading mientras se verifica la autenticación
+  if (authLoading || userAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderBottomColor: '#F16529' }}></div>
@@ -1964,7 +1976,8 @@ export default function AdminPage() {
     );
   }
 
-  if (!user) {
+  // Bloquear acceso si no es administrador
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
@@ -1973,6 +1986,7 @@ export default function AdminPage() {
             <p className="text-gray-600 mt-2">Importadora F&D</p>
           </div>
 
+          {!user ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -2016,6 +2030,25 @@ export default function AdminPage() {
               {loggingIn ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
           </form>
+          ) : (
+            <div className="text-center space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-800 font-semibold">⛔ Acceso Denegado</p>
+                <p className="text-red-600 text-sm mt-2">
+                  No tienes permisos de administrador para acceder a esta página.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('/')}
+                className="w-full text-white font-semibold py-2 px-4 rounded-md transition-colors"
+                style={{ backgroundColor: '#F16529' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+              >
+                Volver al Inicio
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

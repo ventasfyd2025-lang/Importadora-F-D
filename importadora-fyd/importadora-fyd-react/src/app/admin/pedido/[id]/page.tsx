@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -28,7 +28,8 @@ interface ChatMessage {
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params.id as string;
-  const { user } = useUserAuth();
+  const router = useRouter();
+  const { user, isAdmin, loading: authLoading } = useUserAuth();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,14 @@ export default function OrderDetailPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Protección de ruta: redirigir si no es administrador
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      console.warn('⚠️ Acceso denegado a /admin/pedido: usuario no es administrador');
+      router.push('/');
+    }
+  }, [authLoading, user, isAdmin, router]);
 
   // Load order details
   useEffect(() => {
