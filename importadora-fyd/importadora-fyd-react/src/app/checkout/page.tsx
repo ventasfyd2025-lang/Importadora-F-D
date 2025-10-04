@@ -305,18 +305,28 @@ function CheckoutContent() {
       // Mensaje actualizado para transferencia
       const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n✅ Comprobante recibido exitosamente.\n🔍 Verificaremos tu pago y confirmaremos tu pedido pronto.';
 
-      console.log('💬 Creando mensaje de chat...');
-      await addDoc(collection(db, 'chat_messages'), {
-        orderId: orderRef.id,
-        userId: (currentUser as any)?.uid || finalData.email,
-        userEmail: finalData.email,
-        userName: 'Sistema FyD',
-        message: `¡Hola ${finalData.name}! 👋\n\nTu pedido #${orderRef.id.slice(-8).toUpperCase()} ha sido recibido exitosamente.${paymentMessage}\n\n📋 Puedes hacer seguimiento del estado en "Mis Pedidos".\n💬 Si tienes alguna pregunta, no dudes en escribirnos aquí.\n\n¡Gracias por elegir FyD!`,
-        isAdmin: true,
-        timestamp: new Date(),
-        read: false
-      });
-      console.log('✅ Mensaje de chat creado');
+      // Crear mensaje de chat solo si el usuario está autenticado
+      if (isRegistered && (currentUser as any)?.uid) {
+        console.log('💬 Creando mensaje de chat...');
+        try {
+          await addDoc(collection(db, 'chat_messages'), {
+            orderId: orderRef.id,
+            userId: (currentUser as any).uid,
+            userEmail: finalData.email,
+            userName: 'Sistema FyD',
+            message: `¡Hola ${finalData.name}! 👋\n\nTu pedido #${orderRef.id.slice(-8).toUpperCase()} ha sido recibido exitosamente.${paymentMessage}\n\n📋 Puedes hacer seguimiento del estado en "Mis Pedidos".\n💬 Si tienes alguna pregunta, no dudes en escribirnos aquí.\n\n¡Gracias por elegir FyD!`,
+            isAdmin: true,
+            timestamp: new Date(),
+            read: false
+          });
+          console.log('✅ Mensaje de chat creado');
+        } catch (chatError) {
+          console.error('⚠️ Error creando mensaje de chat (no crítico):', chatError);
+          // Continuar con el proceso aunque falle el chat
+        }
+      } else {
+        console.log('ℹ️ Usuario invitado - mensaje de chat omitido');
+      }
 
       // Redirigir a página de éxito completa
       const successUrl = new URLSearchParams({
