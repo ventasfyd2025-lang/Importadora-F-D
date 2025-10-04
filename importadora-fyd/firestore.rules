@@ -78,6 +78,12 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Alertas de stock - crear/actualizar permitido, leer/editar solo admin
+    match /stock_alerts/{document} {
+      allow create, update: if true;
+      allow read, delete: if isAdmin();
+    }
+
     // Carritos - cada usuario solo puede acceder a su propio carrito
     match /carts/{userId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
