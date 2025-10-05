@@ -1535,11 +1535,16 @@ export default function AdminPage() {
         productData.fechaCreacion = new Date().toISOString();
       }
 
+      // Limpiar valores undefined (Firestore no los acepta)
+      const cleanedData = Object.fromEntries(
+        Object.entries(productData).filter(([_, value]) => value !== undefined)
+      );
+
       if (productForm.id) {
         // Update existing product
         try {
           const productRef = doc(db, 'products', productForm.id);
-          await updateDoc(productRef, productData);
+          await updateDoc(productRef, cleanedData);
           alert('Producto actualizado exitosamente');
           refetch(); // Refetch to show the new data
         } catch (error) {
@@ -1549,7 +1554,7 @@ export default function AdminPage() {
       } else {
         // Create new product
         try {
-          await addDoc(collection(db, 'products'), productData);
+          await addDoc(collection(db, 'products'), cleanedData);
           alert('Producto creado exitosamente');
           refetch(); // Refetch to get the new product with its ID
         } catch (error) {
