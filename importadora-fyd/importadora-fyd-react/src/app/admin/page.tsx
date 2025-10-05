@@ -1514,10 +1514,9 @@ export default function AdminPage() {
 
       const priceAsNumber = parseInt(String(productForm.precio).replace(/\D/g, ''), 10) || 0;
 
-      const productData: Partial<Product> = {
+      const productData: any = {
         nombre: productForm.nombre,
         precio: priceAsNumber,
-        precioOriginal: productForm.precioOriginal,
         descripcion: productForm.descripcion,
         stock: Number(productForm.stock),
         minStock: Number(productForm.minStock),
@@ -1531,14 +1530,17 @@ export default function AdminPage() {
         activo: true,
       };
 
+      // Solo agregar precioOriginal si tiene valor (evitar undefined)
+      if (productForm.precioOriginal && productForm.precioOriginal > 0) {
+        productData.precioOriginal = productForm.precioOriginal;
+      }
+
       if (!productForm.id) {
         productData.fechaCreacion = new Date().toISOString();
       }
 
-      // Limpiar valores undefined (Firestore no los acepta)
-      const cleanedData = Object.fromEntries(
-        Object.entries(productData).filter(([_, value]) => value !== undefined)
-      );
+      // No es necesario limpiar porque ya no incluimos undefined
+      const cleanedData = productData;
 
       if (productForm.id) {
         // Update existing product
