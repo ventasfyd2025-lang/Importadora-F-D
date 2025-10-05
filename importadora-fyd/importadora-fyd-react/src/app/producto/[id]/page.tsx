@@ -258,23 +258,23 @@ export default function ProductPage() {
                   : [];
 
               return images.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="flex gap-3 overflow-x-auto pb-2">
                   {images.map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`relative flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-md overflow-hidden border-3 transition-all ${
                         selectedImageIndex === index
-                          ? 'border-orange-500 ring-2 ring-orange-200'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-green-500 border-4'
+                          : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
                       <Image
                         src={img}
                         alt={`${product.nombre} - imagen ${index + 1}`}
                         fill
-                        className="object-contain"
-                        sizes="(max-width: 768px) 25vw, 12.5vw"
+                        className="object-contain p-1"
+                        sizes="96px"
                       />
                     </button>
                   ))}
