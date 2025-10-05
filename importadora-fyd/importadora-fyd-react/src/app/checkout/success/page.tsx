@@ -294,9 +294,9 @@ function PaymentSuccessContent() {
                             Próximos pasos
                           </h3>
                           <ul className="text-sm text-blue-700 space-y-2">
-                            <li>• Te contactaremos por WhatsApp con los datos bancarios</li>
-                            <li>• Una vez realizada la transferencia, confirma el pago</li>
-                            <li>• Procesaremos tu pedido y te informaremos sobre el envío</li>
+                            <li>• Recibirás un email de confirmación con tu número de orden</li>
+                            <li>• Envíanos la confirmación con los datos de envío o día de retiro</li>
+                            <li>• Verificaremos tu pago y procesaremos tu pedido</li>
                           </ul>
                         </div>
                       </div>
