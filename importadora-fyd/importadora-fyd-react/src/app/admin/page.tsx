@@ -5232,12 +5232,45 @@ export default function AdminPage() {
                           <div className="flex flex-wrap gap-1">
                             {(category as any).subcategorias && (category as any).subcategorias.length > 0 ? (
                               (category as any).subcategorias.map((sub: any, index: number) => (
-                                <span
+                                <div
                                   key={index}
-                                  className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 group"
                                 >
-                                  {sub.nombre}
-                                </span>
+                                  <span>{sub.nombre}</span>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedCategoryForSub(category.id);
+                                      setSubcategoryForm({ id: sub.id, nombre: sub.nombre, activa: sub.activa });
+                                      setShowSubcategoryModal(true);
+                                    }}
+                                    className="ml-1 opacity-0 group-hover:opacity-100 hover:text-blue-900 transition-opacity"
+                                    title="Editar subcategoría"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm(`¿Eliminar subcategoría "${sub.nombre}"?`)) {
+                                        try {
+                                          const updatedSubcategorias = (category as any).subcategorias.filter((_: any, i: number) => i !== index);
+                                          await updateDoc(doc(db, 'categorias', category.id), {
+                                            subcategorias: updatedSubcategorias
+                                          });
+                                          setCategories(categories.map(c =>
+                                            c.id === category.id ? { ...c, subcategorias: updatedSubcategorias } as any : c
+                                          ));
+                                        } catch (error) {
+                                          console.error('Error eliminando subcategoría:', error);
+                                          alert('Error al eliminar subcategoría');
+                                        }
+                                      }
+                                    }}
+                                    className="ml-1 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity"
+                                    title="Eliminar subcategoría"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
                               ))
                             ) : (
                               <span className="text-gray-400 text-xs">Sin subcategorías</span>
@@ -5463,16 +5496,28 @@ export default function AdminPage() {
                             if (categoryIndex >= 0) {
                               const category = categories[categoryIndex];
                               const subcategorias = (category as any).subcategorias || [];
-                              
-                              const newSubcategory = {
-                                id: Date.now().toString(),
-                                nombre: subcategoryForm.nombre,
-                                activa: subcategoryForm.activa
-                              };
-                              
-                              const updatedSubcategorias = [...subcategorias, newSubcategory];
+
+                              let updatedSubcategorias;
+
+                              if (subcategoryForm.id) {
+                                // Editar subcategoría existente
+                                updatedSubcategorias = subcategorias.map((sub: any) =>
+                                  sub.id === subcategoryForm.id
+                                    ? { ...sub, nombre: subcategoryForm.nombre, activa: subcategoryForm.activa }
+                                    : sub
+                                );
+                              } else {
+                                // Crear nueva subcategoría
+                                const newSubcategory = {
+                                  id: Date.now().toString(),
+                                  nombre: subcategoryForm.nombre,
+                                  activa: subcategoryForm.activa
+                                };
+                                updatedSubcategorias = [...subcategorias, newSubcategory];
+                              }
+
                               const updatedCategory = { ...category, subcategorias: updatedSubcategorias };
-                              
+
                               // Update in Firebase
                               await setDoc(doc(db, 'categorias', selectedCategoryForSub), {
                                 name: category.name,
@@ -5480,12 +5525,12 @@ export default function AdminPage() {
                                 subcategorias: updatedSubcategorias,
                                 fechaCreacion: (category as any).fechaCreacion || new Date().toISOString()
                               });
-                              
+
                               // Update local state
                               const newCategories = [...categories];
                               newCategories[categoryIndex] = updatedCategory;
                               setCategories(newCategories);
-                              
+
                               setShowSubcategoryModal(false);
                               setSubcategoryForm({ id: '', nombre: '', activa: true });
                               setSelectedCategoryForSub('');
