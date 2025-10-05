@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import CartProviderClient from "@/components/CartProviderClient";
 import ChatProvider from "@/components/ChatProvider";
@@ -34,16 +35,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
-        {/* Preconnect para mejorar rendimiento */}
-        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
-        <link rel="preconnect" href="https://sdk.mercadopago.com" />
-        <link rel="dns-prefetch" href="https://firebaseapp.com" />
-        <script src="https://sdk.mercadopago.com/js/v2" async></script>
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Script
+          src="https://sdk.mercadopago.com/js/v2"
+          strategy="lazyOnload"
+        />
         <I18nProvider>
           <NotificationProvider>
             <CartProviderClient>
