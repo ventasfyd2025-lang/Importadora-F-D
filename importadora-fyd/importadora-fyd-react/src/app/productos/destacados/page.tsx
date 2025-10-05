@@ -20,9 +20,12 @@ export default function ProductosDestacados() {
   const { homepageConfig, loading: homepageLoading } = useHomepageConfig();
   const { addItem } = useCart();
 
+  // Filtrar productos con stock
+  const productsInStock = products.filter(p => (p.stock || 0) > 0);
+
   // Filtrar productos destacados
   const featuredProducts = homepageConfig.featuredProducts.length > 0
-    ? products.filter(p => homepageConfig.featuredProducts.includes(p.id))
+    ? productsInStock.filter(p => homepageConfig.featuredProducts.includes(p.id))
     : [];
 
   const handleAddToCart = (product: any) => {

@@ -11,10 +11,13 @@ export default function PopupOfertasPage() {
 
   const loading = popupLoading || productsLoading;
 
+  // Filtrar productos con stock
+  const productsInStock = products.filter(p => (p.stock || 0) > 0);
+
   // Get only the products selected in admin popup offers
   const selectedProducts = (popupConfig as any).selectedProducts || [];
-  const displayProducts = selectedProducts.length > 0 
-    ? products.filter(product => selectedProducts.includes(product.id))
+  const displayProducts = selectedProducts.length > 0
+    ? productsInStock.filter(product => selectedProducts.includes(product.id))
     : [];
 
   if (loading) {
