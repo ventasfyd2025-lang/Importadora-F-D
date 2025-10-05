@@ -75,6 +75,9 @@ export default function RetailHomepage() {
   const [notification, setNotification] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
 
+  // Filtrar productos sin stock (SIEMPRE ocultar productos agotados)
+  const productsInStock = products.filter(product => (product.stock || 0) > 0);
+
   // Get filter parameters
   const category = searchParams.get('category') || '';
   const filter = searchParams.get('filter') || '';
@@ -84,34 +87,34 @@ export default function RetailHomepage() {
   const hasActiveFilters = !!(category || filter || searchQuery);
 
   // Filter products based on URL parameters
-  const filteredProducts = products.filter(product => {
-    // Category filter
-    if (category) {
-      const productCategory = product.categoria?.toLowerCase() || '';
-      const categoryFilter = category.toLowerCase();
-      return productCategory === categoryFilter;
-    }
-    
-    // Special filters
-    if (filter === 'ofertas') {
-      return product.oferta === true;
-    }
-    if (filter === 'nuevos') {
-      return product.nuevo === true;
-    }
-    if (filter === 'destacados') {
-      return homepageConfig.featuredProducts.includes(product.id);
-    }
-    
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        product.nombre?.toLowerCase().includes(query) ||
-        product.descripcion?.toLowerCase().includes(query) ||
-        product.categoria?.toLowerCase().includes(query)
-      );
-    }
+  const filteredProducts = productsInStock.filter(product => {
+      // Category filter
+      if (category) {
+        const productCategory = product.categoria?.toLowerCase() || '';
+        const categoryFilter = category.toLowerCase();
+        return productCategory === categoryFilter;
+      }
+
+      // Special filters
+      if (filter === 'ofertas') {
+        return product.oferta === true;
+      }
+      if (filter === 'nuevos') {
+        return product.nuevo === true;
+      }
+      if (filter === 'destacados') {
+        return homepageConfig.featuredProducts.includes(product.id);
+      }
+
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          product.nombre?.toLowerCase().includes(query) ||
+          product.descripcion?.toLowerCase().includes(query) ||
+          product.categoria?.toLowerCase().includes(query)
+        );
+      }
     
     return true;
   });
@@ -352,7 +355,7 @@ export default function RetailHomepage() {
       case 'custom':
         // For custom sections, use selected products
         if (section.selectedProducts && section.selectedProducts.length > 0) {
-          return products.filter(p => section.selectedProducts!.includes(p.id)).slice(0, count);
+          return productsInStock.filter(p => section.selectedProducts!.includes(p.id)).slice(0, count);
         }
         return [];
 
@@ -367,43 +370,43 @@ export default function RetailHomepage() {
         ])];
 
         if (combinedIds.length > 0) {
-          return products.filter((p) => combinedIds.includes(p.id)).slice(0, count);
+          return productsInStock.filter((p) => combinedIds.includes(p.id)).slice(0, count);
         }
 
-        return getDiverseProducts(products, count);
+        return getDiverseProducts(productsInStock, count);
       }
 
       case 'bestsellers':
         if (Array.isArray(section.selectedProducts) && section.selectedProducts.length > 0) {
-          return products.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
+          return productsInStock.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
         }
-        return getDiverseProducts(products.filter(p => p.oferta), count);
+        return getDiverseProducts(productsInStock.filter(p => p.oferta), count);
 
       case 'new':
         if (Array.isArray(section.selectedProducts) && section.selectedProducts.length > 0) {
-          return products.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
+          return productsInStock.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
         }
-        return getDiverseProducts(products.filter(p => p.nuevo), count);
+        return getDiverseProducts(productsInStock.filter(p => p.nuevo), count);
 
       case 'category':
         if (Array.isArray(section.selectedProducts) && section.selectedProducts.length > 0) {
-          return products.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
+          return productsInStock.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
         }
         // Filter by category
         if (section.categoryId) {
           return getDiverseProducts(
-            products.filter(p =>
+            productsInStock.filter(p =>
               p.categoria.toLowerCase().includes(section.categoryId!.toLowerCase())
             ), count
           );
         }
-        return getDiverseProducts(products, count);
+        return getDiverseProducts(productsInStock, count);
 
       default:
         if (Array.isArray(section.selectedProducts) && section.selectedProducts.length > 0) {
-          return products.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
+          return productsInStock.filter(p => section.selectedProducts?.includes(p.id)).slice(0, count);
         }
-        return getDiverseProducts(products, count);
+        return getDiverseProducts(productsInStock, count);
     }
   };
 
@@ -449,22 +452,22 @@ export default function RetailHomepage() {
   //   ), 8
   // );
   const fashion = getDiverseProducts(
-    products.filter(p => 
-      p.categoria.toLowerCase().includes('moda') || 
+    productsInStock.filter(p =>
+      p.categoria.toLowerCase().includes('moda') ||
       p.categoria.toLowerCase().includes('ropa') ||
       p.categoria.toLowerCase().includes('calzado')
     ), 8
   );
   const home = getDiverseProducts(
-    products.filter(p => 
-      p.categoria.toLowerCase().includes('hogar') || 
+    productsInStock.filter(p =>
+      p.categoria.toLowerCase().includes('hogar') ||
       p.categoria.toLowerCase().includes('casa') ||
       p.categoria.toLowerCase().includes('cocina')
     ), 8
   );
 
   // Generate structured data for products
-  const productStructuredData = products.slice(0, 4).map(product => ({
+  const productStructuredData = productsInStock.slice(0, 4).map(product => ({
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.nombre,
