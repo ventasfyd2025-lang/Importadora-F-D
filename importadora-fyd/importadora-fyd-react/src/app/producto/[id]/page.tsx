@@ -26,6 +26,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -172,23 +173,32 @@ export default function ProductPage() {
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Product Image */}
+          {/* Product Image Gallery */}
           <div className="space-y-4">
+            {/* Main Image */}
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              {product.imagen ? (
-                <Image
-                  src={product.imagen}
-                  alt={product.nombre}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-gray-400 text-8xl">📦</span>
-                </div>
-              )}
+              {(() => {
+                const images = product.imagenes && product.imagenes.length > 0
+                  ? product.imagenes
+                  : product.imagen
+                    ? [product.imagen]
+                    : [];
+
+                return images.length > 0 ? (
+                  <Image
+                    src={images[selectedImageIndex] || images[0]}
+                    alt={product.nombre}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-gray-400 text-8xl">📦</span>
+                  </div>
+                );
+              })()}
 
               {/* Badges */}
               <div className="absolute top-4 left-4 space-y-2">
@@ -203,7 +213,74 @@ export default function ProductPage() {
                   </span>
                 )}
               </div>
+
+              {/* Navigation Arrows */}
+              {(() => {
+                const images = product.imagenes && product.imagenes.length > 0
+                  ? product.imagenes
+                  : product.imagen
+                    ? [product.imagen]
+                    : [];
+
+                return images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setSelectedImageIndex((prev) =>
+                        prev === 0 ? images.length - 1 : prev - 1
+                      )}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setSelectedImageIndex((prev) =>
+                        prev === images.length - 1 ? 0 : prev + 1
+                      )}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                );
+              })()}
             </div>
+
+            {/* Thumbnail Gallery */}
+            {(() => {
+              const images = product.imagenes && product.imagenes.length > 0
+                ? product.imagenes
+                : product.imagen
+                  ? [product.imagen]
+                  : [];
+
+              return images.length > 1 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {images.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedImageIndex === index
+                          ? 'border-orange-500 ring-2 ring-orange-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Image
+                        src={img}
+                        alt={`${product.nombre} - imagen ${index + 1}`}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 25vw, 12.5vw"
+                      />
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Product Info */}

@@ -1493,13 +1493,21 @@ export default function AdminPage() {
       }
 
       let imageUrl = productForm.imagen;
+      let imagenesUrls = productForm.imagenes || [];
 
-      // Upload new images if selected (take the first one as main image for now)
+      // Upload all new images if selected
       if (productImages.length > 0) {
-        const optimizedProductImage = await optimizeImageFile(productImages[0]);
-        const imageRef = ref(storage, `products/${Date.now()}_${optimizedProductImage.name}`);
-        const snapshot = await uploadBytes(imageRef, optimizedProductImage);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        console.log(`📸 Subiendo ${productImages.length} imágenes...`);
+        const uploadPromises = productImages.map(async (file, index) => {
+          const optimizedImage = await optimizeImageFile(file);
+          const imageRef = ref(storage, `products/${Date.now()}_${index}_${optimizedImage.name}`);
+          const snapshot = await uploadBytes(imageRef, optimizedImage);
+          return await getDownloadURL(snapshot.ref);
+        });
+
+        imagenesUrls = await Promise.all(uploadPromises);
+        imageUrl = imagenesUrls[0]; // Primera imagen como principal
+        console.log(`✅ ${imagenesUrls.length} imágenes subidas exitosamente`);
       }
 
       const priceAsNumber = parseInt(String(productForm.precio).replace(/\D/g, ''), 10) || 0;
@@ -1507,6 +1515,7 @@ export default function AdminPage() {
       const productData: Partial<Product> = {
         nombre: productForm.nombre,
         precio: priceAsNumber,
+        precioOriginal: productForm.precioOriginal,
         descripcion: productForm.descripcion,
         stock: Number(productForm.stock),
         minStock: Number(productForm.minStock),
@@ -1515,6 +1524,7 @@ export default function AdminPage() {
         nuevo: productForm.nuevo,
         oferta: productForm.oferta,
         imagen: imageUrl,
+        imagenes: imagenesUrls,
         sku: trimmedSku,
         activo: true,
       };

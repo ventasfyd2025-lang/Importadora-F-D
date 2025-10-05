@@ -4,7 +4,8 @@ export interface Product {
   nombre: string;
   precio: number;
   descripcion?: string;
-  imagen?: string;
+  imagen?: string; // Primera imagen (por compatibilidad)
+  imagenes?: string[]; // Todas las imágenes del producto
   stock: number;
   minStock?: number; // Minimum stock threshold for alerts
   categoria: string;
