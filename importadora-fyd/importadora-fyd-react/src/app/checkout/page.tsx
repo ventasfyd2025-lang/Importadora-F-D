@@ -493,14 +493,18 @@ function CheckoutContent() {
 
                 <form onSubmit={handleCheckout} className="p-6 space-y-6">
                   {isGuest && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                      <div className="flex">
-                        <div className="text-blue-400 mr-2">👤</div>
-                        <div>
-                          <p className="text-sm font-medium text-blue-800">
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-500 rounded-lg p-4 mb-4 shadow-sm">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-white text-lg">👤</span>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-orange-900 mb-1">
                             Comprando como invitado
-                          </p>
-                          <p className="text-xs text-blue-600">
+                          </h3>
+                          <p className="text-sm text-orange-700 leading-relaxed">
                             Completa los datos para procesar tu pedido. Si deseas crear una cuenta, puedes hacerlo después de la compra.
                           </p>
                         </div>
