@@ -43,10 +43,19 @@ export default function ProductPage() {
           const productDoc = await getDoc(doc(db, 'products', params.id as string));
           
           if (productDoc.exists()) {
-            setProduct({
+            const productData = {
               id: productDoc.id,
               ...productDoc.data()
-            } as Product);
+            } as Product;
+
+            console.log('📦 Producto cargado:', productData.nombre);
+            console.log('📸 Imágenes del producto:', {
+              imagen: productData.imagen,
+              imagenes: productData.imagenes,
+              totalImagenes: productData.imagenes?.length || 0
+            });
+
+            setProduct(productData);
             return;
           }
         } catch (firebaseErr) {

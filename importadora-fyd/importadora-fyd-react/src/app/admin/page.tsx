@@ -1514,6 +1514,12 @@ export default function AdminPage() {
 
       const priceAsNumber = parseInt(String(productForm.precio).replace(/\D/g, ''), 10) || 0;
 
+      console.log('📦 Datos de imágenes a guardar:', {
+        imagen: imageUrl,
+        imagenes: imagenesUrls,
+        totalImagenes: imagenesUrls.length
+      });
+
       const productData: any = {
         nombre: productForm.nombre,
         precio: priceAsNumber,
@@ -1556,7 +1562,9 @@ export default function AdminPage() {
       } else {
         // Create new product
         try {
-          await addDoc(collection(db, 'products'), cleanedData);
+          const docRef = await addDoc(collection(db, 'products'), cleanedData);
+          console.log('✅ Producto creado con ID:', docRef.id);
+          console.log('📸 Imágenes guardadas en Firestore:', cleanedData.imagenes);
           alert('Producto creado exitosamente');
           refetch(); // Refetch to get the new product with its ID
         } catch (error) {
