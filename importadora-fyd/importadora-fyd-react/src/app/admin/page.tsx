@@ -1499,7 +1499,7 @@ export default function AdminPage() {
 
       // Upload all new images if selected
       if (productImages.length > 0) {
-        console.log(`📸 Subiendo ${productImages.length} imágenes...`);
+        console.log(`📸 Subiendo ${productImages.length} nuevas imágenes...`);
         const uploadPromises = productImages.map(async (file, index) => {
           const optimizedImage = await optimizeImageFile(file);
           const imageRef = ref(storage, `products/${Date.now()}_${index}_${optimizedImage.name}`);
@@ -1507,9 +1507,18 @@ export default function AdminPage() {
           return await getDownloadURL(snapshot.ref);
         });
 
-        imagenesUrls = await Promise.all(uploadPromises);
-        imageUrl = imagenesUrls[0]; // Primera imagen como principal
-        console.log(`✅ ${imagenesUrls.length} imágenes subidas exitosamente`);
+        const newImagenesUrls = await Promise.all(uploadPromises);
+        console.log(`✅ ${newImagenesUrls.length} nuevas imágenes subidas`);
+
+        // Combinar imágenes existentes + nuevas (no reemplazar)
+        imagenesUrls = [...imagenesUrls, ...newImagenesUrls];
+
+        // Solo actualizar imagen principal si no existe una
+        if (!imageUrl) {
+          imageUrl = newImagenesUrls[0];
+        }
+
+        console.log(`📦 Total de imágenes: ${imagenesUrls.length}`);
       }
 
       const priceAsNumber = parseInt(String(productForm.precio).replace(/\D/g, ''), 10) || 0;
