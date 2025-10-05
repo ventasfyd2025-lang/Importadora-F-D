@@ -86,10 +86,39 @@ function PaymentSuccessContent() {
           console.error('❌ Error cargando detalles de orden:', error);
         }
       } else {
-        console.log('ℹ️ Usuario invitado - usando datos de URL');
+        console.log('ℹ️ Usuario invitado - intentando recuperar datos de localStorage');
+
+        // Intentar recuperar datos de localStorage para usuarios invitados
+        if (typeof window !== 'undefined') {
+          const savedOrder = localStorage.getItem(`order_${orderId}`);
+          if (savedOrder) {
+            try {
+              const orderData = JSON.parse(savedOrder);
+              console.log('✅ Datos de orden recuperados de localStorage:', orderData);
+
+              setOrderInfo({
+                orderId: orderData.orderId,
+                paymentMethod: orderData.paymentMethod,
+                customerName: orderData.customerName,
+                customerEmail: orderData.customerEmail,
+                total: orderData.total,
+                paymentId: paymentId || undefined,
+                status: orderData.status,
+                items: orderData.items || []
+              });
+
+              // Limpiar localStorage después de recuperar los datos
+              localStorage.removeItem(`order_${orderId}`);
+              return;
+            } catch (parseError) {
+              console.error('❌ Error parseando datos de localStorage:', parseError);
+            }
+          }
+        }
       }
 
-      // Usar datos de URL para usuarios invitados o si hay error
+      // Usar datos de URL como último recurso
+      console.log('⚠️ Usando datos de URL como fallback');
       setOrderInfo({
         orderId,
         paymentMethod,

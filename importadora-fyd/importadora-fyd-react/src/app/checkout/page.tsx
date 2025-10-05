@@ -179,6 +179,25 @@ function CheckoutContent() {
       });
 
       if (preference?.preferenceId) {
+        // Guardar datos de la orden en localStorage para usuarios invitados
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`order_${orderRef.id}`, JSON.stringify({
+            orderId: orderRef.id,
+            paymentMethod: 'mercadopago',
+            customerName: checkoutData.name,
+            customerEmail: checkoutData.email,
+            total: getTotalPrice(),
+            items: items.map(item => ({
+              productId: item.productId,
+              nombre: item.nombre,
+              precio: item.precio,
+              cantidad: item.cantidad,
+              imagen: item.imagen
+            })),
+            status: 'pending_payment'
+          }));
+        }
+
         setMpPreferenceId(preference.preferenceId);
       } else {
         throw new Error('No se pudo crear la preferencia de pago');
@@ -326,6 +345,25 @@ function CheckoutContent() {
         }
       } else {
         console.log('ℹ️ Usuario invitado - mensaje de chat omitido');
+      }
+
+      // Guardar datos de la orden en localStorage para usuarios invitados
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`order_${orderRef.id}`, JSON.stringify({
+          orderId: orderRef.id,
+          paymentMethod: 'transferencia',
+          customerName: finalData.name,
+          customerEmail: finalData.email,
+          total: getTotalPrice(),
+          items: items.map(item => ({
+            productId: item.productId,
+            nombre: item.nombre,
+            precio: item.precio,
+            cantidad: item.cantidad,
+            imagen: item.imagen
+          })),
+          status: 'pending_verification'
+        }));
       }
 
       // Redirigir a página de éxito completa
