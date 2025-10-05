@@ -5855,47 +5855,75 @@ export default function AdminPage() {
                     </div>
 
                     {/* Compact Image Previews */}
-                    {(productImagePreviews.length > 0 || productForm.imagen) && (
-                      <div className="mt-3">
-                        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                          {/* Existing image from form */}
-                          {productForm.imagen && (
-                            <div className="relative group">
-                              <img
-                                src={productForm.imagen}
-                                alt="Actual"
-                                className="w-full h-16 object-cover rounded-lg border-2 border-green-200 shadow-sm"
-                              />
-                              <div className="absolute -top-1 -right-1">
-                                <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full text-[10px]">Actual</span>
-                              </div>
+                    {(productImagePreviews.length > 0 || (productForm.imagenes && productForm.imagenes.length > 0)) && (
+                      <div className="mt-3 space-y-3">
+                        {/* Existing images from product */}
+                        {productForm.imagenes && productForm.imagenes.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 mb-2">📦 Imágenes actuales del producto:</p>
+                            <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                              {productForm.imagenes.map((imageUrl, index) => (
+                                <div key={`existing-${index}`} className="relative group">
+                                  <img
+                                    loading="lazy"
+                                    src={imageUrl}
+                                    alt={`Actual ${index + 1}`}
+                                    className="w-full h-16 object-cover rounded-lg border-2 border-green-200 shadow-sm"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newImagenes = productForm.imagenes?.filter((_, i) => i !== index) || [];
+                                      setProductForm(prev => ({
+                                        ...prev,
+                                        imagenes: newImagenes,
+                                        imagen: newImagenes.length > 0 ? newImagenes[0] : ''
+                                      }));
+                                    }}
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                  >
+                                    ✕
+                                  </button>
+                                  <div className="absolute -top-1 -left-1">
+                                    <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full text-[10px]">#{index + 1}</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
+                          </div>
+                        )}
 
-                          {/* New image previews */}
-                          {productImagePreviews.map((preview, index) => (
-                            <div key={index} className="relative group">
-                              <img
-                                src={preview}
-                                alt={`Preview ${index + 1}`}
-                                className="w-full h-16 object-cover rounded-lg border-2 border-indigo-200 shadow-sm"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProductImages(prev => prev.filter((_, i) => i !== index));
-                                  setProductImagePreviews(prev => prev.filter((_, i) => i !== index));
-                                }}
-                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                              >
-                                ✕
-                              </button>
-                              <div className="absolute -top-1 -left-1">
-                                <span className="bg-indigo-500 text-white text-xs px-1.5 py-0.5 rounded-full text-[10px]">Nuevo</span>
-                              </div>
+                        {/* New image previews */}
+                        {productImagePreviews.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 mb-2">✨ Nuevas imágenes a agregar:</p>
+                            <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                              {productImagePreviews.map((preview, index) => (
+                                <div key={`new-${index}`} className="relative group">
+                                  <img
+                                    loading="lazy"
+                                    src={preview}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-16 object-cover rounded-lg border-2 border-indigo-200 shadow-sm"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setProductImages(prev => prev.filter((_, i) => i !== index));
+                                      setProductImagePreviews(prev => prev.filter((_, i) => i !== index));
+                                    }}
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                                  >
+                                    ✕
+                                  </button>
+                                  <div className="absolute -top-1 -left-1">
+                                    <span className="bg-indigo-500 text-white text-xs px-1.5 py-0.5 rounded-full text-[10px]">Nuevo</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
