@@ -732,7 +732,7 @@ export default function RetailHomepage() {
               </div>
             </div>
             <MasonryProductGrid
-              products={products}
+              products={productsInStock}
               layoutConfig={layoutPatternsConfig}
             />
           </section>
