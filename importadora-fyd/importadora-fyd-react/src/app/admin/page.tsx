@@ -1264,6 +1264,7 @@ export default function AdminPage() {
     sku: '',
     nombre: '',
     precio: 0,
+    precioOriginal: undefined as number | undefined,
     descripcion: '',
     stock: 0,
     minStock: 5,
@@ -1271,7 +1272,8 @@ export default function AdminPage() {
     subcategoria: '',
     nuevo: false,
     oferta: false,
-    imagen: ''
+    imagen: '',
+    imagenes: [] as string[]
   });
   const [showProductModal, setShowProductModal] = useState(false);
   const [productImages, setProductImages] = useState<File[]>([]);
@@ -1562,6 +1564,7 @@ export default function AdminPage() {
         sku: '',
         nombre: '',
         precio: 0,
+        precioOriginal: undefined,
         descripcion: '',
         stock: 0,
         minStock: 5,
@@ -1569,7 +1572,8 @@ export default function AdminPage() {
         subcategoria: '',
         nuevo: false,
         oferta: false,
-        imagen: ''
+        imagen: '',
+        imagenes: []
       });
       setProductImages([]);
       setProductImagePreviews([]);
@@ -1587,6 +1591,7 @@ export default function AdminPage() {
       sku: product.sku || '',
       nombre: product.nombre,
       precio: product.precio,
+      precioOriginal: product.precioOriginal,
       descripcion: product.descripcion || '',
       stock: product.stock,
       minStock: product.minStock || 5,
@@ -1594,7 +1599,8 @@ export default function AdminPage() {
       subcategoria: product.subcategoria || '',
       nuevo: product.nuevo || false,
       oferta: product.oferta || false,
-      imagen: product.imagen || ''
+      imagen: product.imagen || '',
+      imagenes: product.imagenes || []
     });
     setShowProductModal(true);
   };
@@ -2361,14 +2367,16 @@ export default function AdminPage() {
                     sku: '',
                     nombre: '',
                     precio: 0,
+                    precioOriginal: undefined,
                     descripcion: '',
                     stock: 0,
-                    minStock: 0,
+                    minStock: 5,
                     categoria: '',
                     subcategoria: '',
                     nuevo: false,
                     oferta: false,
-                    imagen: ''
+                    imagen: '',
+                    imagenes: []
                   });
                   setShowProductModal(true);
                 }}
