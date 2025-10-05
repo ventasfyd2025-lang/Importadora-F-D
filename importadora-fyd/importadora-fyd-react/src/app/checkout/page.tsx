@@ -322,7 +322,7 @@ function CheckoutContent() {
       }).catch(err => console.error('Error enviando email:', err));
 
       // Mensaje actualizado para transferencia
-      const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n✅ Comprobante recibido exitosamente.\n🔍 Verificaremos tu pago y confirmaremos tu pedido pronto.';
+      const paymentMessage = '\n\n💰 Método de pago: Transferencia Bancaria\n✅ Comprobante recibido exitosamente.\n🔍 Verificaremos tu pago y te confirmaremos por email.\n📧 Recibirás un email con tu número de orden.\n📦 Envíanos los datos de envío o día de retiro para coordinar la entrega.';
 
       // Crear mensaje de chat solo si el usuario está autenticado
       if (isRegistered && (currentUser as any)?.uid) {

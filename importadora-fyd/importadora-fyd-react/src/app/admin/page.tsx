@@ -5539,8 +5539,8 @@ export default function AdminPage() {
                       </div>
                       <h4 className="text-sm font-bold text-gray-800">Información Básica</h4>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="md:col-span-2">
                         <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
                           <span>📦</span> Nombre *
                         </label>
@@ -5582,6 +5582,24 @@ export default function AdminPage() {
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-200 bg-white/70" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties} onFocus={(e) => e.target.style.borderColor = '#F16529'} onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                           placeholder="0"
                         />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                          <span>💸</span> Precio Anterior (Opcional - para mostrar descuento)
+                        </label>
+                        <input
+                          type="number"
+                          value={productForm.precioOriginal || ''}
+                          onChange={(e) => setProductForm({ ...productForm, precioOriginal: e.target.value ? parseFloat(e.target.value) : undefined })}
+                          min="0"
+                          step="1"
+                          className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none transition-all duration-200 bg-white/70" style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties} onFocus={(e) => e.target.style.borderColor = '#F16529'} onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                          placeholder="Dejar vacío si no hay descuento"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Si agregas un precio anterior, se mostrará tachado y el % de descuento
+                        </p>
                       </div>
                     </div>
                   </div>
