@@ -87,6 +87,8 @@ export function useStockManager() {
       await runTransaction(db, async (transaction) => {
         const reservations = [];
 
+        // PASO 1: Hacer TODAS las lecturas primero
+        const productsData = [];
         for (const item of items) {
           const productRef = doc(db, 'products', item.productId);
           const productDoc = await transaction.get(productRef);
@@ -101,6 +103,18 @@ export function useStockManager() {
             throw new Error(`Stock insuficiente para ${item.productName}. Disponible: ${currentStock}, Solicitado: ${item.quantity}`);
           }
 
+          const minStock = productDoc.data().minStock || 5;
+
+          productsData.push({
+            ref: productRef,
+            item,
+            currentStock,
+            minStock
+          });
+        }
+
+        // PASO 2: Hacer TODAS las escrituras después
+        for (const { ref: productRef, item, currentStock, minStock } of productsData) {
           const newStock = currentStock - item.quantity;
 
           // Update product stock
@@ -126,7 +140,6 @@ export function useStockManager() {
           });
 
           // Check if we need to create a stock alert
-          const minStock = productDoc.data().minStock || 5; // Default minimum stock
           if (newStock <= minStock) {
             const alertRef = doc(collection(db, 'stock_alerts'));
             transaction.set(alertRef, {
@@ -233,6 +246,7 @@ export function useStockManager() {
       setLoading(true);
 
       await runTransaction(db, async (transaction) => {
+        // PASO 1: Hacer todas las lecturas primero
         const productRef = doc(db, 'products', productId);
         const productDoc = await transaction.get(productRef);
 
@@ -241,8 +255,10 @@ export function useStockManager() {
         }
 
         const currentStock = productDoc.data().stock || 0;
+        const minStock = productDoc.data().minStock || 5;
         const difference = newStock - currentStock;
 
+        // PASO 2: Hacer todas las escrituras después
         // Update product stock
         transaction.update(productRef, { stock: newStock });
 
@@ -260,7 +276,6 @@ export function useStockManager() {
         });
 
         // Check for stock alerts
-        const minStock = productDoc.data().minStock || 5;
         if (newStock <= minStock) {
           const alertRef = doc(collection(db, 'stock_alerts'));
           transaction.set(alertRef, {
