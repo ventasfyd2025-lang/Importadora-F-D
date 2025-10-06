@@ -93,10 +93,8 @@ const BannerCarousel = memo(({
               aria-hidden={index !== currentIndex}
               aria-label={`Banner ${index + 1}`}
             >
-              <div 
-                className={`relative w-full h-full bg-cover bg-center transition-transform duration-[10s] ease-linear ${
-                  index === currentIndex ? 'scale-110' : 'scale-100'
-                }`}
+              <div
+                className="relative w-full h-full bg-cover bg-center"
                 style={{ backgroundImage }}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/20 to-black/10" />
