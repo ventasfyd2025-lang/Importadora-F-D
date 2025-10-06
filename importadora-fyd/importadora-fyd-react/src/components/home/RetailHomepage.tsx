@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -20,6 +20,8 @@ import { ProductCardSkeleton, BannerSkeleton } from '@/components/home/SkeletonL
 import { defaultMiddleBanners } from '@/components/home/bannerData';
 import MasonryProductGrid from '@/components/MasonryProductGrid';
 import HorizontalProductGrid from '@/components/HorizontalProductGrid';
+import { useCategories } from '@/hooks/useCategories';
+import { formatCategoryLabel, normalizeCategoryValue, productMatchesCategory, productMatchesSubcategory, getProductCategoryCandidates, collectCategoryStrings } from '@/utils/category';
 
 type ProductSectionConfig = {
   id: string;
@@ -73,6 +75,7 @@ export default function RetailHomepage() {
   const { patterns: layoutPatternsConfig } = useLayoutPatterns();
   const { popupConfig } = useOfferPopup();
   const { formatDateTime } = useClientSideFormat();
+  const { categories } = useCategories();
   const [notification, setNotification] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
 
@@ -80,20 +83,123 @@ export default function RetailHomepage() {
   const productsInStock = products.filter(product => (product.stock || 0) > 0);
 
   // Get filter parameters
-  const category = searchParams.get('category') || '';
+  const categoryParam = searchParams.get('category') || '';
   const filter = searchParams.get('filter') || '';
   const searchQuery = searchParams.get('search') || '';
+  const subcategoryParam = searchParams.get('subcategory') || '';
+
+  const findCategoryByValue = (rawValue: string) => {
+    if (!rawValue) return undefined;
+    const normalizedValue = normalizeCategoryValue(rawValue);
+    const match = categories.find(cat => (
+      normalizeCategoryValue(cat.id) === normalizedValue ||
+      normalizeCategoryValue(cat.name || '') === normalizedValue
+    ));
+
+    if (match) return match;
+
+    if (rawValue.includes('-')) {
+      const firstPart = rawValue.split('-')[0];
+      if (firstPart && firstPart !== rawValue) {
+        return findCategoryByValue(firstPart);
+      }
+    }
+
+    return undefined;
+  };
+
+  const resolvedCategory = useMemo(() => {
+    if (!categoryParam) {
+      return {
+        filterValue: '',
+        displayName: '',
+        category: undefined as ReturnType<typeof findCategoryByValue> | undefined,
+      };
+    }
+
+    if (categoryParam === 'all') {
+      return {
+        filterValue: 'all',
+        displayName: 'Todos los productos',
+        category: undefined,
+      };
+    }
+
+    const match = findCategoryByValue(categoryParam);
+    const filterValue = match?.id ?? categoryParam;
+    const displayName = match?.name ?? formatCategoryLabel(categoryParam);
+    return {
+      filterValue,
+      displayName,
+      category: match,
+    };
+  }, [categoryParam, categories]);
+
+  const findSubcategoryByValue = (rawValue: string) => {
+    if (!rawValue) return undefined;
+    const normalizedValue = normalizeCategoryValue(rawValue);
+
+    const fromCurrent = resolvedCategory.category?.subcategorias?.find(sub => (
+      normalizeCategoryValue(sub.id) === normalizedValue ||
+      normalizeCategoryValue(sub.nombre || '') === normalizedValue
+    ));
+    if (fromCurrent) {
+      return { ...fromCurrent, parent: resolvedCategory.category };
+    }
+
+    for (const cat of categories) {
+      const found = (cat.subcategorias ?? []).find(sub => (
+        normalizeCategoryValue(sub.id) === normalizedValue ||
+        normalizeCategoryValue(sub.nombre || '') === normalizedValue
+      ));
+      if (found) {
+        return { ...found, parent: cat };
+      }
+    }
+
+    if (rawValue.includes('-')) {
+      const parts = rawValue.split('-');
+      const lastPart = parts[parts.length - 1];
+      if (lastPart && lastPart !== rawValue) {
+        return findSubcategoryByValue(lastPart);
+      }
+    }
+
+    return undefined;
+  };
+
+  const resolvedSubcategory = useMemo(() => {
+    if (!subcategoryParam) {
+      return {
+        filterValue: '',
+        displayName: '',
+      };
+    }
+
+    const match = findSubcategoryByValue(subcategoryParam);
+    const filterValue = match?.id ?? subcategoryParam;
+    const displayName = match?.nombre ?? formatCategoryLabel(subcategoryParam);
+    return {
+      filterValue,
+      displayName,
+    };
+  }, [subcategoryParam, categories, resolvedCategory.category]);
+
+  const effectiveCategory = resolvedCategory.filterValue;
+  const effectiveSubcategory = resolvedSubcategory.filterValue;
 
   // Check if any filters are active
-  const hasActiveFilters = !!(category || filter || searchQuery);
+  const hasActiveFilters = !!((effectiveCategory && effectiveCategory !== 'all') || filter || searchQuery || effectiveSubcategory);
 
   // Filter products based on URL parameters
   const filteredProducts = productsInStock.filter(product => {
       // Category filter
-      if (category) {
-        const productCategory = product.categoria?.toLowerCase() || '';
-        const categoryFilter = category.toLowerCase();
-        return productCategory === categoryFilter;
+      if (effectiveCategory && effectiveCategory !== 'all' && !productMatchesCategory(product, effectiveCategory)) {
+        return false;
+      }
+
+      if (effectiveSubcategory && !productMatchesSubcategory(product, effectiveSubcategory)) {
+        return false;
       }
 
       // Special filters
@@ -110,13 +216,18 @@ export default function RetailHomepage() {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
+        const normalizedQuery = normalizeCategoryValue(query);
+        const categoryCandidates = getProductCategoryCandidates(product);
+        const subcategoryCandidates = collectCategoryStrings(product.subcategoria);
         return (
           product.nombre?.toLowerCase().includes(query) ||
           product.descripcion?.toLowerCase().includes(query) ||
-          product.categoria?.toLowerCase().includes(query)
+          categoryCandidates.some(candidate => candidate.toLowerCase().includes(query)) ||
+          categoryCandidates.some(candidate => normalizeCategoryValue(candidate).includes(normalizedQuery)) ||
+          subcategoryCandidates.some(candidate => candidate.toLowerCase().includes(query))
         );
       }
-    
+
     return true;
   });
 
@@ -133,7 +244,17 @@ export default function RetailHomepage() {
     if (filter === 'destacados') return '⭐ Productos Destacados';
     if (filter === 'ofertas') return '🔥 Ofertas Especiales';
     if (filter === 'nuevos') return '✨ Productos Nuevos';
-    if (category) return `📦 Categoría: ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+    if (effectiveCategory && effectiveCategory !== 'all') {
+      const categoryLabel = resolvedCategory.displayName || formatCategoryLabel(effectiveCategory);
+      if (effectiveSubcategory) {
+        const subcategoryLabel = resolvedSubcategory.displayName || formatCategoryLabel(effectiveSubcategory);
+        return `📦 ${categoryLabel} · ${subcategoryLabel}`;
+      }
+      return `📦 Categoría: ${categoryLabel}`;
+    }
+    if (effectiveCategory === 'all') {
+      return 'Todos los productos';
+    }
     if (searchQuery) return `🔍 Resultados para: "${searchQuery}"`;
     return 'Productos';
   };

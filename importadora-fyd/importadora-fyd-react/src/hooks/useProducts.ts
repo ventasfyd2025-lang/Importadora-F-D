@@ -5,6 +5,13 @@ import { Product } from '@/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, limit, orderBy } from 'firebase/firestore';
 import { mockProducts } from '@/data/mockProducts';
+import {
+  normalizeCategoryValue,
+  productMatchesCategory,
+  productMatchesSubcategory,
+  getProductCategoryCandidates,
+  collectCategoryStrings,
+} from '@/utils/category';
 
 // Simple in-memory cache
 const productCache = new Map<string, { data: Product[], timestamp: number }>();
@@ -95,26 +102,31 @@ export function useProducts() {
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const normalizedQuery = normalizeCategoryValue(query);
       filtered = filtered.filter(product =>
-        (product.nombre || '').toLowerCase().includes(query) ||
-        (product.descripcion || '').toLowerCase().includes(query) ||
-        (product.categoria || '').toLowerCase().includes(query) ||
-        (product.sku || '').toLowerCase().includes(query)
+        (() => {
+          const categoryCandidates = getProductCategoryCandidates(product);
+          const subcategoryCandidates = collectCategoryStrings(product.subcategoria);
+          return (
+            (product.nombre || '').toLowerCase().includes(query) ||
+            (product.descripcion || '').toLowerCase().includes(query) ||
+            categoryCandidates.some(candidate => candidate.toLowerCase().includes(query)) ||
+            categoryCandidates.some(candidate => normalizeCategoryValue(candidate).includes(normalizedQuery)) ||
+            subcategoryCandidates.some(candidate => candidate.toLowerCase().includes(query)) ||
+            (product.sku || '').toLowerCase().includes(query)
+          );
+        })()
       );
     }
 
     // Filter by category
     if (category && category !== 'all') {
-      filtered = filtered.filter(product =>
-        (product.categoria || '').toLowerCase() === category.toLowerCase()
-      );
+      filtered = filtered.filter(product => productMatchesCategory(product, category));
     }
 
     // Filter by subcategory
     if (subcategory) {
-      filtered = filtered.filter(product =>
-        (product.subcategoria || '').toLowerCase() === subcategory.toLowerCase()
-      );
+      filtered = filtered.filter(product => productMatchesSubcategory(product, subcategory));
     }
 
     // Filter by price range
@@ -157,7 +169,6 @@ export function useProducts() {
   };
 
   const getProductsByFilter = (filter: string) => {
-    // Filter out products without stock first
     const inStockProducts = products.filter(product => (product.stock || 0) > 0);
 
     switch (filter) {

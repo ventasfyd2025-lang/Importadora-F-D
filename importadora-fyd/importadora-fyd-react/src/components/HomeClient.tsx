@@ -11,6 +11,7 @@ import { useConfig } from '@/hooks/useConfig';
 import { useCategories } from '@/hooks/useCategories';
 import { useLayoutPatterns } from '@/hooks/useLayoutPatterns';
 import { useSearchParams } from 'next/navigation';
+import { formatCategoryLabel, normalizeCategoryValue, getProductCategoryCandidates } from '@/utils/category';
 
 export default function HomeClient() {
   const searchParams = useSearchParams();
@@ -27,52 +28,168 @@ export default function HomeClient() {
   
   
   const searchQuery = searchParams.get('search') || '';
-  const category = searchParams.get('category') || '';
-  const subcategory = searchParams.get('subcategory') || '';
+  const categoryParam = searchParams.get('category') || '';
+  const subcategoryParam = searchParams.get('subcategory') || '';
   const priceRange = searchParams.get('price') || '';
   const sortBy = searchParams.get('sort') || '';
   const filter = searchParams.get('filter') || '';
+
+  const findCategoryByValue = (rawValue: string) => {
+    if (!rawValue) return undefined;
+    const normalizedValue = normalizeCategoryValue(rawValue);
+    const match = categories.find(cat => (
+      normalizeCategoryValue(cat.id) === normalizedValue ||
+      normalizeCategoryValue(cat.name || '') === normalizedValue
+    ));
+
+    if (match) return match;
+
+    if (rawValue.includes('-')) {
+      const firstPart = rawValue.split('-')[0];
+      if (firstPart && firstPart !== rawValue) {
+        return findCategoryByValue(firstPart);
+      }
+    }
+    return undefined;
+  };
+
+  const resolvedCategory = useMemo(() => {
+    if (!categoryParam) {
+      return {
+        filterValue: '',
+        displayName: '',
+        category: undefined as ReturnType<typeof findCategoryByValue> | undefined,
+      };
+    }
+
+    if (categoryParam === 'all') {
+      return {
+        filterValue: 'all',
+        displayName: 'Todos los productos',
+        category: undefined,
+      };
+    }
+
+    const match = findCategoryByValue(categoryParam);
+    const filterValue = match?.id ?? categoryParam;
+    const displayName = match?.name ?? formatCategoryLabel(categoryParam);
+    return {
+      filterValue,
+      displayName,
+      category: match,
+    };
+  }, [categoryParam, categories]);
+
+  const findSubcategoryByValue = (rawValue: string) => {
+    if (!rawValue) return undefined;
+    const normalizedValue = normalizeCategoryValue(rawValue);
+
+    const searchIn = resolvedCategory.category?.subcategorias ?? [];
+    const fromCurrent = searchIn.find(sub => (
+      normalizeCategoryValue(sub.id) === normalizedValue ||
+      normalizeCategoryValue(sub.nombre || '') === normalizedValue
+    ));
+    if (fromCurrent) return { ...fromCurrent, parent: resolvedCategory.category };
+
+    for (const cat of categories) {
+      const found = (cat.subcategorias ?? []).find(sub => (
+        normalizeCategoryValue(sub.id) === normalizedValue ||
+        normalizeCategoryValue(sub.nombre || '') === normalizedValue
+      ));
+      if (found) {
+        return { ...found, parent: cat };
+      }
+    }
+
+    if (rawValue.includes('-')) {
+      const parts = rawValue.split('-');
+      const lastPart = parts[parts.length - 1];
+      if (lastPart && lastPart !== rawValue) {
+        return findSubcategoryByValue(lastPart);
+      }
+    }
+
+    return undefined;
+  };
+
+  const resolvedSubcategory = useMemo(() => {
+    if (!subcategoryParam) {
+      return {
+        filterValue: '',
+        displayName: '',
+      };
+    }
+
+    const match = findSubcategoryByValue(subcategoryParam);
+    const filterValue = match?.id ?? subcategoryParam;
+    const displayName = match?.nombre ?? formatCategoryLabel(subcategoryParam);
+    return {
+      filterValue,
+      displayName,
+    };
+  }, [subcategoryParam, categories, resolvedCategory.category]);
+
+  const effectiveCategory = resolvedCategory.filterValue;
+  const effectiveSubcategory = resolvedSubcategory.filterValue;
 
   // Memoizar displayProducts para evitar recalcular en cada render
   const displayProducts = useMemo(() => {
     if (filter) {
       return getProductsByFilter(filter);
     }
-    return filterProducts(searchQuery, category, priceRange, sortBy, subcategory);
-  }, [filter, getProductsByFilter, filterProducts, searchQuery, category, priceRange, sortBy, subcategory]);
+    return filterProducts(searchQuery, effectiveCategory, priceRange, sortBy, effectiveSubcategory);
+  }, [filter, getProductsByFilter, filterProducts, searchQuery, effectiveCategory, priceRange, sortBy, effectiveSubcategory]);
 
-  // Memoizar agrupamiento por categorías
-  const { groupedByCategory, sortedCategories } = useMemo(() => {
-    const grouped = displayProducts.reduce((acc, product) => {
-      const category = product.categoria || 'Sin categoría';
-      if (!acc[category]) acc[category] = [];
-      acc[category].push(product);
-      return acc;
-    }, {} as Record<string, typeof displayProducts>);
+  const categoryGroups = useMemo(() => {
+    const grouped = new Map<string, { displayName: string; icon?: string; products: typeof displayProducts }>();
 
-    return {
-      groupedByCategory: grouped,
-      sortedCategories: Object.keys(grouped).sort()
+    const attachProductToGroup = (key: string, product: (typeof displayProducts)[number], displayName?: string, icon?: string) => {
+      const existing = grouped.get(key) ?? { displayName: displayName ?? 'Sin categoría', icon, products: [] };
+      if (!grouped.has(key)) {
+        grouped.set(key, existing);
+      }
+      existing.products.push(product);
     };
-  }, [displayProducts]);
+
+    displayProducts.forEach((product) => {
+      const candidates = getProductCategoryCandidates(product);
+      const primaryCandidate = candidates[0] ?? (product.categoria as string) ?? 'Sin categoría';
+
+      const matchedCategory = findCategoryByValue(primaryCandidate);
+      const key = matchedCategory?.id ?? primaryCandidate;
+      const displayName = matchedCategory?.name ?? formatCategoryLabel(primaryCandidate);
+      const icon = matchedCategory?.icon;
+      attachProductToGroup(key, product, displayName, icon);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([key, value]) => ({ key, ...value }))
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [displayProducts, categories]);
 
   const getPageTitle = () => {
     if (searchQuery) return `Resultados para "${searchQuery}"`;
-    if (category && category !== 'all') {
-      // Find the category name from the loaded categories
-      const foundCategory = categories.find(cat => cat.id === category);
-      const categoryName = foundCategory?.name || category;
-      
-      if (subcategory) {
-        return `${categoryName} - ${subcategory}`;
+    if (effectiveCategory && effectiveCategory !== 'all') {
+      const categoryName = resolvedCategory.displayName || formatCategoryLabel(effectiveCategory);
+      if (effectiveSubcategory) {
+        const subcategoryName = resolvedSubcategory.displayName || formatCategoryLabel(effectiveSubcategory);
+        return `${categoryName} - ${subcategoryName}`;
       }
       return `Categoría: ${categoryName}`;
+    }
+    if (effectiveCategory === 'all') {
+      return 'Todos los productos';
     }
     if (filter === 'ofertas') return 'Ofertas Especiales';
     if (filter === 'nuevos') return 'Productos Nuevos';
     if (filter === 'popular') return 'Más Vendidos';
     return 'Nuestros Productos';
   };
+
+  const noCategoryFilter = !effectiveCategory || effectiveCategory === 'all';
+  const noSubcategoryFilter = !effectiveSubcategory;
+  const noActiveFilters = !searchQuery && !filter && noCategoryFilter && !priceRange && !sortBy && noSubcategoryFilter;
+  const shouldShowBanner = noActiveFilters;
 
   if (error) {
     return (
@@ -88,9 +205,6 @@ export default function HomeClient() {
     );
   }
 
-  // Banner SIEMPRE visible primero - estilo PC Factory
-  const shouldShowBanner = !searchQuery && !filter;
-  
   return (
     <>
       {/* PRIORIDAD 1: Banner aparece INMEDIATAMENTE - como PC Factory */}
@@ -350,23 +464,16 @@ export default function HomeClient() {
           ) : displayProducts.length > 0 ? (
             <>
               {/* Show products organized by category only on main page without filters */}
-              {!searchQuery && !category && !priceRange && !sortBy && !filter ? (
+              {noActiveFilters ? (
                 <>
-                  {sortedCategories.map(categoryName => {
-                        // Find the category to get its icon
-                        const categoryInfo = categories.find(cat => cat.id === categoryName || cat.name.toLowerCase() === categoryName.toLowerCase());
-                        const categoryIcon = categoryInfo?.icon || '📦';
-                        const displayName = categoryInfo?.name || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
-                        
-                        return (
-                          <MasonryProductGrid
-                            key={categoryName}
-                            products={groupedByCategory[categoryName]}
-                            layoutConfig={layoutPatternsConfig}
-                          />
-                        );
-                      })}
-                    </>
+                  {categoryGroups.map(group => (
+                    <MasonryProductGrid
+                      key={group.key}
+                      products={group.products}
+                      layoutConfig={layoutPatternsConfig}
+                    />
+                  ))}
+                </>
               ) : (
                 /* Masonry grid for filtered results */
                 <>

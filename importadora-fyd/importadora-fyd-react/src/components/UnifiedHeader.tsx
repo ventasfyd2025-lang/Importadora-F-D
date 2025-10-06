@@ -12,6 +12,7 @@ import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import CartButton from '@/components/header/CartButton';
 import UserMenu from '@/components/header/UserMenu';
 import NotificationBadge from '@/components/header/NotificationBadge';
+import { buildCategorySlug } from '@/utils/category';
 import {
   Menu,
   Search,
@@ -274,7 +275,14 @@ export default function UnifiedHeader() {
                         </div>
                       ) : (
                         <>
-                          {categories.map((category) => (
+                          {categories.map((category) => {
+                            const slugSource = category.id === 'all'
+                              ? 'all'
+                              : buildCategorySlug(category.id || (category as any).name || (category as any).nombre || '');
+                            const categorySlug = slugSource || buildCategorySlug((category as any).name || '') || category.id;
+                            const categoryHref = categorySlug === 'all' ? '/' : `/?category=${categorySlug}`;
+
+                            return (
                             <div key={category.id}>
                               {category.subcategorias && category.subcategorias.length > 0 ? (
                                 <button
@@ -293,7 +301,7 @@ export default function UnifiedHeader() {
                                 </button>
                               ) : (
                                 <Link
-                                  href={category.id === 'all' ? '/' : `/?category=${category.id}`}
+                                  href={categoryHref}
                                   onClick={() => handleCategoryNavigate()}
                                   className="group block w-full text-left px-4 py-1 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium text-sm border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200"
                                 >
@@ -314,7 +322,7 @@ export default function UnifiedHeader() {
                                     .map((subcategoria) => (
                                     <Link
                                       key={subcategoria.id}
-                                      href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
+                                      href={`/?category=${categorySlug}&subcategory=${encodeURIComponent(subcategoria.nombre)}`}
                                       onClick={() => handleCategoryNavigate()}
                                       className="group block w-full text-left px-4 py-0.5 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-md transition-all duration-300 font-normal text-xs border border-gray-50 shadow-sm hover:shadow-md hover:border-orange-200"
                                     >
@@ -330,7 +338,8 @@ export default function UnifiedHeader() {
                                 </div>
                               )}
                             </div>
-                          ))}
+                          );
+                          })}
 
                           <div className="pt-4 border-t border-gray-200 space-y-2">
                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2">Secciones especiales</div>
@@ -596,7 +605,14 @@ export default function UnifiedHeader() {
                   </div>
                 ) : (
                   <>
-                    {categories.map((category) => (
+                    {categories.map((category) => {
+                      const slugSource = category.id === 'all'
+                        ? 'all'
+                        : buildCategorySlug(category.id || (category as any).name || (category as any).nombre || '');
+                      const categorySlug = slugSource || buildCategorySlug((category as any).name || '') || category.id;
+                      const categoryHref = categorySlug === 'all' ? '/' : `/?category=${categorySlug}`;
+
+                      return (
                       <div key={category.id}>
                         {/* Main Category */}
                         {category.subcategorias && category.subcategorias.length > 0 ? (
@@ -616,7 +632,7 @@ export default function UnifiedHeader() {
                           </button>
                         ) : (
                           <Link
-                            href={category.id === 'all' ? '/' : `/?category=${category.id}`}
+                            href={categoryHref}
                             onClick={handleCategoryNavigate}
                             className="group block w-full text-left px-4 py-1.5 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-lg transition-all duration-300 font-medium text-sm border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 hover:scale-105"
                           >
@@ -638,7 +654,7 @@ export default function UnifiedHeader() {
                               .map((subcategoria) => (
                               <Link
                                 key={subcategoria.id}
-                                href={`/?category=${category.id}&subcategory=${subcategoria.nombre}`}
+                                href={`/?category=${categorySlug}&subcategory=${encodeURIComponent(subcategoria.nombre)}`}
                                 onClick={handleCategoryNavigate}
                                 className="group block w-full text-left px-4 py-0.5 text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:text-orange-600 rounded-md transition-all duration-300 font-normal text-xs border border-gray-50 shadow-sm hover:shadow-md hover:border-orange-200"
                               >
@@ -650,11 +666,12 @@ export default function UnifiedHeader() {
                                   <span className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                                 </div>
                               </Link>
-                            ))}
+                              ))}
                           </div>
                         )}
                       </div>
-                    ))}
+                    );
+                    })}
                     
                     {/* Secciones especiales */}
                     <div className="pt-4 border-t border-gray-200 space-y-2">
