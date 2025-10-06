@@ -36,17 +36,17 @@ const SPAN_STYLE_MAP: Record<LayoutPatternSpan, TileStyle> = {
     cardHeightClass: 'h-full',
   },
   '2x1': {
-    colSpanClass: 'col-span-2 sm:col-span-2 lg:col-span-2 xl:col-span-3',
+    colSpanClass: 'col-span-2 sm:col-span-2 lg:col-span-2 xl:col-span-2',
     rowSpanClass: 'row-span-1',
     cardHeightClass: 'h-full',
   },
   '1x2': {
-    colSpanClass: 'col-span-1 sm:col-span-1 lg:col-span-2 xl:col-span-2',
+    colSpanClass: 'col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-1',
     rowSpanClass: 'row-span-2',
     cardHeightClass: 'h-full',
   },
   '2x2': {
-    colSpanClass: 'col-span-2 sm:col-span-2 lg:col-span-3 xl:col-span-3',
+    colSpanClass: 'col-span-2 sm:col-span-2 lg:col-span-2 xl:col-span-2',
     rowSpanClass: 'row-span-2',
     cardHeightClass: 'h-full',
   },
@@ -86,7 +86,7 @@ export default function MasonryProductGrid({ products, layoutConfig }: MasonryPr
   const layoutSequence = useMemo(() => buildLayoutSequence(layoutConfig), [layoutConfig]);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4 auto-rows-[15rem] sm:auto-rows-[17rem] lg:auto-rows-[19rem] xl:auto-rows-[21rem] grid-flow-row-dense p-2 sm:p-3 lg:p-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4 auto-rows-[12rem] sm:auto-rows-[13rem] lg:auto-rows-[14rem] xl:auto-rows-[15rem] grid-flow-row-dense p-2 sm:p-3 lg:p-4">
       {products.map((product, index) => {
         const style = layoutSequence[index % layoutSequence.length];
 
