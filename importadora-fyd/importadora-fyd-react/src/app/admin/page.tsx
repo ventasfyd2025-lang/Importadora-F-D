@@ -6116,11 +6116,29 @@ export default function AdminPage() {
                            section.position === 'tall' ? '📱 Alto (1x2)' :
                            section.position === 'wide' ? '📺 Ancho (2x1)' : '⬜ Normal (1x1)'}
                         </h4>
-                        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                          {section.linkType === 'category' ? '📁 Categoría' :
-                           section.linkType === 'product' ? '📦 Producto' :
-                           section.linkType === 'filter' ? '🔍 Filtro' : '🔗 URL'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                            {section.linkType === 'category' ? '📁 Categoría' :
+                             section.linkType === 'product' ? '📦 Producto' :
+                             section.linkType === 'filter' ? '🔍 Filtro' : '🔗 URL'}
+                          </span>
+                          <button
+                            onClick={() => {
+                              if (confirm('¿Eliminar esta sección promocional?')) {
+                                const newContent: HomepageContentState = {
+                                  ...homepageContent,
+                                  promotionalSections: homepageContent.promotionalSections.filter((_, i) => i !== index)
+                                };
+                                setHomepageContent(newContent);
+                                autoSaveHomepageContent(newContent);
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                            title="Eliminar sección"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -6343,8 +6361,37 @@ export default function AdminPage() {
                 })()}
               </div>
 
+              {/* Add New Section Button */}
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => {
+                    const newSection: PromotionalSectionState = {
+                      id: `section-${Date.now()}`,
+                      title: 'Nueva Sección',
+                      subtitle: 'Descripción de la sección',
+                      imageUrl: '',
+                      badgeText: '',
+                      linkType: 'category',
+                      linkValue: '',
+                      position: 'normal',
+                      selectedProducts: []
+                    };
 
-              
+                    const newContent: HomepageContentState = {
+                      ...homepageContent,
+                      promotionalSections: [...homepageContent.promotionalSections, newSection]
+                    };
+
+                    setHomepageContent(newContent);
+                    autoSaveHomepageContent(newContent);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md"
+                >
+                  ➕ Agregar Nueva Sección Promocional
+                </button>
+              </div>
+
+
               <div className="mt-10 border-t border-gray-200 pt-6">
                 <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
