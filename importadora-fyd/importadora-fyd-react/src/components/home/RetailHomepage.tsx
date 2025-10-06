@@ -15,6 +15,7 @@ import { useClientSideFormat } from '@/hooks/useClientSideFormat';
 import OfferPopup from '@/components/OfferPopup';
 import BannerCarousel from '@/components/home/BannerCarousel';
 import ProductCarousel from '@/components/home/ProductCarousel';
+import ProductCard from '@/components/ProductCard';
 import { ProductCardSkeleton, BannerSkeleton } from '@/components/home/SkeletonLoader';
 import { defaultMiddleBanners } from '@/components/home/bannerData';
 import MasonryProductGrid from '@/components/MasonryProductGrid';
@@ -513,7 +514,11 @@ export default function RetailHomepage() {
             </div>
           ) : (
             <>
-              <MasonryProductGrid products={filteredProducts} layoutConfig={layoutPatternsConfig} />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
               <div className="text-center text-gray-600 mt-6">
                 Mostrando {filteredProducts.length} producto{filteredProducts.length === 1 ? '' : 's'}
               </div>
@@ -731,10 +736,11 @@ export default function RetailHomepage() {
                 </div>
               </div>
             </div>
-            <MasonryProductGrid
-              products={productsInStock}
-              layoutConfig={layoutPatternsConfig}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {productsInStock.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </section>
         )}
 
