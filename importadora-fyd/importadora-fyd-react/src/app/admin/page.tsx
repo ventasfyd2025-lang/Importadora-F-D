@@ -583,13 +583,31 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const categoryOptions = categories
-      .map((category) => normalizeCategoryOption(category))
-      .filter((option): option is CategoryOption => option !== null);
+    if (categories.length === 0) return;
 
-    if (categoryOptions.length > 0) {
-      setAvailableCategories((prev) => mergeCategoryOptions(prev, categoryOptions));
-    }
+    const categoryOptions: CategoryOption[] = [];
+
+    categories.forEach((category) => {
+      // Add main category
+      const mainCategoryOption = normalizeCategoryOption(category);
+      if (mainCategoryOption) {
+        categoryOptions.push(mainCategoryOption);
+      }
+
+      // Add subcategories
+      const subcategorias = (category as any).subcategorias || [];
+      subcategorias.forEach((sub: any) => {
+        if (sub.nombre && sub.activa !== false) {
+          categoryOptions.push({
+            id: `${category.id}-${sub.id}`,
+            name: `${category.name} > ${sub.nombre}`
+          });
+        }
+      });
+    });
+
+    // Replace with actual categories from database (not merge)
+    setAvailableCategories(categoryOptions);
   }, [categories]);
 
   const loadBannerConfig = async () => {
