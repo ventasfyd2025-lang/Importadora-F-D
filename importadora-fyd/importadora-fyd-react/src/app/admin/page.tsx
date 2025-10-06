@@ -2423,6 +2423,7 @@ export default function AdminPage() {
                     stock: 0,
                     minStock: 5,
                     categoria: '',
+                    categorias: [],
                     subcategoria: '',
                     nuevo: false,
                     oferta: false,
