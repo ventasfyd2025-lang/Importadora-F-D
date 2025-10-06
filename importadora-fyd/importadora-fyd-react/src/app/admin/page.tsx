@@ -6368,7 +6368,7 @@ export default function AdminPage() {
                     const newSection: PromotionalSectionState = {
                       id: `section-${Date.now()}`,
                       title: 'Nueva Sección',
-                      subtitle: 'Descripción de la sección',
+                      description: 'Descripción de la sección',
                       imageUrl: '',
                       badgeText: '',
                       linkType: 'category',
