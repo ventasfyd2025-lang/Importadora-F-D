@@ -5774,56 +5774,96 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                          <span>📂</span> Categorías * (selecciona una o más)
+                          <span>📂</span> Categorías y Subcategorías * (selecciona todas las que apliquen)
                         </label>
-                        <div className="border-2 border-gray-200 rounded-lg p-3 bg-white/70 max-h-48 overflow-y-auto">
-                          <div className="grid grid-cols-2 gap-2">
-                            {categories.map((category) => (
-                              <label key={category.id} className="flex items-center gap-2 hover:bg-purple-50 p-2 rounded cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={productForm.categorias.includes(category.id)}
-                                  onChange={(e) => {
-                                    const newCategorias = e.target.checked
-                                      ? [...productForm.categorias, category.id]
-                                      : productForm.categorias.filter(c => c !== category.id);
-                                    setProductForm({
-                                      ...productForm,
-                                      categorias: newCategorias,
-                                      categoria: newCategorias[0] || '' // Primera seleccionada como principal
-                                    });
-                                  }}
-                                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                />
-                                <span className="text-sm">{category.name}</span>
-                              </label>
-                            ))}
-                          </div>
+                        <div className="border-2 border-gray-200 rounded-lg p-3 bg-white/70 max-h-96 overflow-y-auto space-y-3">
+                          {categories.map((category) => {
+                            const subcategorias = (category as any).subcategorias || [];
+                            const isCategoryChecked = productForm.categorias.includes(category.id);
+
+                            return (
+                              <div key={category.id} className="border-b border-gray-200 pb-3 last:border-0">
+                                {/* Categoría principal */}
+                                <label className="flex items-center gap-2 hover:bg-purple-50 p-2 rounded cursor-pointer font-medium">
+                                  <input
+                                    type="checkbox"
+                                    checked={isCategoryChecked}
+                                    onChange={(e) => {
+                                      let newCategorias = [...productForm.categorias];
+
+                                      if (e.target.checked) {
+                                        // Agregar categoría
+                                        newCategorias.push(category.id);
+                                      } else {
+                                        // Quitar categoría y todas sus subcategorías
+                                        newCategorias = newCategorias.filter(c => {
+                                          if (c === category.id) return false;
+                                          if (c.startsWith(`${category.id}-`)) return false;
+                                          return true;
+                                        });
+                                      }
+
+                                      setProductForm({
+                                        ...productForm,
+                                        categorias: newCategorias,
+                                        categoria: newCategorias[0]?.split('-')[0] || ''
+                                      });
+                                    }}
+                                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                  />
+                                  <span className="text-sm">📂 {category.name}</span>
+                                </label>
+
+                                {/* Subcategorías */}
+                                {subcategorias.length > 0 && (
+                                  <div className="ml-6 mt-2 space-y-1">
+                                    {subcategorias.map((sub: any) => {
+                                      const subId = `${category.id}-${sub.id}`;
+                                      return (
+                                        <label key={sub.id} className="flex items-center gap-2 hover:bg-purple-50 p-1.5 rounded cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={productForm.categorias.includes(subId)}
+                                            onChange={(e) => {
+                                              let newCategorias = [...productForm.categorias];
+
+                                              if (e.target.checked) {
+                                                // Agregar subcategoría y asegurar que categoría padre esté incluida
+                                                if (!newCategorias.includes(category.id)) {
+                                                  newCategorias.push(category.id);
+                                                }
+                                                newCategorias.push(subId);
+                                              } else {
+                                                // Quitar subcategoría
+                                                newCategorias = newCategorias.filter(c => c !== subId);
+                                              }
+
+                                              setProductForm({
+                                                ...productForm,
+                                                categorias: newCategorias,
+                                                categoria: newCategorias[0]?.split('-')[0] || ''
+                                              });
+                                            }}
+                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                          />
+                                          <span className="text-xs">📁 {sub.nombre}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                         {productForm.categorias.length === 0 && (
-                          <p className="text-xs text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
+                          <p className="text-xs text-red-500 mt-1">Debes seleccionar al menos una categoría o subcategoría</p>
                         )}
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                          <span>📁</span> Subcategoría
-                        </label>
-                        <select
-                          value={productForm.subcategoria}
-                          onChange={(e) => setProductForm({ ...productForm, subcategoria: e.target.value })}
-                          className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-all duration-200 bg-white/70"
-                          disabled={!productForm.categoria}
-                        >
-                          <option value="">Subcategoría (opcional)</option>
-                          {productForm.categoria && (categories
-                            .find(cat => cat.id === productForm.categoria) as any)
-                            ?.subcategorias?.map((subcategoria: any) => (
-                              <option key={subcategoria.id} value={subcategoria.id}>
-                                {subcategoria.nombre}
-                              </option>
-                            ))}
-                        </select>
+                        {productForm.categorias.length > 0 && (
+                          <p className="text-xs text-green-600 mt-1">
+                            ✓ {productForm.categorias.length} seleccionada(s)
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
