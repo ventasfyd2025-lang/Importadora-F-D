@@ -8,7 +8,8 @@ export interface Product {
   imagenes?: string[]; // Todas las imágenes del producto
   stock: number;
   minStock?: number; // Minimum stock threshold for alerts
-  categoria: string;
+  categoria: string; // Primary category (for backwards compatibility)
+  categorias?: string[]; // Multiple categories support
   subcategoria?: string;
   nuevo?: boolean;
   oferta?: boolean;

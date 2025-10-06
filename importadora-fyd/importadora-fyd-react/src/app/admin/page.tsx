@@ -1287,6 +1287,7 @@ export default function AdminPage() {
     stock: 0,
     minStock: 5,
     categoria: '',
+    categorias: [] as string[],
     subcategoria: '',
     nuevo: false,
     oferta: false,
@@ -1554,6 +1555,7 @@ export default function AdminPage() {
         stock: Number(productForm.stock),
         minStock: Number(productForm.minStock),
         categoria: productForm.categoria,
+        categorias: productForm.categorias,
         subcategoria: productForm.subcategoria,
         nuevo: productForm.nuevo,
         oferta: productForm.oferta,
@@ -1611,6 +1613,7 @@ export default function AdminPage() {
         stock: 0,
         minStock: 5,
         categoria: '',
+        categorias: [],
         subcategoria: '',
         nuevo: false,
         oferta: false,
@@ -1628,6 +1631,11 @@ export default function AdminPage() {
   };
 
   const editProduct = (product: Product) => {
+    // Si el producto tiene categorias, las usa; si no, convierte categoria a array para compatibilidad
+    const categoriasArray = product.categorias && product.categorias.length > 0
+      ? product.categorias
+      : product.categoria ? [product.categoria] : [];
+
     setProductForm({
       id: product.id,
       sku: product.sku || '',
@@ -1638,6 +1646,7 @@ export default function AdminPage() {
       stock: product.stock,
       minStock: product.minStock || 5,
       categoria: product.categoria,
+      categorias: categoriasArray,
       subcategoria: product.subcategoria || '',
       nuevo: product.nuevo || false,
       oferta: product.oferta || false,
@@ -5761,24 +5770,38 @@ export default function AdminPage() {
                       </div>
                       <h4 className="text-sm font-bold text-gray-800">Categorización</h4>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                          <span>📂</span> Categoría *
+                        <label className="block text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                          <span>📂</span> Categorías * (selecciona una o más)
                         </label>
-                        <select
-                          value={productForm.categoria}
-                          onChange={(e) => setProductForm({ ...productForm, categoria: e.target.value })}
-                          required
-                          className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-all duration-200 bg-white/70"
-                        >
-                          <option value="">Seleccionar categoría</option>
-                          {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="border-2 border-gray-200 rounded-lg p-3 bg-white/70 max-h-48 overflow-y-auto">
+                          <div className="grid grid-cols-2 gap-2">
+                            {categories.map((category) => (
+                              <label key={category.id} className="flex items-center gap-2 hover:bg-purple-50 p-2 rounded cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={productForm.categorias.includes(category.id)}
+                                  onChange={(e) => {
+                                    const newCategorias = e.target.checked
+                                      ? [...productForm.categorias, category.id]
+                                      : productForm.categorias.filter(c => c !== category.id);
+                                    setProductForm({
+                                      ...productForm,
+                                      categorias: newCategorias,
+                                      categoria: newCategorias[0] || '' // Primera seleccionada como principal
+                                    });
+                                  }}
+                                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                />
+                                <span className="text-sm">{category.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        {productForm.categorias.length === 0 && (
+                          <p className="text-xs text-red-500 mt-1">Debes seleccionar al menos una categoría</p>
+                        )}
                       </div>
 
                       <div>
