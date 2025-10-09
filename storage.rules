@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Public read access for all assets
+    match /homepage-promotions/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily allow all writes for admin
+    }
+
+    match /homepage-middle-banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily allow all writes for admin
+    }
+
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily allow all writes for admin
+    }
+
+    match /config/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily allow all writes for admin
+    }
+
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily allow all writes for admin
+    }
+
+    match /main-banner/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily allow all writes for admin
+    }
+
+    match /test/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // For testing
+    }
+
+    // Default: allow all for now (will restrict later)
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporarily open for admin functionality
+    }
+  }
+}
