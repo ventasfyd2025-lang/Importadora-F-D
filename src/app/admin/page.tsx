@@ -209,7 +209,7 @@ const DEFAULT_PROMOTIONAL_SECTIONS: PromotionalSectionState[] = [
     description: 'Cocina y limpieza',
     imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=500&h=400&fit=crop&crop=center',
     linkType: 'category' as const,
-    linkValue: 'hogar',
+    linkValue: 'electrohogar',
     badgeText: 'OFERTAS',
     position: 'wide' as const,
     selectedProducts: [],
