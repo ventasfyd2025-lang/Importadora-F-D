@@ -885,7 +885,7 @@ const MAX_ALL_PRODUCTS_HOME = 10;
             {hasMoreAllProducts && (
               <div className="flex justify-center">
                 <Link
-                  href="/productos"
+                  href="/?category=all"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm sm:text-base text-white shadow-lg transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
                   style={{ background: 'linear-gradient(135deg, #F16529 0%, #E67E22 100%)' }}
                 >

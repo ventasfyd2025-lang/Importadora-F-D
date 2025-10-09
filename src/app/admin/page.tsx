@@ -7084,7 +7084,9 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              <form onSubmit={(e) => {
+              <form
+                key={editingSection?.id || 'new'}
+                onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 const sectionData = {
