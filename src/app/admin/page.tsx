@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useFooterConfig } from '@/hooks/useFooterConfig';
@@ -418,6 +419,7 @@ const productHasCategory = (product: Product, categoryId: string): boolean => {
 
 export default function AdminPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading, login, logout } = useAuth();
   const { userProfile, isAdmin, loading: userAuthLoading } = useUserAuth();
   const { products, refetch, removeProduct, removeProducts } = useProducts();
@@ -782,6 +784,31 @@ export default function AdminPage() {
       }
     };
   }, []);
+
+  // Detect URL parameter to auto-open product modal
+  useEffect(() => {
+    const modalParam = searchParams.get('modal');
+    if (modalParam === 'add-product') {
+      setProductForm({
+        id: '',
+        sku: '',
+        nombre: '',
+        precio: 0,
+        precioOriginal: undefined,
+        descripcion: '',
+        stock: 0,
+        minStock: 5,
+        categoria: '',
+        categorias: [],
+        subcategoria: '',
+        nuevo: false,
+        oferta: false,
+        imagen: '',
+        imagenes: []
+      });
+      setShowProductModal(true);
+    }
+  }, [searchParams]);
 
   const saveHomepageContent = async (showAlert = true) => {
     try {
@@ -2459,32 +2486,16 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Gestión de Productos</h2>
-              <button
-                onClick={() => {
-                  setProductForm({
-                    id: '',
-                    sku: '',
-                    nombre: '',
-                    precio: 0,
-                    precioOriginal: undefined,
-                    descripcion: '',
-                    stock: 0,
-                    minStock: 5,
-                    categoria: '',
-                    categorias: [],
-                    subcategoria: '',
-                    nuevo: false,
-                    oferta: false,
-                    imagen: '',
-                    imagenes: []
-                  });
-                  setShowProductModal(true);
-                }}
-                className="text-white px-4 py-2 rounded-md transition-colors" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+              <Link
+                href="/admin/productos/nuevo"
+                className="text-white px-4 py-2 rounded-md transition-colors inline-block"
+                style={{ backgroundColor: '#F16529' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
               >
                 <span className="text-lg mr-2">➕</span>
                 Agregar Producto
-              </button>
+              </Link>
             </div>
 
             {/* Compact Low Stock Alert Section */}
