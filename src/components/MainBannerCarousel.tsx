@@ -53,6 +53,9 @@ export default function MainBannerCarousel({
   const [imagesLoaded, setImagesLoaded] = useState<Set<number>>(new Set());
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(0);
+  const [dragCurrent, setDragCurrent] = useState(0);
   const router = useRouter();
 
   // Create banner slides - INMEDIATO como PC Factory
@@ -164,7 +167,7 @@ export default function MainBannerCarousel({
     router.push(slide.targetUrl);
   };
 
-  // Manejo de swipe
+  // Manejo de swipe (móvil)
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -191,6 +194,35 @@ export default function MainBannerCarousel({
     setTouchEnd(0);
   };
 
+  // Manejo de drag (desktop)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart(e.pageX);
+    setDragCurrent(e.pageX);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    setDragCurrent(e.pageX);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+
+    const distance = dragStart - dragCurrent;
+
+    if (Math.abs(distance) > 50) {
+      if (distance > 0) {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+      } else {
+        setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+      }
+    }
+
+    setIsDragging(false);
+  };
+
   if (slides.length === 0) {
     return null;
   }
@@ -199,10 +231,14 @@ export default function MainBannerCarousel({
     <section className="relative w-full bg-gray-900">
       {/* Main Carousel - Responsive heights optimized for mobile */}
       <div
-        className="relative h-[180px] sm:h-[280px] md:h-[350px] lg:h-[450px] xl:h-[500px] overflow-hidden"
+        className="relative h-[180px] sm:h-[280px] md:h-[350px] lg:h-[450px] xl:h-[500px] overflow-hidden cursor-grab active:cursor-grabbing"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         {slides.map((slide, index) => (
           <div

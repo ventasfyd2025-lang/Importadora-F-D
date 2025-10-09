@@ -163,22 +163,34 @@ const ProductCarousel = memo(({
 
   const handleDragStart = (e: React.MouseEvent) => {
     setIsDragging(true);
-    setStartX(e.pageX - (carouselRef.current?.scrollLeft || 0));
-    setScrollLeft(carouselRef.current?.scrollLeft || 0);
+    setStartX(e.pageX);
+    setScrollLeft(e.pageX); // Usar scrollLeft para guardar la última posición
   };
 
   const handleDragEnd = () => {
+    if (!isDragging) return;
+
+    const endX = scrollLeft;
+    const distance = startX - endX;
+
+    // Si el arrastre es mayor a 50px, cambiar de slide
+    if (Math.abs(distance) > 50) {
+      if (distance > 0 && currentIndex < products.length - itemsToShow) {
+        // Arrastre a la izquierda - siguiente
+        nextSlide();
+      } else if (distance < 0 && currentIndex > 0) {
+        // Arrastre a la derecha - anterior
+        prevSlide();
+      }
+    }
+
     setIsDragging(false);
   };
 
   const handleDragMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     e.preventDefault();
-    const x = e.pageX - (carouselRef.current?.scrollLeft || 0);
-    const walk = (x - startX) * 2;
-    if (carouselRef.current) {
-      carouselRef.current.scrollLeft = scrollLeft - walk;
-    }
+    setScrollLeft(e.pageX); // Actualizar la posición actual
   };
 
   // Keyboard navigation
@@ -236,6 +248,10 @@ const ProductCarousel = memo(({
     setCurrentIndex(0);
   }, [itemsToShow]);
 
+  // Determinar si hay suficientes productos para hacer carrusel
+  const hasEnoughProducts = products.length > itemsToShow;
+  const maxIndex = Math.max(0, products.length - itemsToShow);
+
   return (
     <section className="space-y-3 sm:space-y-4 lg:space-y-5">
       <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-4 sm:p-6 border border-orange-100">
@@ -259,30 +275,31 @@ const ProductCarousel = memo(({
           )}
         </div>
       </div>
-      
+
       <div className="relative">
         <div
           ref={carouselRef}
           className="carousel-container overflow-x-hidden"
-          onMouseDown={handleDragStart}
-          onMouseUp={handleDragEnd}
-          onMouseMove={handleDragMove}
-          onMouseLeave={() => {
-            handleDragEnd();
+          onMouseDown={hasEnoughProducts ? handleDragStart : undefined}
+          onMouseUp={hasEnoughProducts ? handleDragEnd : undefined}
+          onMouseMove={hasEnoughProducts ? handleDragMove : undefined}
+          onMouseLeave={hasEnoughProducts ? () => {
             setIsHovered(false);
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onKeyDown={handleKeyDown}
-          tabIndex={0}
+          } : undefined}
+          onMouseEnter={hasEnoughProducts ? () => setIsHovered(true) : undefined}
+          onTouchStart={hasEnoughProducts ? handleTouchStart : undefined}
+          onTouchMove={hasEnoughProducts ? handleTouchMove : undefined}
+          onTouchEnd={hasEnoughProducts ? handleTouchEnd : undefined}
+          onKeyDown={hasEnoughProducts ? handleKeyDown : undefined}
+          tabIndex={hasEnoughProducts ? 0 : undefined}
           role="region"
           aria-label={`${t('common.carousel')}: ${title}`}
         >
           <div
-            className="flex gap-2 sm:gap-3 lg:gap-4 transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentIndex * (100 / itemsToShow)}%)` }}
+            className={`flex gap-2 sm:gap-3 lg:gap-4 ${hasEnoughProducts ? 'transition-transform duration-500 ease-out' : ''}`}
+            style={{
+              transform: hasEnoughProducts ? `translateX(-${Math.min(currentIndex, maxIndex) * (100 / itemsToShow)}%)` : 'none'
+            }}
           >
             {products.map((product) => (
               <div
@@ -301,23 +318,25 @@ const ProductCarousel = memo(({
           </div>
         </div>
       </div>
-      
-      {/* Indicators */}
-      <div className="flex justify-center gap-2">
-        {Array.from({ length: Math.ceil(products.length / itemsToShow) }).map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index * itemsToShow)}
-            className={`h-2 w-2 rounded-full transition-all ${
-              Math.floor(currentIndex / itemsToShow) === index 
-                ? 'bg-orange-500 w-6' 
-                : 'bg-gray-300'
-            }`}
-            aria-label={`${t('carousel.goToPage')} ${index + 1} ${t('common.of')} ${Math.ceil(products.length / itemsToShow)} ${t('common.in')} ${title}`}
-            aria-current={Math.floor(currentIndex / itemsToShow) === index ? 'true' : 'false'}
-          />
-        ))}
-      </div>
+
+      {/* Indicators - solo si hay suficientes productos */}
+      {hasEnoughProducts && (
+        <div className="flex justify-center gap-2">
+          {Array.from({ length: Math.ceil(products.length / itemsToShow) }).map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(Math.min(index * itemsToShow, maxIndex))}
+              className={`h-2 w-2 rounded-full transition-all ${
+                Math.floor(currentIndex / itemsToShow) === index
+                  ? 'bg-orange-500 w-6'
+                  : 'bg-gray-300'
+              }`}
+              aria-label={`${t('carousel.goToPage')} ${index + 1} ${t('common.of')} ${Math.ceil(products.length / itemsToShow)} ${t('common.in')} ${title}`}
+              aria-current={Math.floor(currentIndex / itemsToShow) === index ? 'true' : 'false'}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 });
