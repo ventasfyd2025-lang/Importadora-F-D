@@ -1251,6 +1251,9 @@ export default function AdminPage() {
   const [previewName, setPreviewName] = useState('');
   const [previewDescription, setPreviewDescription] = useState('');
 
+  // Estado para la vista del tab Secciones (sin popups)
+  const [sectionsView, setSectionsView] = useState<'list' | 'edit' | 'products'>('list');
+
   // Product selector filters state
   const [productSelectorFilters, setProductSelectorFilters] = useState({
     category: '',
@@ -4772,154 +4775,667 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === 'secciones' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  📑 Secciones de Productos
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  Gestiona las secciones que aparecen en la página principal
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingSection(null);
-                  setShowSectionModal(true);
-                }}
-                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center gap-2"
-              >
-                <span>+</span> Nueva Sección
-              </button>
-            </div>
+{activeTab === 'secciones' && (
+  <div className="space-y-6">
+    {/* Vista LIST - Listado de secciones */}
+    {sectionsView === 'list' && (
+      <>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              📑 Secciones de Productos
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Gestiona las secciones que aparecen en la página principal
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setEditingSection(null);
+              setPreviewName('');
+              setPreviewDescription('');
+              setSectionsView('edit');
+            }}
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center gap-2"
+          >
+            <span>+</span> Nueva Sección
+          </button>
+        </div>
 
-            {/* Sections List */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {productSections.map((section, index) => (
-                <div key={section.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900">{section.name}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            section.enabled
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}>
-                            {section.enabled ? '✓ Activa' : '○ Inactiva'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{section.description}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded-md font-medium">
-                            {section.selectedProducts.length} productos
-                          </span>
-                          <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md font-medium">
-                            Tipo: {section.type === 'custom' ? '🎯 Personalizada' :
-                                   section.type === 'featured' ? '⭐ Destacados' :
-                                   section.type === 'new' ? '🆕 Nuevos' :
-                                   section.type === 'bestsellers' ? '🔥 Más Vendidos' : '📁 Categoría'}
-                          </span>
-                        </div>
+        {/* Sections Grid */}
+        {productSections.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {productSections.map((section, index) => (
+              <div key={section.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-gray-900">{section.name}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          section.enabled
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {section.enabled ? '✓ Activa' : '○ Inactiva'}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={section.enabled}
-                          onChange={async (e) => {
-                            const newSections = [...productSections];
-                            newSections[index].enabled = e.target.checked;
-                            setProductSections(newSections as any);
-
-                            try {
-                              await setDoc(doc(db, 'config', 'productSections'), {
-                                sections: newSections,
-                                updatedAt: new Date().toISOString()
-                              });
-                            } catch (error) {
-                              console.error('Error auto-saving section enabled status:', error);
-                            }
-                          }}
-                          className="w-5 h-5 text-orange-500 rounded"
-                        />
+                      <p className="text-sm text-gray-600 mb-3">{section.description}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded-md font-medium">
+                          {section.selectedProducts?.length || 0} productos
+                        </span>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md font-medium">
+                          {section.type === 'custom' ? '🎯 Personalizada' :
+                           section.type === 'featured' ? '⭐ Destacados' :
+                           section.type === 'new' ? '🆕 Nuevos' :
+                           section.type === 'bestsellers' ? '🔥 Más Vendidos' : '📁 Categoría'}
+                        </span>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={section.enabled}
+                        onChange={async (e) => {
+                          const newSections = [...productSections];
+                          newSections[index].enabled = e.target.checked;
+                          setProductSections(newSections as any);
 
-                    <div className="flex gap-2 pt-4 border-t border-gray-100">
-                      <button
-                        onClick={() => {
-                          setEditingSection(section);
-                          setShowSectionModal(true);
-                        }}
-                        className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
-                      >
-                        ✏️ Editar Sección
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCurrentSectionId(section.id);
-                          setShowProductSelector(true);
-                        }}
-                        className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-                      >
-                        📦 Productos
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (confirm('¿Estás seguro de eliminar esta sección?')) {
-                            const newSections = productSections.filter(s => s.id !== section.id);
-                            setProductSections(newSections as any);
-                            try {
-                              await setDoc(doc(db, 'config', 'productSections'), {
-                                sections: newSections,
-                                updatedAt: new Date().toISOString()
-                              });
-                            } catch (error) {
-                              console.error('Error deleting section:', error);
-                            }
+                          try {
+                            await setDoc(doc(db, 'config', 'productSections'), {
+                              sections: newSections,
+                              updatedAt: new Date().toISOString()
+                            });
+                          } catch (error) {
+                            console.error('Error auto-saving section enabled status:', error);
                           }
                         }}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                      >
-                        🗑️
-                      </button>
+                        className="w-5 h-5 text-orange-500 rounded"
+                      />
                     </div>
                   </div>
+
+                  <div className="flex gap-2 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        setEditingSection(section);
+                        setPreviewName(section.name);
+                        setPreviewDescription(section.description);
+                        setSectionsView('edit');
+                      }}
+                      className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentSectionId(section.id);
+                        setProductSelectorFilters({ category: '', search: '', showOnlySelected: false });
+                        setSectionsView('products');
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                    >
+                      📦 Productos
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirm('¿Estás seguro de eliminar esta sección?')) {
+                          const newSections = productSections.filter(s => s.id !== section.id);
+                          setProductSections(newSections as any);
+                          try {
+                            await setDoc(doc(db, 'config', 'productSections'), {
+                              sections: newSections,
+                              updatedAt: new Date().toISOString()
+                            });
+                          } catch (error) {
+                            console.error('Error deleting section:', error);
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="text-6xl mb-4">📑</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No hay secciones configuradas</h3>
+            <p className="text-gray-600 mb-6">Crea tu primera sección para organizar los productos en la página principal</p>
+            <button
+              onClick={() => {
+                setEditingSection(null);
+                setPreviewName('');
+                setPreviewDescription('');
+                setSectionsView('edit');
+              }}
+              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold"
+            >
+              + Nueva Sección
+            </button>
+          </div>
+        )}
+      </>
+    )}
+
+    {/* Vista EDIT - Editar/Crear sección */}
+    {sectionsView === 'edit' && (
+      <>
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              setSectionsView('list');
+              setEditingSection(null);
+              setPreviewName('');
+              setPreviewDescription('');
+              setSectionSaveStatus('idle');
+            }}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
+          >
+            <span>←</span> Volver a la lista
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            {editingSection ? 'Editar Sección' : 'Nueva Sección'}
+          </h2>
+
+          <div className="grid grid-cols-3 gap-6">
+            {/* Columna Izquierda: Formulario */}
+            <div className="col-span-1 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuración</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre de la Sección
+                </label>
+                <input
+                  type="text"
+                  id="section-name-input"
+                  defaultValue={editingSection?.name || ''}
+                  onChange={(e) => setPreviewName(e.target.value)}
+                  placeholder="Ej: Productos Destacados"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  id="section-description-input"
+                  defaultValue={editingSection?.description || ''}
+                  onChange={(e) => setPreviewDescription(e.target.value)}
+                  placeholder="Descripción de la sección"
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Sección
+                </label>
+                <select
+                  defaultValue={editingSection?.type || 'custom'}
+                  id="section-type-select"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="custom">🎯 Personalizada</option>
+                  <option value="featured">⭐ Destacados</option>
+                  <option value="new">🆕 Nuevos</option>
+                  <option value="bestsellers">🔥 Más Vendidos</option>
+                  <option value="category">📁 Categoría</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="section-enabled"
+                  defaultChecked={editingSection?.enabled ?? true}
+                  className="w-5 h-5 text-orange-500 rounded"
+                />
+                <label htmlFor="section-enabled" className="text-sm font-medium text-gray-700">
+                  Sección activa
+                </label>
+              </div>
             </div>
 
-            {productSections.length === 0 && (
-              <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 p-12 text-center">
-                <div className="text-6xl mb-4">📑</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay secciones creadas</h3>
-                <p className="text-gray-600 mb-6">Crea tu primera sección para organizar los productos en la página principal</p>
-                <button
-                  onClick={() => {
-                    setEditingSection(null);
-                    setShowSectionModal(true);
-                  }}
-                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold inline-flex items-center gap-2"
-                >
-                  <span>+</span> Crear Primera Sección
-                </button>
-              </div>
-            )}
+            {/* Columna Centro: Vista Previa */}
+            <div className="col-span-1 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">👁️ Vista Previa</h3>
 
-            {/* Auto-save indicator */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-sm">
-              <div className="flex items-center justify-center text-center">
-                <span className="text-2xl mr-3 animate-pulse">✅</span>
-                <div>
-                  <p className="text-sm font-bold text-green-700">Guardado Automático Activo</p>
-                  <p className="text-xs text-green-600 mt-1">Los cambios se sincronizan en tiempo real con tu sitio web</p>
+              <div className="bg-gradient-to-br from-orange-50 to-white rounded-lg p-6 border-2 border-orange-200">
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="border-b-2 border-orange-500 pb-3 mb-3">
+                    <h4 className="text-xl font-bold text-gray-900">
+                      {previewName || editingSection?.name || 'Nombre de Sección'}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {previewDescription || editingSection?.description || 'Descripción de la sección'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-gray-50 rounded h-20 flex items-center justify-center">
+                        <span className="text-2xl">📦</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center mt-3 text-xs">
+                    <span className="text-gray-500">{editingSection?.selectedProducts?.length || 0} productos</span>
+                    <span className="text-orange-500 font-semibold">Ver todos →</span>
+                  </div>
                 </div>
+                <p className="text-xs text-center text-gray-500 mt-3">
+                  Así se verá en tu sitio web
+                </p>
+              </div>
+            </div>
+
+            {/* Columna Derecha: Resumen de Productos */}
+            <div className="col-span-1 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Productos Seleccionados</h3>
+
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="text-center mb-4">
+                  <div className="text-3xl font-bold text-orange-500">
+                    {editingSection?.selectedProducts?.length || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">productos configurados</div>
+                </div>
+
+                {editingSection?.selectedProducts && editingSection.selectedProducts.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {editingSection.selectedProducts.slice(0, 5).map((productId: string) => {
+                      const product = products.find(p => p.id === productId);
+                      return product ? (
+                        <div key={productId} className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
+                          {product.imagen && (
+                            <img
+                              src={product.imagen}
+                              alt={product.nombre}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-gray-900 truncate">
+                              {product.nombre}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ${product.precio?.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null;
+                    })}
+                    {editingSection.selectedProducts.length > 5 && (
+                      <div className="text-xs text-gray-500 text-center pt-2">
+                        +{editingSection.selectedProducts.length - 5} más
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-400 text-sm">
+                    No hay productos seleccionados.
+                    <br />
+                    Guarda la sección y luego agrega productos.
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
+
+          {/* Status Messages */}
+          {sectionSaveStatus !== 'idle' && (
+            <div className={`mt-6 px-4 py-3 rounded-lg flex items-center gap-2 ${
+              sectionSaveStatus === 'saving' ? 'bg-blue-50 text-blue-700 animate-pulse' :
+              sectionSaveStatus === 'success' ? 'bg-green-50 text-green-700' :
+              'bg-red-50 text-red-700'
+            }`}>
+              {sectionSaveStatus === 'saving' && (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>Guardando cambios...</span>
+                </>
+              )}
+              {sectionSaveStatus === 'success' && (
+                <>
+                  <span>✓</span>
+                  <span>Cambios guardados correctamente</span>
+                </>
+              )}
+              {sectionSaveStatus === 'error' && (
+                <>
+                  <span>✗</span>
+                  <span>Error al guardar los cambios</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setSectionsView('list');
+                setEditingSection(null);
+                setPreviewName('');
+                setPreviewDescription('');
+                setSectionSaveStatus('idle');
+              }}
+              disabled={sectionSaveStatus === 'saving'}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={async () => {
+                setSectionSaveStatus('saving');
+
+                try {
+                  const nameInput = document.querySelector<HTMLInputElement>('#section-name-input');
+                  const descriptionInput = document.querySelector<HTMLTextAreaElement>('#section-description-input');
+                  const typeSelect = document.querySelector<HTMLSelectElement>('#section-type-select');
+                  const enabledCheckbox = document.querySelector<HTMLInputElement>('#section-enabled');
+
+                  const sectionData = {
+                    id: editingSection?.id || `section_${Date.now()}`,
+                    name: nameInput?.value || previewName || 'Nueva Sección',
+                    description: descriptionInput?.value || previewDescription || '',
+                    type: typeSelect?.value || 'custom',
+                    enabled: enabledCheckbox?.checked ?? true,
+                    selectedProducts: editingSection?.selectedProducts || []
+                  };
+
+                  let newSections;
+                  if (editingSection) {
+                    newSections = productSections.map(s =>
+                      s.id === editingSection.id ? sectionData : s
+                    );
+                  } else {
+                    newSections = [...productSections, sectionData];
+                  }
+
+                  setProductSections(newSections as any);
+
+                  await setDoc(doc(db, 'config', 'productSections'), {
+                    sections: newSections,
+                    updatedAt: new Date().toISOString()
+                  });
+
+                  setSectionSaveStatus('success');
+                  setTimeout(() => {
+                    setSectionsView('list');
+                    setEditingSection(null);
+                    setPreviewName('');
+                    setPreviewDescription('');
+                    setSectionSaveStatus('idle');
+                  }, 1500);
+                } catch (error) {
+                  console.error('Error saving section:', error);
+                  setSectionSaveStatus('error');
+                  setTimeout(() => setSectionSaveStatus('idle'), 3000);
+                }
+              }}
+              disabled={sectionSaveStatus === 'saving'}
+              className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold disabled:opacity-50"
+            >
+              {sectionSaveStatus === 'saving' ? 'Guardando...' : (editingSection ? 'Actualizar' : 'Crear') + ' Sección'}
+            </button>
+          </div>
+        </div>
+      </>
+    )}
+
+    {/* Vista PRODUCTS - Selector de productos */}
+    {sectionsView === 'products' && (
+      <>
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              setSectionsView('list');
+              setProductSelectorFilters({ category: '', search: '', showOnlySelected: false });
+            }}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
+          >
+            <span>←</span> Volver a la lista
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            📦 Gestionar Productos de la Sección
+          </h2>
+
+          <div className="grid grid-cols-3 gap-6">
+            {/* Columna Izquierda: Resumen de Sección */}
+            <div className="col-span-1 space-y-4">
+              {(() => {
+                const currentSection = productSections.find(s => s.id === currentSectionId);
+                const selectedProducts = products.filter(p => currentSection?.selectedProducts?.includes(p.id as never));
+
+                return currentSection ? (
+                  <>
+                    <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        {currentSection.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {currentSection.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="px-2 py-1 bg-white text-orange-600 rounded-md font-medium text-xs">
+                          {currentSection.type === 'custom' ? '🎯 Personalizada' :
+                           currentSection.type === 'featured' ? '⭐ Destacados' :
+                           currentSection.type === 'new' ? '🆕 Nuevos' :
+                           currentSection.type === 'bestsellers' ? '🔥 Más Vendidos' : '📁 Categoría'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-center mb-4">
+                        <div className="text-3xl font-bold text-orange-500">
+                          {currentSection.selectedProducts?.length || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">productos seleccionados</div>
+                      </div>
+
+                      {selectedProducts.length > 0 ? (
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {selectedProducts.map((product) => (
+                            <div key={product.id} className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
+                              {product.imagen && (
+                                <img
+                                  src={product.imagen}
+                                  alt={product.nombre}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium text-gray-900 truncate">
+                                  {product.nombre}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  ${product.precio?.toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-gray-400 text-sm">
+                          No hay productos seleccionados
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-gray-400">
+                    Sección no encontrada
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Columnas Derecha: Selector de Productos */}
+            <div className="col-span-2 space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Buscar productos..."
+                    value={productSelectorFilters.search}
+                    onChange={(e) => setProductSelectorFilters(prev => ({
+                      ...prev,
+                      search: e.target.value
+                    }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="w-48">
+                  <select
+                    value={productSelectorFilters.category}
+                    onChange={(e) => setProductSelectorFilters(prev => ({
+                      ...prev,
+                      category: e.target.value
+                    }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="">Todas las categorías</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="show-only-selected"
+                  checked={productSelectorFilters.showOnlySelected}
+                  onChange={(e) => setProductSelectorFilters(prev => ({
+                    ...prev,
+                    showOnlySelected: e.target.checked
+                  }))}
+                  className="w-4 h-4 text-orange-500 rounded"
+                />
+                <label htmlFor="show-only-selected" className="text-sm text-gray-700">
+                  Mostrar solo seleccionados
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                {(() => {
+                  const currentSection = productSections.find(s => s.id === currentSectionId);
+                  return products
+                    .filter(product => {
+                      const isSelected = currentSection?.selectedProducts?.includes(product.id as never) || false;
+
+                      if (productSelectorFilters.search) {
+                        const searchTerm = productSelectorFilters.search.toLowerCase();
+                        const searchableText = [
+                          product.nombre,
+                          product.descripcion || '',
+                          product.categoria,
+                          product.sku || ''
+                        ].join(' ').toLowerCase();
+
+                        if (!searchableText.includes(searchTerm)) return false;
+                      }
+
+                      if (productSelectorFilters.category) {
+                        if (!productHasCategory(product, productSelectorFilters.category)) return false;
+                      }
+
+                      if (productSelectorFilters.showOnlySelected && !isSelected) {
+                        return false;
+                      }
+
+                      return true;
+                    })
+                    .map((product) => {
+                    const currentSection = productSections.find(s => s.id === currentSectionId);
+                    const isSelected = currentSection?.selectedProducts?.includes(product.id as never) || false;
+
+                    return (
+                      <div key={product.id} className={`border-2 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer ${
+                        isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-200'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={async (e) => {
+                              const newSections = productSections.map(section => {
+                                if (section.id === currentSectionId) {
+                                  const currentProducts = section.selectedProducts || [];
+                                  return {
+                                    ...section,
+                                    selectedProducts: e.target.checked
+                                      ? [...currentProducts, product.id as never]
+                                      : currentProducts.filter((id: string) => id !== product.id)
+                                  };
+                                }
+                                return section;
+                              });
+
+                              setProductSections(newSections as any);
+
+                              try {
+                                await setDoc(doc(db, 'config', 'productSections'), {
+                                  sections: newSections,
+                                  updatedAt: new Date().toISOString()
+                                });
+                              } catch (error) {
+                                console.error('Error auto-saving product selection:', error);
+                              }
+                            }}
+                            className="w-5 h-5 text-orange-500 rounded mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            {product.imagen && (
+                              <img
+                                src={product.imagen}
+                                alt={product.nombre}
+                                className="w-full h-32 object-cover rounded-lg mb-2"
+                              />
+                            )}
+                            <h4 className="font-medium text-gray-900 text-sm truncate">
+                              {product.nombre}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
+                              ${product.precio?.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Stock: {product.stock}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+)}
 
         {activeTab === 'main-banner' && (
           <div className="space-y-6">
