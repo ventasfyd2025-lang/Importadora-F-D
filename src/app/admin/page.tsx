@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminModalDetector from '@/components/AdminModalDetector';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useFooterConfig } from '@/hooks/useFooterConfig';
@@ -783,28 +782,6 @@ export default function AdminPage() {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, []);
-
-  // Handler for opening product modal from URL parameter
-  const handleOpenProductModal = useCallback(() => {
-    setProductForm({
-      id: '',
-      sku: '',
-      nombre: '',
-      precio: 0,
-      precioOriginal: undefined,
-      descripcion: '',
-      stock: 0,
-      minStock: 5,
-      categoria: '',
-      categorias: [],
-      subcategoria: '',
-      nuevo: false,
-      oferta: false,
-      imagen: '',
-      imagenes: []
-    });
-    setShowProductModal(true);
   }, []);
 
   const saveHomepageContent = async (showAlert = true) => {
@@ -2195,9 +2172,6 @@ export default function AdminPage() {
 
   return (
     <>
-      <Suspense fallback={null}>
-        <AdminModalDetector onOpenProductModal={handleOpenProductModal} />
-      </Suspense>
       <style jsx global>{`
         #admin-container * {
           font-size: 1.02em !important;
