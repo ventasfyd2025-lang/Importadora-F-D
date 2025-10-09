@@ -21,7 +21,7 @@ interface BannerCarouselProps {
   autoPlayInterval?: number;
 }
 
-const BannerCarousel = memo(({ 
+const BannerCarousel = memo(({
   banners = [],
   autoPlay = true,
   autoPlayInterval = 3000
@@ -30,6 +30,8 @@ const BannerCarousel = memo(({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   // Auto-play functionality
   useEffect(() => {
@@ -46,6 +48,32 @@ const BannerCarousel = memo(({
     setCurrentIndex(index);
   };
 
+  // Manejo de swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      setCurrentIndex((prev) => (prev + 1) % banners.length);
+    }
+    if (isRightSwipe) {
+      setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   if (banners.length === 0) {
     return (
@@ -67,12 +95,15 @@ const BannerCarousel = memo(({
   }
 
   return (
-    <div 
+    <div
       className="relative w-full rounded-2xl overflow-hidden shadow-xl"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       role="region"
       aria-label={t('common.banner')}
     >

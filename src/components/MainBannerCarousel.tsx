@@ -42,15 +42,17 @@ interface MainBannerCarouselProps {
   interval?: number;
 }
 
-export default function MainBannerCarousel({ 
-  products = [], 
+export default function MainBannerCarousel({
+  products = [],
   config,
-  autoPlay = true, 
-  interval = 3000 
+  autoPlay = true,
+  interval = 3000
 }: MainBannerCarouselProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [imagesLoaded, setImagesLoaded] = useState<Set<number>>(new Set());
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const router = useRouter();
 
   // Create banner slides - INMEDIATO como PC Factory
@@ -162,6 +164,33 @@ export default function MainBannerCarousel({
     router.push(slide.targetUrl);
   };
 
+  // Manejo de swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }
+    if (isRightSwipe) {
+      setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
   if (slides.length === 0) {
     return null;
   }
@@ -169,7 +198,12 @@ export default function MainBannerCarousel({
   return (
     <section className="relative w-full bg-gray-900">
       {/* Main Carousel - Responsive heights optimized for mobile */}
-      <div className="relative h-[180px] sm:h-[280px] md:h-[350px] lg:h-[450px] xl:h-[500px] overflow-hidden">
+      <div
+        className="relative h-[180px] sm:h-[280px] md:h-[350px] lg:h-[450px] xl:h-[500px] overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {slides.map((slide, index) => (
           <div
             key={index}
@@ -178,7 +212,7 @@ export default function MainBannerCarousel({
             }`}
           >
             {/* Optimized Product Image - Full Screen */}
-            <div 
+            <div
               className="absolute inset-0 cursor-pointer hover:scale-105 transition-transform duration-300"
               onClick={() => handleSlideClick(slide)}
             >
@@ -199,61 +233,20 @@ export default function MainBannerCarousel({
         ))}
       </div>
 
-      {/* Controls - Responsive */}
-      <div className="absolute bottom-3 sm:bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 sm:space-x-4">
-        {/* Play/Pause Button */}
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-1.5 sm:p-2 rounded-full hover:bg-opacity-30 transition-all duration-300"
-        >
-          {isPlaying ? (
-            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          ) : (
-            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-            </svg>
-          )}
-        </button>
-
-        {/* Slide Indicators */}
-        <div className="flex space-x-1 sm:space-x-2">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide
-                  ? 'bg-white scale-125'
-                  : 'bg-white bg-opacity-50 hover:bg-opacity-75'
-              }`}
-            />
-          ))}
-        </div>
+      {/* Slide Indicators */}
+      <div className="absolute bottom-3 sm:bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-1 sm:space-x-2">
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentSlide(index)}
+            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+              index === currentSlide
+                ? 'bg-white scale-125'
+                : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+            }`}
+          />
+        ))}
       </div>
-
-      {/* Navigation Arrows - Hidden on mobile, visible on larger screens */}
-      {slides.length > 1 && (
-        <>
-          <button
-            onClick={() => setCurrentSlide(currentSlide === 0 ? slides.length - 1 : currentSlide - 1)}
-            className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-opacity-30 transition-all duration-300"
-          >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setCurrentSlide(currentSlide === slides.length - 1 ? 0 : currentSlide + 1)}
-            className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-opacity-30 transition-all duration-300"
-          >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </>
-      )}
     </section>
   );
 }

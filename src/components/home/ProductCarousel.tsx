@@ -130,6 +130,8 @@ const ProductCarousel = memo(({
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Update items to show based on screen size
@@ -188,6 +190,33 @@ const ProductCarousel = memo(({
     }
   };
 
+  // Manejo de swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentIndex < products.length - itemsToShow) {
+      nextSlide();
+    }
+    if (isRightSwipe && currentIndex > 0) {
+      prevSlide();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
   // Auto-play functionality
   useEffect(() => {
     if (isHovered || products.length <= itemsToShow) return;
@@ -232,17 +261,7 @@ const ProductCarousel = memo(({
       </div>
       
       <div className="relative">
-        {currentIndex > 0 && (
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-orange-500"
-            aria-label={t('carousel.previous')}
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-        )}
-        
-        <div 
+        <div
           ref={carouselRef}
           className="carousel-container overflow-x-hidden"
           onMouseDown={handleDragStart}
@@ -253,18 +272,21 @@ const ProductCarousel = memo(({
             setIsHovered(false);
           }}
           onMouseEnter={() => setIsHovered(true)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onKeyDown={handleKeyDown}
           tabIndex={0}
           role="region"
           aria-label={`${t('common.carousel')}: ${title}`}
         >
-          <div 
+          <div
             className="flex gap-2 sm:gap-3 lg:gap-4 transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${currentIndex * (100 / itemsToShow)}%)` }}
           >
             {products.map((product) => (
-              <div 
-                key={product.id} 
+              <div
+                key={product.id}
                 className="flex-shrink-0"
                 style={{ width: `${100 / itemsToShow}%` }}
               >
@@ -278,16 +300,6 @@ const ProductCarousel = memo(({
             ))}
           </div>
         </div>
-        
-        {currentIndex < products.length - itemsToShow && (
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-orange-500"
-            aria-label={t('carousel.next')}
-          >
-            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
-          </button>
-        )}
       </div>
       
       {/* Indicators */}
