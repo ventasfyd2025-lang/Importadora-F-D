@@ -7073,8 +7073,8 @@ export default function AdminPage() {
 
       
       {showSectionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -7199,34 +7199,61 @@ export default function AdminPage() {
                   </div>
 
                   {/* Right Column - Preview */}
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 border-2 border-dashed border-gray-300">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                      <span className="mr-2">👁️</span> Vista Previa
-                    </h4>
-                    <div className="bg-white rounded-lg shadow-md p-4">
-                      <div className="border-b border-gray-200 pb-3 mb-3">
-                        <h5 className="text-lg font-bold text-gray-900">
-                          {previewName || editingSection?.name || 'Nombre de Sección'}
-                        </h5>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {previewDescription || editingSection?.description || 'Descripción de la sección'}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">
-                          {editingSection?.selectedProducts?.length || 0} productos
-                        </span>
+                  <div className="bg-gradient-to-br from-orange-50 via-white to-gray-50 rounded-xl p-6 border-2 border-orange-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-gray-700 flex items-center">
+                        <span className="mr-2">👁️</span> Vista Previa en el Sitio
+                      </h4>
+                      <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-medium">
+                        En Vivo
+                      </span>
+                    </div>
+
+                    {/* Preview of section as it appears on website */}
+                    <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-100">
+                      {/* Section Header */}
+                      <div className="flex justify-between items-center mb-4 pb-3 border-b-2 border-orange-500">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {previewName || editingSection?.name || 'Nombre de Sección'}
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {previewDescription || editingSection?.description || 'Descripción de la sección'}
+                          </p>
+                        </div>
                         <button
                           type="button"
-                          className="text-xs text-orange-500 font-semibold hover:text-orange-600"
+                          className="text-xs text-orange-500 font-semibold hover:text-orange-600 whitespace-nowrap"
                         >
                           Ver todos →
                         </button>
                       </div>
+
+                      {/* Product Cards Preview */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                            <div className="bg-gray-200 rounded h-20 mb-2 flex items-center justify-center">
+                              <span className="text-2xl">📦</span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="h-2 bg-gray-300 rounded w-full"></div>
+                              <div className="h-2 bg-orange-200 rounded w-2/3"></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-xs text-gray-400 mt-3 text-center">
+                        {editingSection?.selectedProducts?.length || 0} productos configurados
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-4 text-center">
-                      Así se verá esta sección en tu página principal
-                    </p>
+
+                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs text-blue-700 text-center font-medium">
+                        💡 Los productos se mostrarán en carrusel horizontal
+                      </p>
+                    </div>
                   </div>
                 </div>
 
