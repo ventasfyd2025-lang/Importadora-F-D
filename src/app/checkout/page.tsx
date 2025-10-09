@@ -40,6 +40,7 @@ function CheckoutContent() {
   const [successOrderId, setSuccessOrderId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'transferencia' | 'mercadopago'>('transferencia');
   const [mpPreferenceId, setMpPreferenceId] = useState<string | null>(null);
+  const [deliveryType, setDeliveryType] = useState<'envio' | 'retiro'>('envio');
   const [checkoutData, setCheckoutData] = useState({
     name: '',
     email: '',
@@ -123,6 +124,7 @@ function CheckoutContent() {
         customerPhone: checkoutData.phone,
         customerRut: checkoutData.rut,
         shippingAddress: checkoutData.address,
+        deliveryType: deliveryType,
         userId: (currentUser as any)?.uid || checkoutData.email,
         paymentMethod: 'mercadopago',
         items: items.map(item => ({
@@ -279,6 +281,7 @@ function CheckoutContent() {
         customerPhone: finalData.phone,
         customerRut: finalData.rut,
         shippingAddress: finalData.address,
+        deliveryType: deliveryType,
         userId: (currentUser as any)?.uid || finalData.email,
         paymentMethod: 'transferencia',
         paymentProof: comprobanteUrl, // URL del comprobante
@@ -602,19 +605,68 @@ function CheckoutContent() {
                     </div>
                   </div>
 
+                  {/* Tipo de entrega */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Tipo de entrega *
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType('envio')}
+                        className={`p-4 border-2 rounded-lg transition-all ${
+                          deliveryType === 'envio'
+                            ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
+                            : 'border-gray-300 bg-white hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl">🚚</span>
+                          {deliveryType === 'envio' && (
+                            <span className="text-orange-600 font-bold">✓</span>
+                          )}
+                        </div>
+                        <div className="font-semibold text-gray-900 text-left">Envío a domicilio</div>
+                        <div className="text-sm text-gray-600 text-left mt-1">Recibe tu pedido en casa</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType('retiro')}
+                        className={`p-4 border-2 rounded-lg transition-all ${
+                          deliveryType === 'retiro'
+                            ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
+                            : 'border-gray-300 bg-white hover:border-green-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl">🏪</span>
+                          {deliveryType === 'retiro' && (
+                            <span className="text-green-600 font-bold">✓</span>
+                          )}
+                        </div>
+                        <div className="font-semibold text-gray-900 text-left">Retiro en tienda</div>
+                        <div className="text-sm text-gray-600 text-left mt-1">Retira gratis en nuestra tienda</div>
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                      Dirección de envío *
+                      {deliveryType === 'envio' ? 'Dirección de envío *' : 'Notas adicionales (opcional)'}
                     </label>
                     <textarea
                       id="address"
                       name="address"
-                      required
+                      required={deliveryType === 'envio'}
                       rows={3}
                       value={checkoutData.address}
                       onChange={(e) => setCheckoutData({...checkoutData, address: e.target.value})}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder={isRegistered ? "Dirección desde perfil" : "Calle, número, comuna, región"}
+                      placeholder={deliveryType === 'envio'
+                        ? (isRegistered ? "Dirección desde perfil" : "Calle, número, comuna, región")
+                        : "Ej: Prefiero retirar en la mañana, horario laboral, etc."
+                      }
                     />
                   </div>
 
