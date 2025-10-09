@@ -1247,6 +1247,9 @@ export default function AdminPage() {
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<string>('');
+  const [sectionSaveStatus, setSectionSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [previewName, setPreviewName] = useState('');
+  const [previewDescription, setPreviewDescription] = useState('');
 
   // Product selector filters state
   const [productSelectorFilters, setProductSelectorFilters] = useState({
@@ -4852,8 +4855,14 @@ export default function AdminPage() {
                 </div>
 
                 <div className="pt-4">
-                  <div className="text-sm text-green-600 flex items-center">
-                    ✅ Guardado automático activo - Los cambios se guardan al seleccionar productos
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center justify-center text-center">
+                      <span className="text-2xl mr-3 animate-pulse">✅</span>
+                      <div>
+                        <p className="text-sm font-bold text-green-700">Guardado Automático Activo</p>
+                        <p className="text-xs text-green-600 mt-1">Los cambios se sincronizan en tiempo real con tu sitio web</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -7064,16 +7073,26 @@ export default function AdminPage() {
 
       
       {showSectionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingSection ? 'Editar Sección' : 'Nueva Sección'}
-                </h3>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {editingSection ? 'Editar Sección' : 'Nueva Sección'}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Configura cómo se verá esta sección en la página principal
+                  </p>
+                </div>
                 <button
-                  onClick={() => setShowSectionModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setShowSectionModal(false);
+                    setSectionSaveStatus('idle');
+                    setPreviewName('');
+                    setPreviewDescription('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
                 >
                   ✕
                 </button>
@@ -7083,6 +7102,8 @@ export default function AdminPage() {
                 key={editingSection?.id || 'new'}
                 onSubmit={async (e) => {
                 e.preventDefault();
+                setSectionSaveStatus('saving');
+
                 const formData = new FormData(e.currentTarget);
                 const sectionData = {
                   id: editingSection?.id || `section_${Date.now()}`,
@@ -7110,78 +7131,157 @@ export default function AdminPage() {
                     sections: newSections,
                     updatedAt: new Date().toISOString()
                   });
+                  setSectionSaveStatus('success');
+
+                  // Close modal after a brief delay to show success message
+                  setTimeout(() => {
+                    setShowSectionModal(false);
+                    setEditingSection(null);
+                    setSectionSaveStatus('idle');
+                  }, 1500);
                 } catch (error) {
                   console.error('Error auto-saving section:', error);
-                  alert('Error al guardar la sección');
+                  setSectionSaveStatus('error');
+                  setTimeout(() => setSectionSaveStatus('idle'), 3000);
                 }
-
-                setShowSectionModal(false);
-                setEditingSection(null);
               }}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nombre de la Sección *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      defaultValue={editingSection?.name || ''}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
-                      style={{ '--tw-ring-color': '#F16529' } as any}
-                    />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column - Form */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre de la Sección *
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        defaultValue={editingSection?.name || ''}
+                        onChange={(e) => setPreviewName(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-base"
+                        style={{ '--tw-ring-color': '#F16529' } as any}
+                        placeholder="Ej: Ofertas Especiales"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Descripción
+                      </label>
+                      <textarea
+                        name="description"
+                        defaultValue={editingSection?.description || ''}
+                        onChange={(e) => setPreviewDescription(e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-base resize-none"
+                        style={{ '--tw-ring-color': '#F16529' } as any}
+                        placeholder="Breve descripción de la sección"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo de Sección
+                      </label>
+                      <select
+                        name="type"
+                        defaultValue={editingSection?.type || 'custom'}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-base"
+                        style={{ '--tw-ring-color': '#F16529' } as any}
+                      >
+                        <option value="custom">🎯 Productos Personalizados</option>
+                        <option value="featured">⭐ Productos Destacados</option>
+                        <option value="new">🆕 Productos Nuevos</option>
+                        <option value="bestsellers">🔥 Más Vendidos</option>
+                        <option value="category">📁 Por Categoría</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Descripción
-                    </label>
-                    <input
-                      type="text"
-                      name="description"
-                      defaultValue={editingSection?.description || ''}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
-                      style={{ '--tw-ring-color': '#F16529' } as any}
-                    />
+                  {/* Right Column - Preview */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                      <span className="mr-2">👁️</span> Vista Previa
+                    </h4>
+                    <div className="bg-white rounded-lg shadow-md p-4">
+                      <div className="border-b border-gray-200 pb-3 mb-3">
+                        <h5 className="text-lg font-bold text-gray-900">
+                          {previewName || editingSection?.name || 'Nombre de Sección'}
+                        </h5>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {previewDescription || editingSection?.description || 'Descripción de la sección'}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">
+                          {editingSection?.selectedProducts?.length || 0} productos
+                        </span>
+                        <button
+                          type="button"
+                          className="text-xs text-orange-500 font-semibold hover:text-orange-600"
+                        >
+                          Ver todos →
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-4 text-center">
+                      Así se verá esta sección en tu página principal
+                    </p>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tipo de Sección
-                    </label>
-                    <select
-                      name="type"
-                      defaultValue={editingSection?.type || 'custom'}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
-                      style={{ '--tw-ring-color': '#F16529' } as any}
-                    >
-                      <option value="custom">Productos Personalizados</option>
-                      <option value="featured">Productos Destacados</option>
-                      <option value="new">Productos Nuevos</option>
-                      <option value="bestsellers">Más Vendidos</option>
-                      <option value="category">Por Categoría</option>
-                    </select>
+                {/* Status Messages */}
+                {sectionSaveStatus !== 'idle' && (
+                  <div className={`mt-6 p-4 rounded-lg flex items-center justify-center text-center font-semibold transition-all ${
+                    sectionSaveStatus === 'saving' ? 'bg-blue-50 text-blue-700 animate-pulse' :
+                    sectionSaveStatus === 'success' ? 'bg-green-50 text-green-700' :
+                    'bg-red-50 text-red-700'
+                  }`}>
+                    {sectionSaveStatus === 'saving' && (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Guardando cambios...
+                      </>
+                    )}
+                    {sectionSaveStatus === 'success' && (
+                      <>
+                        <span className="mr-2">✅</span>
+                        ¡Guardado exitosamente! Los cambios ya están activos en tu sitio web.
+                      </>
+                    )}
+                    {sectionSaveStatus === 'error' && (
+                      <>
+                        <span className="mr-2">❌</span>
+                        Error al guardar. Por favor intenta nuevamente.
+                      </>
+                    )}
                   </div>
+                )}
 
-                  <div className="flex space-x-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowSectionModal(false)}
-                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-base py-3 px-6 rounded-md transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 text-white font-semibold py-3 px-6 rounded-md transition-colors"
-                      style={{ backgroundColor: '#F16529' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
-                    >
-                      {editingSection ? 'Actualizar' : 'Crear'} Sección
-                    </button>
-                  </div>
+                <div className="flex space-x-3 pt-6 mt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSectionModal(false);
+                      setSectionSaveStatus('idle');
+                      setPreviewName('');
+                      setPreviewDescription('');
+                    }}
+                    disabled={sectionSaveStatus === 'saving'}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-base py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sectionSaveStatus === 'saving'}
+                    className="flex-1 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: '#F16529' }}
+                    onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#D13C1A')}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
+                  >
+                    {sectionSaveStatus === 'saving' ? 'Guardando...' : (editingSection ? 'Actualizar' : 'Crear') + ' Sección'}
+                  </button>
                 </div>
               </form>
             </div>
