@@ -152,6 +152,45 @@ export async function POST(request: NextRequest) {
                       console.log(`✅ Stock descontado: ${item.nombre} - ${currentStock} → ${newStock}`);
                     }
                   }
+
+                  // Enviar email de confirmación de pedido DESPUÉS de confirmar el pago
+                  try {
+                    console.log('📧 Enviando email de confirmación de pedido después de pago aprobado...');
+                    const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://importadora-fyd.vercel.app'}/api/send-email`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        type: 'new_order',
+                        data: {
+                          orderId: orderId,
+                          customerName: orderData.customerName,
+                          customerEmail: orderData.customerEmail,
+                          customerPhone: orderData.customerPhone,
+                          total: orderData.total,
+                          paymentMethod: 'mercadopago',
+                          items: items.map((item: any) => ({
+                            nombre: item.nombre,
+                            cantidad: item.cantidad,
+                            precio: item.precio
+                          })),
+                          shippingAddress: {
+                            street: orderData.shippingAddress
+                          }
+                        }
+                      })
+                    });
+
+                    if (emailResponse.ok) {
+                      console.log('✅ Email de confirmación enviado exitosamente');
+                    } else {
+                      console.error('❌ Error enviando email:', await emailResponse.text());
+                    }
+                  } catch (emailError) {
+                    console.error('❌ Error enviando email de confirmación:', emailError);
+                    // No fallar el webhook si el email falla
+                  }
                 }
               } else {
                 // console.warn('⚠️ Orden no encontrada para actualizar con pago MP', { orderId, paymentId });

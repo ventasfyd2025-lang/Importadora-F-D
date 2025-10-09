@@ -139,24 +139,9 @@ function CheckoutContent() {
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
-      // Enviar notificación por email
-      console.log('📧 Enviando notificación por email...');
-      notifyNewOrder({
-        orderId: orderRef.id,
-        customerName: checkoutData.name,
-        customerEmail: checkoutData.email,
-        customerPhone: checkoutData.phone,
-        total: getTotalPrice(),
-        paymentMethod: 'mercadopago',
-        items: items.map(item => ({
-          nombre: item.nombre,
-          cantidad: item.cantidad,
-          precio: item.precio
-        })),
-        shippingAddress: {
-          street: checkoutData.address
-        }
-      }).catch(err => console.error('Error enviando email:', err));
+      // NOTA: El email de confirmación se enviará DESPUÉS de que MercadoPago confirme el pago
+      // mediante el webhook en /api/mercadopago/webhook/route.ts
+      console.log('✅ Orden creada. Email se enviará después de confirmar el pago.');
 
       // Crear preferencia de MercadoPago
       const mpItems = items.map(item => ({
