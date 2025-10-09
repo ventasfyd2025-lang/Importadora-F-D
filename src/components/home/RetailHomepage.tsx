@@ -697,8 +697,16 @@ const MAX_ALL_PRODUCTS_HOME = 10;
               // Generate link based on section configuration
               const getLink = () => {
                 switch (section.linkType) {
-                  case 'category':
+                  case 'category': {
+                    // Check if it's a subcategory (format: category-subcategory)
+                    if (section.linkValue.includes('-')) {
+                      const parts = section.linkValue.split('-');
+                      const categoryPart = parts[0];
+                      const subcategoryPart = parts.slice(1).join('-');
+                      return `/?category=${categoryPart}&subcategory=${subcategoryPart}`;
+                    }
                     return `/?category=${section.linkValue}`;
+                  }
                   case 'product':
                     return `/producto/${section.linkValue}`;
                   case 'filter':
