@@ -2237,6 +2237,7 @@ export default function AdminPage() {
                 { id: 'user-management', name: 'Gestión de Usuario', icon: '👥' },
                 { id: 'main-banner', name: 'Banners', icon: '🏆' },
                 { id: 'product-layout', name: 'Layout Productos', icon: '🔲' },
+                { id: 'secciones', name: 'Secciones', icon: '📑' },
                 { id: 'popup', name: 'Popup Ofertas', icon: '🎉' },
                 { id: 'logo', name: 'Logo', icon: '🏪' },
                 { id: 'categories', name: 'Categorías', icon: '🏷️' },
@@ -4766,98 +4767,154 @@ export default function AdminPage() {
                   </div>
 
                 </div>
-                
-                <div className="border-t border-gray-200 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Secciones de Productos</h3>
-                      <p className="text-sm text-gray-600">
-                        Configura las secciones que aparecerán en la página principal.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setEditingSection(null);
-                        setShowSectionModal(true);
-                      }}
-                      className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors text-sm"
-                      style={{ backgroundColor: '#F16529' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
-                    >
-                      + Nueva Sección
-                    </button>
-                  </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                  <div className="space-y-4">
-                    {productSections.map((section, index) => (
-                      <div key={section.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-gray-900">{section.name}</h4>
-                            <div className="flex items-center space-x-2">
-                              <Link
-                                href={`/admin/secciones/editar?id=${section.id}`}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                              >
-                                📦 Productos ({section.selectedProducts.length})
-                              </Link>
-                              <Link
-                                href={`/admin/secciones/editar?id=${section.id}`}
-                                className="text-orange-600 hover:text-orange-800 text-sm font-medium"
-                              >
-                                ✏️ Editar
-                              </Link>
-                              <button
-                                onClick={() => {
-                                  const newSections = productSections.filter(s => s.id !== section.id);
-                                  setProductSections(newSections as any);
-                                }}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                              >
-                                Eliminar
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-500 mt-1">{section.description}</p>
+        {activeTab === 'secciones' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  📑 Secciones de Productos
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Gestiona las secciones que aparecen en la página principal
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingSection(null);
+                  setShowSectionModal(true);
+                }}
+                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center gap-2"
+              >
+                <span>+</span> Nueva Sección
+              </button>
+            </div>
+
+            {/* Sections List */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {productSections.map((section, index) => (
+                <div key={section.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-bold text-gray-900">{section.name}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            section.enabled
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {section.enabled ? '✓ Activa' : '○ Inactiva'}
+                          </span>
                         </div>
-                        <div className="flex items-center ml-4">
-                          <input
-                            type="checkbox"
-                            checked={section.enabled}
-                            onChange={async (e) => {
-                              const newSections = [...productSections];
-                              newSections[index].enabled = e.target.checked;
-                              setProductSections(newSections as any);
-
-                              // Auto-save to Firebase
-                              try {
-                                await setDoc(doc(db, 'config', 'productSections'), {
-                                  sections: newSections,
-                                  updatedAt: new Date().toISOString()
-                                });
-                              } catch (error) {
-                                console.error('Error auto-saving section enabled status:', error);
-                              }
-                            }}
-                            className="h-4 w-4 text-orange-500 rounded"
-                          />
+                        <p className="text-sm text-gray-600 mb-3">{section.description}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded-md font-medium">
+                            {section.selectedProducts.length} productos
+                          </span>
+                          <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md font-medium">
+                            Tipo: {section.type === 'custom' ? '🎯 Personalizada' :
+                                   section.type === 'featured' ? '⭐ Destacados' :
+                                   section.type === 'new' ? '🆕 Nuevos' :
+                                   section.type === 'bestsellers' ? '🔥 Más Vendidos' : '📁 Categoría'}
+                          </span>
                         </div>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={section.enabled}
+                          onChange={async (e) => {
+                            const newSections = [...productSections];
+                            newSections[index].enabled = e.target.checked;
+                            setProductSections(newSections as any);
+
+                            try {
+                              await setDoc(doc(db, 'config', 'productSections'), {
+                                sections: newSections,
+                                updatedAt: new Date().toISOString()
+                              });
+                            } catch (error) {
+                              console.error('Error auto-saving section enabled status:', error);
+                            }
+                          }}
+                          className="w-5 h-5 text-orange-500 rounded"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-4 border-t border-gray-100">
+                      <button
+                        onClick={() => {
+                          setEditingSection(section);
+                          setShowSectionModal(true);
+                        }}
+                        className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                      >
+                        ✏️ Editar Sección
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCurrentSectionId(section.id);
+                          setShowProductSelector(true);
+                        }}
+                        className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                      >
+                        📦 Productos
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm('¿Estás seguro de eliminar esta sección?')) {
+                            const newSections = productSections.filter(s => s.id !== section.id);
+                            setProductSections(newSections as any);
+                            try {
+                              await setDoc(doc(db, 'config', 'productSections'), {
+                                sections: newSections,
+                                updatedAt: new Date().toISOString()
+                              });
+                            } catch (error) {
+                              console.error('Error deleting section:', error);
+                            }
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                <div className="pt-4">
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center justify-center text-center">
-                      <span className="text-2xl mr-3 animate-pulse">✅</span>
-                      <div>
-                        <p className="text-sm font-bold text-green-700">Guardado Automático Activo</p>
-                        <p className="text-xs text-green-600 mt-1">Los cambios se sincronizan en tiempo real con tu sitio web</p>
-                      </div>
-                    </div>
-                  </div>
+            {productSections.length === 0 && (
+              <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 p-12 text-center">
+                <div className="text-6xl mb-4">📑</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay secciones creadas</h3>
+                <p className="text-gray-600 mb-6">Crea tu primera sección para organizar los productos en la página principal</p>
+                <button
+                  onClick={() => {
+                    setEditingSection(null);
+                    setShowSectionModal(true);
+                  }}
+                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold inline-flex items-center gap-2"
+                >
+                  <span>+</span> Crear Primera Sección
+                </button>
+              </div>
+            )}
+
+            {/* Auto-save indicator */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-center text-center">
+                <span className="text-2xl mr-3 animate-pulse">✅</span>
+                <div>
+                  <p className="text-sm font-bold text-green-700">Guardado Automático Activo</p>
+                  <p className="text-xs text-green-600 mt-1">Los cambios se sincronizan en tiempo real con tu sitio web</p>
                 </div>
               </div>
             </div>
