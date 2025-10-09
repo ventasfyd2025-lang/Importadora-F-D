@@ -4828,10 +4828,20 @@ export default function AdminPage() {
                           <input
                             type="checkbox"
                             checked={section.enabled}
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const newSections = [...productSections];
                               newSections[index].enabled = e.target.checked;
                               setProductSections(newSections as any);
+
+                              // Auto-save to Firebase
+                              try {
+                                await setDoc(doc(db, 'config', 'productSections'), {
+                                  sections: newSections,
+                                  updatedAt: new Date().toISOString()
+                                });
+                              } catch (error) {
+                                console.error('Error auto-saving section enabled status:', error);
+                              }
                             }}
                             className="h-4 w-4 text-orange-500 rounded"
                           />
@@ -7071,7 +7081,7 @@ export default function AdminPage() {
 
               <form
                 key={editingSection?.id || 'new'}
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 const sectionData = {
@@ -7083,13 +7093,26 @@ export default function AdminPage() {
                   selectedProducts: editingSection?.selectedProducts || []
                 };
 
+                let newSections;
                 if (editingSection) {
-                  const newSections = productSections.map(s =>
+                  newSections = productSections.map(s =>
                     s.id === editingSection.id ? sectionData : s
                   );
                   setProductSections(newSections);
                 } else {
-                  setProductSections([...productSections, sectionData]);
+                  newSections = [...productSections, sectionData];
+                  setProductSections(newSections);
+                }
+
+                // Auto-save to Firebase
+                try {
+                  await setDoc(doc(db, 'config', 'productSections'), {
+                    sections: newSections,
+                    updatedAt: new Date().toISOString()
+                  });
+                } catch (error) {
+                  console.error('Error auto-saving section:', error);
+                  alert('Error al guardar la sección');
                 }
 
                 setShowSectionModal(false);

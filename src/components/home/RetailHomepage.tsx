@@ -803,7 +803,8 @@ const MAX_ALL_PRODUCTS_HOME = 10;
                 case 'bestsellers': return '/?filter=ofertas';
                 case 'new': return '/?filter=nuevos';
                 case 'category': return section.categoryId ? `/?category=${section.categoryId}` : '/';
-                default: return '/';
+                case 'custom': return `/productos?section=${section.id}`;
+                default: return `/productos?section=${section.id}`;
               }
             };
 
