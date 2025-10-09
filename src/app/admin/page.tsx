@@ -4796,24 +4796,18 @@ export default function AdminPage() {
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium text-gray-900">{section.name}</h4>
                             <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => {
-                                  setCurrentSectionId(section.id);
-                                  setShowProductSelector(true);
-                                }}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              <Link
+                                href={`/admin/secciones/editar?id=${section.id}`}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                               >
-                                Productos ({section.selectedProducts.length})
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingSection(section);
-                                  setShowSectionModal(true);
-                                }}
-                                className="text-orange-600 hover:text-orange-800 text-sm"
+                                📦 Productos ({section.selectedProducts.length})
+                              </Link>
+                              <Link
+                                href={`/admin/secciones/editar?id=${section.id}`}
+                                className="text-orange-600 hover:text-orange-800 text-sm font-medium"
                               >
-                                Editar
-                              </button>
+                                ✏️ Editar
+                              </Link>
                               <button
                                 onClick={() => {
                                   const newSections = productSections.filter(s => s.id !== section.id);

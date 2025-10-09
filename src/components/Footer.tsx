@@ -24,32 +24,32 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-orange-900 text-white relative overflow-hidden">
+    <footer className="bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 text-white relative overflow-hidden">
       {/* Decorative background elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-orange-500 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl"></div>
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-red-700 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12 lg:py-16 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 lg:gap-12">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-10 lg:py-12 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info with Logo */}
-          <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-4 mb-6 group">
+          <div className="lg:col-span-1">
+            <Link href="/" className="flex items-center gap-3 mb-4 group">
               {/* Logo */}
               <div className="relative">
                 {logoConfig?.image ? (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20 group-hover:ring-orange-400 transition-all duration-300">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
                     <Image
                       src={logoConfig.image}
                       alt={logoConfig.text || 'Logo'}
-                      width={80}
-                      height={80}
+                      width={56}
+                      height={56}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center text-4xl shadow-2xl ring-4 ring-white/20 group-hover:ring-orange-400 transition-all duration-300">
+                  <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center text-3xl shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
                     {logoConfig?.emoji || '🏪'}
                   </div>
                 )}
@@ -57,69 +57,58 @@ export default function Footer() {
 
               {/* Company Name */}
               <div className="flex flex-col">
-                <h3 className="text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
+                <h3 className="text-xl lg:text-2xl font-bold text-white">
                   {footerConfig.companyName}
                 </h3>
-                <span className="text-sm text-orange-300 font-medium tracking-wide mt-1">
+                <span className="text-xs text-white/80 font-medium">
                   Tu tienda de confianza
                 </span>
               </div>
             </Link>
 
-            <p className="text-white/80 text-base lg:text-lg leading-relaxed mb-6">
+            <p className="text-white/90 text-sm leading-relaxed mb-4">
               {footerConfig.description}
             </p>
 
             {/* Trust Badges */}
-            <div className="flex flex-wrap gap-3">
-              <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 flex items-center gap-2">
-                <span className="text-green-400">✓</span>
-                <span className="text-sm font-medium">Pagos Seguros</span>
+            <div className="flex flex-wrap gap-2">
+              <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                <span>✓</span> Pagos Seguros
               </div>
-              <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 flex items-center gap-2">
-                <span className="text-blue-400">🚚</span>
-                <span className="text-sm font-medium">Envío Rápido</span>
+              <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                <span>🚚</span> Envío Rápido
               </div>
             </div>
           </div>
 
           {/* Contact Info */}
           {footerConfig.showContactInfo && (
-            <div className="space-y-4">
-              <h4 className="text-xl lg:text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="text-orange-400">💬</span>
-                Contacto
-              </h4>
-              <div className="space-y-3">
+            <div>
+              <h4 className="text-lg font-bold mb-4 text-white">Contacto</h4>
+              <div className="space-y-2">
                 <a
                   href={`tel:${footerConfig.contact.phone}`}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-orange-400/50 transition-all group"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-sm"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                    📞
-                  </div>
-                  <span className="text-white/90 group-hover:text-white transition-colors">
+                  <span className="text-lg">📞</span>
+                  <span className="text-white/90 group-hover:text-white">
                     {footerConfig.contact.phone}
                   </span>
                 </a>
 
                 <a
                   href={`mailto:${footerConfig.contact.email}`}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-orange-400/50 transition-all group"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-sm"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                    📧
-                  </div>
-                  <span className="text-white/90 group-hover:text-white transition-colors text-sm lg:text-base break-all">
+                  <span className="text-lg">📧</span>
+                  <span className="text-white/90 group-hover:text-white break-all">
                     {footerConfig.contact.email}
                   </span>
                 </a>
 
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                  <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center text-white shadow-lg flex-shrink-0">
-                    📍
-                  </div>
-                  <span className="text-white/90 text-sm lg:text-base">
+                <div className="flex items-start gap-2 p-2 rounded-lg bg-white/10 text-sm">
+                  <span className="text-lg flex-shrink-0">📍</span>
+                  <span className="text-white/90">
                     {footerConfig.contact.address}
                   </span>
                 </div>
@@ -129,24 +118,19 @@ export default function Footer() {
 
           {/* Social Media */}
           {footerConfig.showSocialMedia && (
-            <div className="space-y-4">
-              <h4 className="text-xl lg:text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="text-orange-400">🌐</span>
-                Síguenos
-              </h4>
-              <div className="flex flex-col gap-3">
+            <div>
+              <h4 className="text-lg font-bold mb-4 text-white">Síguenos</h4>
+              <div className="flex flex-wrap gap-2">
                 {footerConfig.socialMedia.facebook !== '#' && (
                   <a
                     href={footerConfig.socialMedia.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 transition-all shadow-lg hover:shadow-xl hover:scale-105 group"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-medium"
                     aria-label="Facebook"
                   >
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-                      📘
-                    </div>
-                    <span className="font-semibold">Facebook</span>
+                    <span className="text-lg">📘</span>
+                    Facebook
                   </a>
                 )}
                 {footerConfig.socialMedia.instagram !== '#' && (
@@ -154,13 +138,11 @@ export default function Footer() {
                     href={footerConfig.socialMedia.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl hover:scale-105 group"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-medium"
                     aria-label="Instagram"
                   >
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-                      📷
-                    </div>
-                    <span className="font-semibold">Instagram</span>
+                    <span className="text-lg">📷</span>
+                    Instagram
                   </a>
                 )}
                 {footerConfig.socialMedia.whatsapp !== '#' && (
@@ -168,13 +150,11 @@ export default function Footer() {
                     href={footerConfig.socialMedia.whatsapp}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 transition-all shadow-lg hover:shadow-xl hover:scale-105 group"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-medium"
                     aria-label="WhatsApp"
                   >
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-                      💬
-                    </div>
-                    <span className="font-semibold">WhatsApp</span>
+                    <span className="text-lg">💬</span>
+                    WhatsApp
                   </a>
                 )}
               </div>
@@ -183,53 +163,22 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-white/10">
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
-            {/* Copyright */}
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="text-orange-400">©</span>
-              <span className="text-sm lg:text-base">
-                {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
-              </span>
-            </div>
-
-            {/* Legal Links */}
-            <div className="flex flex-wrap justify-center gap-6">
-              <Link
-                href="/legal/terminos"
-                className="text-sm lg:text-base text-white/70 hover:text-orange-400 transition-colors font-medium"
-              >
-                Términos y Condiciones
+        <div className="mt-8 pt-6 border-t border-white/20">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+            <p className="text-white/90">
+              © {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/legal/terminos" className="text-white/80 hover:text-white transition-colors">
+                Términos
               </Link>
-              <Link
-                href="/legal/privacidad"
-                className="text-sm lg:text-base text-white/70 hover:text-orange-400 transition-colors font-medium"
-              >
-                Política de Privacidad
+              <Link href="/legal/privacidad" className="text-white/80 hover:text-white transition-colors">
+                Privacidad
               </Link>
-              <Link
-                href="/admin"
-                className="text-sm lg:text-base text-white/50 hover:text-orange-400/70 transition-colors font-medium"
-              >
-                Panel Admin
+              <Link href="/admin" className="text-white/60 hover:text-white/80 transition-colors">
+                Admin
               </Link>
             </div>
-          </div>
-
-          {/* Made with love */}
-          <div className="text-center mt-6 pt-6 border-t border-white/5">
-            <p className="text-xs lg:text-sm text-white/50 flex items-center justify-center gap-2">
-              <span>Hecho con</span>
-              <span className="text-red-500 animate-pulse">❤️</span>
-              <span>para nuestros clientes</span>
-            </p>
-            <p className="text-xs text-white/30 mt-2">
-              Última actualización: {new Date().toLocaleDateString('es-CL', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              })}
-            </p>
           </div>
         </div>
       </div>
