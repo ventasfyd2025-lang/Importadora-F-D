@@ -132,6 +132,7 @@ const ProductCarousel = memo(({
   const [isHovered, setIsHovered] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Update items to show based on screen size
@@ -164,7 +165,8 @@ const ProductCarousel = memo(({
   const handleDragStart = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartX(e.pageX);
-    setScrollLeft(e.pageX); // Usar scrollLeft para guardar la última posición
+    setScrollLeft(e.pageX);
+    setHasDragged(false); // Resetear flag al inicio
   };
 
   const handleDragEnd = () => {
@@ -185,12 +187,23 @@ const ProductCarousel = memo(({
     }
 
     setIsDragging(false);
+
+    // Resetear flag después de un delay
+    setTimeout(() => {
+      setHasDragged(false);
+    }, 100);
   };
 
   const handleDragMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     e.preventDefault();
-    setScrollLeft(e.pageX); // Actualizar la posición actual
+    setScrollLeft(e.pageX);
+
+    // Marcar como dragged si hay movimiento significativo
+    const distance = Math.abs(startX - e.pageX);
+    if (distance > 10) {
+      setHasDragged(true);
+    }
   };
 
   // Keyboard navigation
@@ -205,10 +218,17 @@ const ProductCarousel = memo(({
   // Manejo de swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
+    setHasDragged(false); // Resetear flag al inicio
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
+
+    // Marcar como dragged si hay movimiento significativo
+    const distance = Math.abs(touchStart - e.targetTouches[0].clientX);
+    if (distance > 10) {
+      setHasDragged(true);
+    }
   };
 
   const handleTouchEnd = () => {
@@ -227,6 +247,11 @@ const ProductCarousel = memo(({
 
     setTouchStart(0);
     setTouchEnd(0);
+
+    // Resetear flag después de un delay
+    setTimeout(() => {
+      setHasDragged(false);
+    }, 100);
   };
 
   // Auto-play functionality
@@ -311,6 +336,11 @@ const ProductCarousel = memo(({
                 <Link
                   href={`/producto/${product.id}`}
                   className="block h-full focus:outline-none focus:ring-2 focus:ring-[#F16529] focus:ring-offset-2"
+                  onClick={(e) => {
+                    if (hasDragged) {
+                      e.preventDefault();
+                    }
+                  }}
                 >
                   <ProductCard product={product} />
                 </Link>
