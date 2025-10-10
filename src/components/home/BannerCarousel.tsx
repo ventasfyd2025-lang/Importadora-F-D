@@ -32,6 +32,9 @@ const BannerCarousel = memo(({
   const [isFocused, setIsFocused] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(0);
+  const [dragCurrent, setDragCurrent] = useState(0);
 
   // Auto-play functionality
   useEffect(() => {
@@ -75,6 +78,37 @@ const BannerCarousel = memo(({
     setTouchEnd(0);
   };
 
+  // Manejo de drag (desktop)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart(e.pageX);
+    setDragCurrent(e.pageX);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    setDragCurrent(e.pageX);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+
+    const distance = dragStart - dragCurrent;
+
+    if (Math.abs(distance) > 50) {
+      if (distance > 0) {
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      } else {
+        setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
+      }
+    }
+
+    setIsDragging(false);
+    setDragStart(0);
+    setDragCurrent(0);
+  };
+
   if (banners.length === 0) {
     return (
       <div
@@ -96,14 +130,20 @@ const BannerCarousel = memo(({
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden shadow-xl"
+      className="relative w-full rounded-2xl overflow-hidden shadow-xl cursor-grab active:cursor-grabbing"
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        handleMouseUp();
+      }}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
       role="region"
       aria-label={t('common.banner')}
     >

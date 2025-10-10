@@ -279,12 +279,13 @@ const ProductCarousel = memo(({
       <div className="relative">
         <div
           ref={carouselRef}
-          className="carousel-container overflow-x-hidden"
+          className={`carousel-container overflow-x-hidden ${hasEnoughProducts ? 'cursor-grab active:cursor-grabbing' : ''}`}
           onMouseDown={hasEnoughProducts ? handleDragStart : undefined}
           onMouseUp={hasEnoughProducts ? handleDragEnd : undefined}
           onMouseMove={hasEnoughProducts ? handleDragMove : undefined}
           onMouseLeave={hasEnoughProducts ? () => {
             setIsHovered(false);
+            handleDragEnd();
           } : undefined}
           onMouseEnter={hasEnoughProducts ? () => setIsHovered(true) : undefined}
           onTouchStart={hasEnoughProducts ? handleTouchStart : undefined}

@@ -163,22 +163,6 @@ export default function MainBannerCarousel({
     setImagesLoaded(prev => new Set([...prev, index]));
   };
 
-  const handleSlideClick = (slide: ProcessedSlide) => {
-    // Prevenir navegación si hubo drag/swipe
-    if (hasDragged) {
-      console.log('Navegación bloqueada: hubo drag/swipe');
-      return;
-    }
-
-    if (!slide?.targetUrl || slide.targetUrl === '#') {
-      console.log('Navegación bloqueada: targetUrl no válido', slide.targetUrl);
-      return;
-    }
-
-    console.log('Navegando a:', slide.targetUrl);
-    router.push(slide.targetUrl);
-  };
-
   // Manejo de swipe (móvil)
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.targetTouches[0].clientX;
@@ -206,9 +190,15 @@ export default function MainBannerCarousel({
 
     if (isLeftSwipe) {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }
-    if (isRightSwipe) {
+    } else if (isRightSwipe) {
       setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    } else if (Math.abs(distance) < 10) {
+      // Si el movimiento fue mínimo, es un tap - navegar al slide actual
+      const currentSlideData = slides[currentSlide];
+      if (currentSlideData?.targetUrl && currentSlideData.targetUrl !== '#') {
+        console.log('Tap detectado, navegando a:', currentSlideData.targetUrl);
+        router.push(currentSlideData.targetUrl);
+      }
     }
 
     // Resetear después de un delay
@@ -250,6 +240,13 @@ export default function MainBannerCarousel({
       } else {
         setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
       }
+    } else if (Math.abs(distance) < 10) {
+      // Si el movimiento fue mínimo, es un click - navegar al slide actual
+      const currentSlideData = slides[currentSlide];
+      if (currentSlideData?.targetUrl && currentSlideData.targetUrl !== '#') {
+        console.log('Click detectado, navegando a:', currentSlideData.targetUrl);
+        router.push(currentSlideData.targetUrl);
+      }
     }
 
     setIsDragging(false);
@@ -288,8 +285,7 @@ export default function MainBannerCarousel({
           >
             {/* Optimized Product Image - Full Screen */}
             <div
-              className="absolute inset-0 cursor-pointer hover:scale-105 transition-transform duration-300"
-              onClick={() => handleSlideClick(slide)}
+              className="absolute inset-0 hover:scale-105 transition-transform duration-300"
             >
               <Image
                 src={slide.imageUrl}
