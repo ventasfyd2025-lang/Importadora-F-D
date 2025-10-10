@@ -21,6 +21,9 @@ export default function BannerCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(0);
+  const [dragCurrent, setDragCurrent] = useState(0);
 
   // Ensure images is always an array
   const safeImages = Array.isArray(images) ? images : [];
@@ -72,6 +75,37 @@ export default function BannerCarousel({
     setTouchEnd(0);
   };
 
+  // Manejo de drag (desktop)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart(e.pageX);
+    setDragCurrent(e.pageX);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    setDragCurrent(e.pageX);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+
+    const distance = dragStart - dragCurrent;
+
+    if (Math.abs(distance) > 50) {
+      if (distance > 0) {
+        goToNext();
+      } else {
+        goToPrevious();
+      }
+    }
+
+    setIsDragging(false);
+    setDragStart(0);
+    setDragCurrent(0);
+  };
+
   if (safeImages.length === 0) {
     // Fallback to gradient banner if no images
     return (
@@ -90,10 +124,14 @@ export default function BannerCarousel({
 
   return (
     <section
-      className="relative h-[500px] overflow-hidden"
+      className="relative h-[500px] overflow-hidden cursor-grab active:cursor-grabbing"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
       {/* Background Images */}
       {safeImages.map((image, index) => (
