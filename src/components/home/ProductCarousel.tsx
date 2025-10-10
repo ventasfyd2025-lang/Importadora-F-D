@@ -331,7 +331,10 @@ const ProductCarousel = memo(({
               <div
                 key={product.id}
                 className="flex-shrink-0"
-                style={{ width: `${100 / itemsToShow}%` }}
+                style={{
+                  width: `${100 / itemsToShow}%`,
+                  pointerEvents: isDragging ? 'none' : 'auto'
+                }}
               >
                 <Link
                   href={`/producto/${product.id}`}
@@ -341,6 +344,7 @@ const ProductCarousel = memo(({
                       e.preventDefault();
                     }
                   }}
+                  style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
                 >
                   <ProductCard product={product} />
                 </Link>
