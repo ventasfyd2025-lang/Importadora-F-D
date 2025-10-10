@@ -163,13 +163,23 @@ export default function MainBannerCarousel({
   };
 
   const handleSlideClick = (slide: ProcessedSlide) => {
+    // Prevenir navegación si hubo drag (desktop)
+    const dragDistance = Math.abs(dragStart - dragCurrent);
+    if (dragDistance > 5) return; // Si movió más de 5px, fue drag, no click
+
+    // Prevenir navegación si hubo swipe (móvil)
+    const swipeDistance = Math.abs(touchStart - touchEnd);
+    if (swipeDistance > 5) return; // Si movió más de 5px, fue swipe, no tap
+
     if (!slide?.targetUrl || slide.targetUrl === '#') return;
     router.push(slide.targetUrl);
   };
 
   // Manejo de swipe (móvil)
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
+    const touch = e.targetTouches[0].clientX;
+    setTouchStart(touch);
+    setTouchEnd(touch); // Inicializar touchEnd igual que touchStart
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -177,7 +187,7 @@ export default function MainBannerCarousel({
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart) return;
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50;
@@ -190,8 +200,11 @@ export default function MainBannerCarousel({
       setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
     }
 
-    setTouchStart(0);
-    setTouchEnd(0);
+    // Resetear después de un delay para permitir validación en onClick
+    setTimeout(() => {
+      setTouchStart(0);
+      setTouchEnd(0);
+    }, 50);
   };
 
   // Manejo de drag (desktop)
@@ -221,6 +234,12 @@ export default function MainBannerCarousel({
     }
 
     setIsDragging(false);
+
+    // Resetear posiciones después de un pequeño delay para permitir que onClick se ejecute con los valores correctos
+    setTimeout(() => {
+      setDragStart(0);
+      setDragCurrent(0);
+    }, 50);
   };
 
   if (slides.length === 0) {
