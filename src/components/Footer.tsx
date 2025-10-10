@@ -31,15 +31,15 @@ export default function Footer() {
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-red-700 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-12 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
           {/* Company Info with Logo */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 group">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4 group">
               {/* Logo */}
               <div className="relative">
                 {logoConfig?.image ? (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
                     <Image
                       src={logoConfig.image}
                       alt={logoConfig.text || 'Logo'}
@@ -49,7 +49,7 @@ export default function Footer() {
                     />
                   </div>
                 ) : (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white/10 rounded-lg sm:rounded-xl flex items-center justify-center text-2xl sm:text-3xl shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white/10 rounded-lg sm:rounded-xl flex items-center justify-center text-xl sm:text-3xl shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
                     {logoConfig?.emoji || '🏪'}
                   </div>
                 )}
@@ -57,21 +57,22 @@ export default function Footer() {
 
               {/* Company Name */}
               <div className="flex flex-col">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+                <h3 className="text-base sm:text-xl lg:text-2xl font-bold text-white">
                   {footerConfig.companyName}
                 </h3>
-                <span className="text-xs text-white/80 font-medium">
+                <span className="text-[10px] sm:text-xs text-white/80 font-medium hidden sm:inline">
                   Tu tienda de confianza
                 </span>
               </div>
             </Link>
 
-            <p className="text-white/90 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4">
+            {/* Descripción - oculta en móvil */}
+            <p className="hidden sm:block text-white/90 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4">
               {footerConfig.description}
             </p>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap gap-2">
+            {/* Trust Badges - ocultos en móvil */}
+            <div className="hidden sm:flex flex-wrap gap-2">
               <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                 <span>✓</span> Pagos Seguros
               </div>
@@ -84,13 +85,13 @@ export default function Footer() {
           {/* Contact Info */}
           {footerConfig.showContactInfo && (
             <div>
-              <h4 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 lg:mb-4 text-white">Contacto</h4>
-              <div className="space-y-1.5 sm:space-y-2">
+              <h4 className="text-sm sm:text-lg font-bold mb-1.5 sm:mb-3 lg:mb-4 text-white">Contacto</h4>
+              <div className="space-y-1 sm:space-y-2">
                 <a
                   href={`tel:${footerConfig.contact.phone}`}
-                  className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-sm"
+                  className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-xs sm:text-sm"
                 >
-                  <span className="text-lg">📞</span>
+                  <span className="text-base sm:text-lg">📞</span>
                   <span className="text-white/90 group-hover:text-white">
                     {footerConfig.contact.phone}
                   </span>
@@ -98,16 +99,16 @@ export default function Footer() {
 
                 <a
                   href={`mailto:${footerConfig.contact.email}`}
-                  className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-sm"
+                  className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-xs sm:text-sm"
                 >
-                  <span className="text-lg">📧</span>
+                  <span className="text-base sm:text-lg">📧</span>
                   <span className="text-white/90 group-hover:text-white break-all">
                     {footerConfig.contact.email}
                   </span>
                 </a>
 
-                <div className="flex items-start gap-2 p-2 rounded-lg bg-white/10 text-sm">
-                  <span className="text-lg flex-shrink-0">📍</span>
+                <div className="flex items-start gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-white/10 text-xs sm:text-sm">
+                  <span className="text-base sm:text-lg flex-shrink-0">📍</span>
                   <span className="text-white/90">
                     {footerConfig.contact.address}
                   </span>
@@ -119,18 +120,18 @@ export default function Footer() {
           {/* Social Media */}
           {footerConfig.showSocialMedia && (
             <div>
-              <h4 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 lg:mb-4 text-white">Síguenos</h4>
-              <div className="flex flex-wrap gap-2">
+              <h4 className="text-sm sm:text-lg font-bold mb-1.5 sm:mb-3 lg:mb-4 text-white">Síguenos</h4>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {footerConfig.socialMedia.facebook !== '#' && (
                   <a
                     href={footerConfig.socialMedia.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-medium"
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-xs sm:text-sm font-medium"
                     aria-label="Facebook"
                   >
-                    <span className="text-lg">📘</span>
-                    Facebook
+                    <span className="text-base sm:text-lg">📘</span>
+                    <span className="hidden sm:inline">Facebook</span>
                   </a>
                 )}
                 {footerConfig.socialMedia.instagram !== '#' && (
@@ -138,11 +139,11 @@ export default function Footer() {
                     href={footerConfig.socialMedia.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-medium"
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-xs sm:text-sm font-medium"
                     aria-label="Instagram"
                   >
-                    <span className="text-lg">📷</span>
-                    Instagram
+                    <span className="text-base sm:text-lg">📷</span>
+                    <span className="hidden sm:inline">Instagram</span>
                   </a>
                 )}
                 {footerConfig.socialMedia.whatsapp !== '#' && (
@@ -150,11 +151,11 @@ export default function Footer() {
                     href={footerConfig.socialMedia.whatsapp}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-medium"
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-xs sm:text-sm font-medium"
                     aria-label="WhatsApp"
                   >
-                    <span className="text-lg">💬</span>
-                    WhatsApp
+                    <span className="text-base sm:text-lg">💬</span>
+                    <span className="hidden sm:inline">WhatsApp</span>
                   </a>
                 )}
               </div>
@@ -163,10 +164,10 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-4 sm:mt-6 lg:mt-8 pt-4 sm:pt-5 lg:pt-6 border-t border-white/20">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm">
-            <p className="text-white/90">
-              © {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
+        <div className="mt-3 sm:mt-6 lg:mt-8 pt-3 sm:pt-5 lg:pt-6 border-t border-white/20">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 sm:gap-3 lg:gap-4 text-[10px] sm:text-sm">
+            <p className="text-white/90 text-center sm:text-left">
+              © {new Date().getFullYear()} {footerConfig.companyName}
             </p>
             <div className="flex flex-wrap justify-center gap-2 sm:gap-3 lg:gap-4">
               <Link href="/legal/terminos" className="text-white/80 hover:text-white transition-colors">
@@ -174,9 +175,6 @@ export default function Footer() {
               </Link>
               <Link href="/legal/privacidad" className="text-white/80 hover:text-white transition-colors">
                 Privacidad
-              </Link>
-              <Link href="/admin" className="text-white/60 hover:text-white/80 transition-colors text-xs">
-                Admin
               </Link>
             </div>
           </div>
