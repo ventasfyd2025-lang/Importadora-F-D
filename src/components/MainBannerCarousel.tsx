@@ -56,6 +56,7 @@ export default function MainBannerCarousel({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(0);
   const [dragCurrent, setDragCurrent] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
   const router = useRouter();
 
   // Create banner slides - INMEDIATO como PC Factory
@@ -163,15 +164,18 @@ export default function MainBannerCarousel({
   };
 
   const handleSlideClick = (slide: ProcessedSlide) => {
-    // Prevenir navegación si hubo drag (desktop)
-    const dragDistance = Math.abs(dragStart - dragCurrent);
-    if (dragDistance > 5) return; // Si movió más de 5px, fue drag, no click
+    // Prevenir navegación si hubo drag/swipe
+    if (hasDragged) {
+      console.log('Navegación bloqueada: hubo drag/swipe');
+      return;
+    }
 
-    // Prevenir navegación si hubo swipe (móvil)
-    const swipeDistance = Math.abs(touchStart - touchEnd);
-    if (swipeDistance > 5) return; // Si movió más de 5px, fue swipe, no tap
+    if (!slide?.targetUrl || slide.targetUrl === '#') {
+      console.log('Navegación bloqueada: targetUrl no válido', slide.targetUrl);
+      return;
+    }
 
-    if (!slide?.targetUrl || slide.targetUrl === '#') return;
+    console.log('Navegando a:', slide.targetUrl);
     router.push(slide.targetUrl);
   };
 
@@ -179,11 +183,18 @@ export default function MainBannerCarousel({
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.targetTouches[0].clientX;
     setTouchStart(touch);
-    setTouchEnd(touch); // Inicializar touchEnd igual que touchStart
+    setTouchEnd(touch);
+    setHasDragged(false); // Resetear flag al inicio
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
+
+    // Marcar como dragged si hay movimiento significativo
+    const distance = Math.abs(touchStart - e.targetTouches[0].clientX);
+    if (distance > 10) {
+      setHasDragged(true);
+    }
   };
 
   const handleTouchEnd = () => {
@@ -200,11 +211,12 @@ export default function MainBannerCarousel({
       setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
     }
 
-    // Resetear después de un delay para permitir validación en onClick
+    // Resetear después de un delay
     setTimeout(() => {
       setTouchStart(0);
       setTouchEnd(0);
-    }, 50);
+      setHasDragged(false);
+    }, 100);
   };
 
   // Manejo de drag (desktop)
@@ -212,12 +224,19 @@ export default function MainBannerCarousel({
     setIsDragging(true);
     setDragStart(e.pageX);
     setDragCurrent(e.pageX);
+    setHasDragged(false); // Resetear flag al inicio
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     e.preventDefault();
     setDragCurrent(e.pageX);
+
+    // Marcar como dragged si hay movimiento significativo
+    const distance = Math.abs(dragStart - e.pageX);
+    if (distance > 10) {
+      setHasDragged(true);
+    }
   };
 
   const handleMouseUp = () => {
@@ -235,11 +254,12 @@ export default function MainBannerCarousel({
 
     setIsDragging(false);
 
-    // Resetear posiciones después de un pequeño delay para permitir que onClick se ejecute con los valores correctos
+    // Resetear después de un delay
     setTimeout(() => {
       setDragStart(0);
       setDragCurrent(0);
-    }, 50);
+      setHasDragged(false);
+    }, 100);
   };
 
   if (slides.length === 0) {
