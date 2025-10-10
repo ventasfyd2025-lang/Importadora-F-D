@@ -31,15 +31,15 @@ export default function Footer() {
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-red-700 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-10 lg:py-12 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-12 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {/* Company Info with Logo */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-3 mb-4 group">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 group">
               {/* Logo */}
               <div className="relative">
                 {logoConfig?.image ? (
-                  <div className="w-14 h-14 rounded-xl overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
                     <Image
                       src={logoConfig.image}
                       alt={logoConfig.text || 'Logo'}
@@ -49,7 +49,7 @@ export default function Footer() {
                     />
                   </div>
                 ) : (
-                  <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center text-3xl shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white/10 rounded-lg sm:rounded-xl flex items-center justify-center text-2xl sm:text-3xl shadow-lg ring-2 ring-white/30 group-hover:ring-white transition-all duration-300">
                     {logoConfig?.emoji || '🏪'}
                   </div>
                 )}
@@ -57,7 +57,7 @@ export default function Footer() {
 
               {/* Company Name */}
               <div className="flex flex-col">
-                <h3 className="text-xl lg:text-2xl font-bold text-white">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
                   {footerConfig.companyName}
                 </h3>
                 <span className="text-xs text-white/80 font-medium">
@@ -66,7 +66,7 @@ export default function Footer() {
               </div>
             </Link>
 
-            <p className="text-white/90 text-sm leading-relaxed mb-4">
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4">
               {footerConfig.description}
             </p>
 
@@ -84,8 +84,8 @@ export default function Footer() {
           {/* Contact Info */}
           {footerConfig.showContactInfo && (
             <div>
-              <h4 className="text-lg font-bold mb-4 text-white">Contacto</h4>
-              <div className="space-y-2">
+              <h4 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 lg:mb-4 text-white">Contacto</h4>
+              <div className="space-y-1.5 sm:space-y-2">
                 <a
                   href={`tel:${footerConfig.contact.phone}`}
                   className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all group text-sm"
@@ -119,7 +119,7 @@ export default function Footer() {
           {/* Social Media */}
           {footerConfig.showSocialMedia && (
             <div>
-              <h4 className="text-lg font-bold mb-4 text-white">Síguenos</h4>
+              <h4 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 lg:mb-4 text-white">Síguenos</h4>
               <div className="flex flex-wrap gap-2">
                 {footerConfig.socialMedia.facebook !== '#' && (
                   <a
@@ -163,19 +163,19 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-8 pt-6 border-t border-white/20">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+        <div className="mt-4 sm:mt-6 lg:mt-8 pt-4 sm:pt-5 lg:pt-6 border-t border-white/20">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm">
             <p className="text-white/90">
               © {new Date().getFullYear()} {footerConfig.companyName}. Todos los derechos reservados.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 lg:gap-4">
               <Link href="/legal/terminos" className="text-white/80 hover:text-white transition-colors">
                 Términos
               </Link>
               <Link href="/legal/privacidad" className="text-white/80 hover:text-white transition-colors">
                 Privacidad
               </Link>
-              <Link href="/admin" className="text-white/60 hover:text-white/80 transition-colors">
+              <Link href="/admin" className="text-white/60 hover:text-white/80 transition-colors text-xs">
                 Admin
               </Link>
             </div>
