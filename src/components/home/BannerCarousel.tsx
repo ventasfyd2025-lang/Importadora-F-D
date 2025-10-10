@@ -114,17 +114,20 @@ const BannerCarousel = memo(({
             ? `url(${banner.imageUrl})`
             : 'linear-gradient(135deg, #F16529 0%, #F97316 100%)';
 
+          const isActive = index === currentIndex;
+
           return (
-            <div 
+            <div
               key={banner.id}
               className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                index === currentIndex 
-                  ? 'opacity-100 scale-100' 
-                  : 'opacity-0 scale-105'
+                isActive
+                  ? 'opacity-100 scale-100'
+                  : 'opacity-0 scale-105 pointer-events-none'
               }`}
               role="group"
-              aria-hidden={index !== currentIndex}
               aria-label={`Banner ${index + 1}`}
+              aria-live={isActive ? 'polite' : 'off'}
+              aria-atomic="true"
             >
               <div
                 className="relative w-full h-full bg-cover bg-center"
@@ -162,6 +165,7 @@ const BannerCarousel = memo(({
                             href={banner.ctaLink}
                             className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-orange-500 text-white font-semibold shadow-lg hover:bg-orange-600 transition-colors"
                             aria-label={banner.ctaText || banner.title || `Banner ${index + 1}`}
+                            tabIndex={isActive ? 0 : -1}
                           >
                             {banner.ctaText || 'Ver más'}
                           </Link>
