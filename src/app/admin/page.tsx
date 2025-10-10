@@ -496,7 +496,9 @@ export default function AdminPage() {
     ]
   });
   const [updatingMainBanner, setUpdatingMainBanner] = useState(false);
-  
+  const [isAutoSavingBanner, setIsAutoSavingBanner] = useState(false);
+  const bannerAutoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Homepage content management state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<{ [key: string]: boolean }>({});
@@ -783,6 +785,47 @@ export default function AdminPage() {
       }
     };
   }, []);
+
+  // Auto-save for main banner
+  const autoSaveMainBanner = useCallback((bannerConfig: typeof mainBannerForm) => {
+    if (bannerAutoSaveTimeoutRef.current) {
+      clearTimeout(bannerAutoSaveTimeoutRef.current);
+    }
+
+    setIsAutoSavingBanner(true);
+    bannerAutoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await setDoc(doc(db, 'config', 'main-banner'), {
+          active: bannerConfig.active,
+          slides: bannerConfig.slides,
+          updatedAt: new Date().toISOString()
+        });
+        console.log('✅ Banner auto-guardado');
+      } catch (error) {
+        console.error('❌ Error auto-guardando banner:', error);
+      } finally {
+        setIsAutoSavingBanner(false);
+        bannerAutoSaveTimeoutRef.current = null;
+      }
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (bannerAutoSaveTimeoutRef.current) {
+        clearTimeout(bannerAutoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Watch mainBannerForm changes and auto-save
+  useEffect(() => {
+    // Skip auto-save on initial mount (when loading from Firebase)
+    // Only auto-save when user makes changes
+    if (mainBannerForm.slides.length > 0) {
+      autoSaveMainBanner(mainBannerForm);
+    }
+  }, [mainBannerForm, autoSaveMainBanner]);
 
   const saveHomepageContent = async (showAlert = true) => {
     try {
@@ -5439,8 +5482,19 @@ export default function AdminPage() {
 
         {activeTab === 'main-banner' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Gestión de Banners (v2)</h2>
-            
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Gestión de Banners (v2)</h2>
+              {isAutoSavingBanner && (
+                <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Guardando cambios...</span>
+                </div>
+              )}
+            </div>
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <form className="space-y-6">
                 
@@ -5686,29 +5740,14 @@ export default function AdminPage() {
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setUpdatingMainBanner(true);
-                    try {
-                      await setDoc(doc(db, 'config', 'main-banner'), {
-                        active: mainBannerForm.active,
-                        slides: mainBannerForm.slides,
-                        updatedAt: new Date().toISOString()
-                      });
-                      alert('✅ Banner principal actualizado y guardado en Firebase.');
-                    } catch (error) {
-                      console.error('Error al guardar en Firebase:', error);
-                      alert(`❌ Error al guardar en Firebase: ${error instanceof Error ? error.message : 'Error desconocido'}. Los cambios solo se aplicaron localmente.`);
-                    } finally {
-                      setUpdatingMainBanner(false);
-                    }
-                  }}
-                  disabled={updatingMainBanner}
-                  className="text-white font-semibold text-base py-3 px-6 rounded-md transition-colors disabled:opacity-50" style={{ backgroundColor: '#F16529' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D13C1A'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F16529'}
-                >
-                  {updatingMainBanner ? 'Actualizando...' : 'Guardar Configuración'}
-                </button>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <p className="text-green-700 font-medium">
+                    ✅ Los cambios se guardan automáticamente
+                  </p>
+                  <p className="text-green-600 text-sm mt-1">
+                    No necesitas hacer clic en ningún botón, todos los cambios se sincronizan con Firebase automáticamente.
+                  </p>
+                </div>
               </form>
 
               
