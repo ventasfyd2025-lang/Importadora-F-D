@@ -181,10 +181,35 @@ export default function NuevoProductoPage() {
         const docRef = await addDoc(collection(db, 'products'), productData);
         console.log('✅ Producto creado con ID:', docRef.id);
         console.log('📸 Imágenes guardadas en Firestore:', productData.imagenes);
-        alert('Producto creado exitosamente');
+        alert('✅ Producto creado exitosamente. Puedes agregar otro producto.');
 
-        // Redirect back to admin page to continue adding products
-        router.push('/admin');
+        // Reset form to add another product
+        setProductForm({
+          id: '',
+          sku: '',
+          nombre: '',
+          precio: 0,
+          precioOriginal: undefined,
+          descripcion: '',
+          stock: 0,
+          minStock: 5,
+          categoria: '',
+          categorias: [],
+          subcategoria: '',
+          nuevo: false,
+          oferta: false,
+          nuevoDuracionHoras: 24,
+          ofertaDuracionHoras: 24,
+          imagen: '',
+          imagenes: []
+        });
+
+        // Clear images
+        setProductImages([]);
+        setProductImagePreviews([]);
+
+        // Scroll to top for better UX
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (error) {
         console.error("Error creating product in Firestore: ", error);
         alert(`Error al crear el producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
