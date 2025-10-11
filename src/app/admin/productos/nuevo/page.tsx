@@ -183,8 +183,8 @@ export default function NuevoProductoPage() {
         console.log('📸 Imágenes guardadas en Firestore:', productData.imagenes);
         alert('Producto creado exitosamente');
 
-        // Redirect back to productos page to continue adding
-        router.push('/admin/productos');
+        // Redirect back to admin page to continue adding products
+        router.push('/admin');
       } catch (error) {
         console.error("Error creating product in Firestore: ", error);
         alert(`Error al crear el producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
