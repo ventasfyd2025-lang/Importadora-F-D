@@ -31,7 +31,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import optimizeImageFile from '@/utils/imageProcessing';
 import { normalizeCategoryValue } from '@/utils/category';
-import MainBannerCarousel from '@/components/MainBannerCarousel';
 import { defaultMiddleBanners } from '@/components/home/bannerData';
 import { cleanAllData } from '@/scripts/cleanData';
 import AdminChatPopup from '@/components/AdminChatPopup';
@@ -5884,46 +5883,6 @@ export default function AdminPage() {
                 </div>
               </form>
 
-
-              <div className="mt-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Vista Previa del Carrusel Principal
-                  </h3>
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    Live Preview
-                  </span>
-                </div>
-                <div className="relative w-full max-w-full mx-auto border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
-                  <MainBannerCarousel
-                    config={{
-                      active: mainBannerForm.active,
-                      slides: mainBannerForm.slides,
-                    }}
-                    products={products}
-                  />
-                </div>
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="text-sm text-blue-900">
-                      <p className="font-bold mb-1">Consejos para banners efectivos:</p>
-                      <ul className="space-y-1 text-blue-800">
-                        <li>• Usa imágenes de alta calidad (1920x640px)</li>
-                        <li>• Mantén el título corto y llamativo</li>
-                        <li>• El subtítulo debe complementar el título</li>
-                        <li>• Prueba diferentes combinaciones de texto e imágenes</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
             </div>
           </div>
