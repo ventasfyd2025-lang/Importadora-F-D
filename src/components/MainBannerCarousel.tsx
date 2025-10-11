@@ -135,9 +135,11 @@ export default function MainBannerCarousel({
 
   const slides = createBannerSlides();
 
-  // Debug: log config cuando cambia
+  // Config tracking (silent in production)
   useEffect(() => {
-    console.log('🔍 MainBannerCarousel - Config actualizado:', config.slides.map(s => ({ title: s.title, subtitle: s.subtitle })));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 MainBannerCarousel - Config actualizado:', config.slides.map(s => ({ title: s.title, subtitle: s.subtitle })));
+    }
   }, [config]);
 
   // Optimized preload with proper timing
@@ -213,7 +215,6 @@ export default function MainBannerCarousel({
       // Si el movimiento fue mínimo, es un tap - navegar al slide actual
       const currentSlideData = slides[currentSlide];
       if (currentSlideData?.targetUrl && currentSlideData.targetUrl !== '#') {
-        console.log('Tap detectado, navegando a:', currentSlideData.targetUrl);
         router.push(currentSlideData.targetUrl);
       }
     }
@@ -261,7 +262,6 @@ export default function MainBannerCarousel({
       // Si el movimiento fue mínimo, es un click - navegar al slide actual
       const currentSlideData = slides[currentSlide];
       if (currentSlideData?.targetUrl && currentSlideData.targetUrl !== '#') {
-        console.log('Click detectado, navegando a:', currentSlideData.targetUrl);
         router.push(currentSlideData.targetUrl);
       }
     }
@@ -277,7 +277,18 @@ export default function MainBannerCarousel({
   };
 
   if (slides.length === 0) {
-    return null;
+    return (
+      <div className="relative w-full bg-gray-100 h-[180px] sm:h-[280px] md:h-[350px] lg:h-[450px] xl:h-[500px] flex items-center justify-center">
+        <div className="text-center p-8">
+          <div className="text-gray-400 text-6xl mb-4">📸</div>
+          <h3 className="text-xl font-bold text-gray-700 mb-2">No hay banners configurados</h3>
+          <p className="text-gray-500 text-sm">
+            {!config?.active && "El carrusel está desactivado. "}
+            {(!config?.slides || config.slides.length === 0) && "Agrega al menos un slide para ver la vista previa."}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

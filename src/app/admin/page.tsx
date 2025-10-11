@@ -858,7 +858,6 @@ export default function AdminPage() {
     // Skip auto-save on initial mount (when loading from Firebase)
     if (isFirstBannerLoadRef.current) {
       isFirstBannerLoadRef.current = false;
-      console.log('⏭️ Primera carga del banner - NO auto-guardar');
       return;
     }
 
