@@ -818,10 +818,13 @@ export default function AdminPage() {
 
   // Auto-save for main banner
   const autoSaveMainBanner = useCallback((bannerConfig: typeof mainBannerForm) => {
+    console.log('🚀 autoSaveMainBanner EJECUTADO');
     if (bannerAutoSaveTimeoutRef.current) {
+      console.log('⏰ Limpiando timeout anterior');
       clearTimeout(bannerAutoSaveTimeoutRef.current);
     }
 
+    console.log('🟢 Poniendo isAutoSavingBanner = true');
     setIsAutoSavingBanner(true);
     bannerAutoSaveTimeoutRef.current = setTimeout(async () => {
       try {
@@ -859,10 +862,14 @@ export default function AdminPage() {
 
   // Watch mainBannerForm changes and auto-save
   useEffect(() => {
+    console.log('🔄 useEffect disparado - mainBannerForm cambió');
     // Skip auto-save on initial mount (when loading from Firebase)
     // Only auto-save when user makes changes
     if (mainBannerForm.slides.length > 0) {
+      console.log('✅ Llamando autoSaveMainBanner...');
       autoSaveMainBanner(mainBannerForm);
+    } else {
+      console.log('⚠️ No hay slides, no se guarda');
     }
   }, [mainBannerForm, autoSaveMainBanner]);
 
