@@ -7,7 +7,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      return isSignedIn() && (request.auth.token.admin == true || request.auth.token.isAdmin == true);
     }
 
     function isOrderOwner() {
@@ -45,15 +45,23 @@ service cloud.firestore {
     }
 
     // Validar que usuarios regulares solo puedan editar campos permitidos
-    function validateUserUpdate(data) {
-      // Campos que el usuario puede editar libremente
-      let allowedFields = ['displayName', 'email', 'phone', 'address', 'photoURL', 'updatedAt'];
-
+    function validateUserUpdate() {
       // Campos sensibles que NO pueden ser editados por usuarios regulares
-      let protectedFields = ['role', 'isAdmin', 'customClaims', 'createdAt'];
+      let protectedFields = [
+        'role',
+        'isAdmin',
+        'customClaims',
+        'createdAt',
+        'blocked',
+        'blockedAt',
+        'blockedReason'
+      ];
 
-      // Si el usuario intenta modificar campos protegidos, rechazar
-      return !data.keys().hasAny(protectedFields);
+      // Obtener solo los campos que CAMBIARON (no los que existen)
+      let changedKeys = request.resource.data.diff(resource.data).changedKeys();
+
+      // Si el usuario intenta MODIFICAR campos protegidos, rechazar
+      return !changedKeys.hasAny(protectedFields);
     }
 
     match /products/{productId} {
@@ -97,13 +105,14 @@ service cloud.firestore {
       // Lectura: admin o el propio usuario
       allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
 
-      // Creación: solo admin o el propio usuario (sin campos protegidos)
+      // Creación: admin sin restricciones, usuario regular sin campos protegidos
       allow create: if isAdmin()
-        || (isSignedIn() && request.auth.uid == userId && validateUserUpdate(request.resource.data));
+        || (isSignedIn() && request.auth.uid == userId
+            && !request.resource.data.keys().hasAny(['role', 'isAdmin', 'customClaims', 'blocked', 'blockedAt', 'blockedReason']));
 
-      // Actualización: admin sin restricciones, usuario regular con validación
+      // Actualización: admin sin restricciones, usuario regular con validación de cambios
       allow update: if isAdmin()
-        || (isSignedIn() && request.auth.uid == userId && validateUserUpdate(request.resource.data));
+        || (isSignedIn() && request.auth.uid == userId && validateUserUpdate());
 
       // Borrado: solo admin
       allow delete: if isAdmin();

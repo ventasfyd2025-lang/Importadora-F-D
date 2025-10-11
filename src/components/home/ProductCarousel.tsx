@@ -199,9 +199,9 @@ const ProductCarousel = memo(({
     e.preventDefault();
     setScrollLeft(e.pageX);
 
-    // Marcar como dragged si hay movimiento significativo
+    // Marcar como dragged si hay movimiento significativo (aumentado de 10 a 30px)
     const distance = Math.abs(startX - e.pageX);
-    if (distance > 10) {
+    if (distance > 30) {
       setHasDragged(true);
     }
   };
@@ -224,9 +224,9 @@ const ProductCarousel = memo(({
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
 
-    // Marcar como dragged si hay movimiento significativo
+    // Marcar como dragged si hay movimiento significativo (aumentado de 10 a 30px)
     const distance = Math.abs(touchStart - e.targetTouches[0].clientX);
-    if (distance > 10) {
+    if (distance > 30) {
       setHasDragged(true);
     }
   };

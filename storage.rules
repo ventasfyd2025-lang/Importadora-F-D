@@ -49,7 +49,8 @@ service firebase.storage {
     }
 
     match /comprobantes/{allPaths=**} {
-      allow read: if true;
+      // Solo admin puede leer comprobantes (contienen datos personales/bancarios)
+      allow read: if isAdmin();
       allow write: if (isAdmin() || isSignedIn()) && isAllowedProofFile();
     }
 
