@@ -5631,7 +5631,7 @@ export default function AdminPage() {
                               <option value="">Selecciona una categoría</option>
                               {categories.map((category) => (
                                 <option key={category.id} value={category.id}>
-                                  📦 {category.name}
+                                  {category.name}
                                 </option>
                               ))}
                             </select>
@@ -5714,7 +5714,9 @@ export default function AdminPage() {
                           return selectedCategory && (
                             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                               <div className="flex items-center space-x-2 mb-2">
-                                <span className="text-2xl">📦</span>
+                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
                                 <h5 className="font-medium text-gray-900">
                                   {selectedCategory.name}
                                 </h5>
@@ -5743,8 +5745,11 @@ export default function AdminPage() {
                 </div>
 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <p className="text-green-700 font-medium">
-                    ✅ Los cambios se guardan automáticamente
+                  <p className="text-green-700 font-medium flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Los cambios se guardan automáticamente
                   </p>
                   <p className="text-green-600 text-sm mt-1">
                     No necesitas hacer clic en ningún botón, todos los cambios se sincronizan con Firebase automáticamente.
@@ -6784,7 +6789,12 @@ export default function AdminPage() {
             
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">🎨 Secciones Promocionales de la Página Principal</h3>
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                  Secciones Promocionales de la Página Principal
+                </h3>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={async () => {
@@ -6798,9 +6808,12 @@ export default function AdminPage() {
                       autoSaveHomepageContent(newContent);
                       alert('✅ Imágenes por defecto restauradas!');
                     }}
-                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-1 rounded transition-colors"
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-1 rounded transition-colors flex items-center gap-1"
                   >
-                    🔄 Restaurar Imágenes
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Restaurar Imágenes
                   </button>
 
                   {isAutoSaving ? (
@@ -6809,8 +6822,11 @@ export default function AdminPage() {
                       Guardando...
                     </div>
                   ) : (
-                    <div className="text-green-600 text-sm flex items-center">
-                      ✅ Guardado automático activo
+                    <div className="text-green-600 text-sm flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Guardado automático activo
                     </div>
                   )}
                 </div>
@@ -6835,16 +6851,28 @@ export default function AdminPage() {
                     
                     <div className="bg-gray-50 px-4 py-3 border-b">
                       <div className="flex justify-between items-center">
-                        <h4 className="font-medium text-gray-900">
-                          {section.position === 'large' ? '🔲 Grande (2x2)' :
-                           section.position === 'tall' ? '📱 Alto (1x2)' :
-                           section.position === 'wide' ? '📺 Ancho (3:1)' : '⬜ Normal (1x1)'}
+                        <h4 className="font-medium text-gray-900 flex items-center gap-1">
+                          {section.position === 'large' ? (
+                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg> Grande (2x2)</>
+                           ) : section.position === 'tall' ? (
+                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> Alto (1x2)</>
+                           ) : section.position === 'wide' ? (
+                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h18M3 12h18M3 16h18" /></svg> Ancho (3:1)</>
+                           ) : (
+                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" /></svg> Normal (1x1)</>
+                           )}
                         </h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                            {section.linkType === 'category' ? '📁 Categoría' :
-                             section.linkType === 'product' ? '📦 Producto' :
-                             section.linkType === 'filter' ? '🔍 Filtro' : '🔗 URL'}
+                          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border flex items-center gap-1">
+                            {section.linkType === 'category' ? (
+                              <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg> Categoría</>
+                            ) : section.linkType === 'product' ? (
+                              <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg> Producto</>
+                            ) : section.linkType === 'filter' ? (
+                              <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg> Filtro</>
+                            ) : (
+                              <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg> URL</>
+                            )}
                           </span>
                           <button
                             onClick={() => {
@@ -6860,7 +6888,9 @@ export default function AdminPage() {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
                             title="Eliminar sección"
                           >
-                            🗑️
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                         </div>
                       </div>
@@ -6869,8 +6899,12 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                       
                       <div className="space-y-2">
-                        <h5 className="text-sm font-semibold text-gray-700 flex items-center">
-                          ✨ Vista Previa en Vivo
+                        <h5 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Vista Previa en Vivo
                         </h5>
                         <div className={`${previewWrapperClasses} mx-auto md:mx-0`}>
                           {section.imageUrl ? (
@@ -6886,7 +6920,9 @@ export default function AdminPage() {
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-800/60">
                               <div className="text-center">
-                                <div className="text-4xl mb-2">📷</div>
+                                <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                                 <div className="text-xs">Sube una imagen</div>
                               </div>
                             </div>
@@ -6913,8 +6949,12 @@ export default function AdminPage() {
 
                       
                       <div className="space-y-3">
-                        <h5 className="text-sm font-semibold text-gray-700 flex items-center">
-                          ⚙️ Configuración
+                        <h5 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Configuración
                         </h5>
 
                       
@@ -6952,7 +6992,12 @@ export default function AdminPage() {
                       
                       
                       <div className="mb-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
-                        <p className="text-purple-800 font-medium">📐 Resolución recomendada:</p>
+                        <p className="text-purple-800 font-medium flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                          </svg>
+                          Resolución recomendada:
+                        </p>
                         <p className="text-purple-700">
                           {section.position === 'large' ? '1200x1200px (1:1)' :
                            section.position === 'tall' ? '800x1600px (1:2)' :
@@ -6991,10 +7036,10 @@ export default function AdminPage() {
                           }}
                           className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
                         >
-                          <option value="category">📁 Categoría</option>
-                          <option value="product">📦 Producto</option>
-                          <option value="filter">🔍 Filtro</option>
-                          <option value="url">🔗 URL personalizada</option>
+                          <option value="category">Categoría</option>
+                          <option value="product">Producto</option>
+                          <option value="filter">Filtro</option>
+                          <option value="url">URL personalizada</option>
                         </select>
 
                         {section.linkType === 'category' ? (
@@ -7044,8 +7089,8 @@ export default function AdminPage() {
                               className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
                             >
                               <option value="">-- Selecciona un filtro --</option>
-                              <option value="ofertas">🏷️ Ofertas</option>
-                              <option value="nuevos">✨ Nuevos</option>
+                              <option value="ofertas">Ofertas</option>
+                              <option value="nuevos">Nuevos</option>
                             </select>
                           </div>
                         ) : (
@@ -7111,7 +7156,10 @@ export default function AdminPage() {
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md"
                 >
-                  ➕ Agregar Nueva Sección Promocional
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar Nueva Sección Promocional
                 </button>
               </div>
 
@@ -7301,10 +7349,20 @@ export default function AdminPage() {
                                   )}
                                 </select>
                                 {availableCategories.length === 0 && (
-                                  <p className="text-xs text-red-600 mt-2">⚠️ No se encontraron categorías. Crea categorías primero.</p>
+                                  <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    No se encontraron categorías. Crea categorías primero.
+                                  </p>
                                 )}
                                 {banner.linkValue && (
-                                  <p className="text-xs text-green-600 mt-2">✓ Enlace: /?category={banner.linkValue}</p>
+                                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Enlace: /?category={banner.linkValue}
+                                  </p>
                                 )}
                               </div>
                             ) : banner.linkType === 'filter' ? (
@@ -7321,11 +7379,16 @@ export default function AdminPage() {
                                   className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all"
                                 >
                                   <option value="">-- Selecciona un filtro --</option>
-                                  <option value="ofertas">🏷️ Productos en Oferta</option>
-                                  <option value="nuevos">✨ Productos Nuevos</option>
+                                  <option value="ofertas">Productos en Oferta</option>
+                                  <option value="nuevos">Productos Nuevos</option>
                                 </select>
                                 {banner.linkValue && (
-                                  <p className="text-xs text-green-600 mt-2">✓ Enlace: /?filter={banner.linkValue}</p>
+                                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Enlace: /?filter={banner.linkValue}
+                                  </p>
                                 )}
                               </div>
                             ) : banner.linkType === 'popup-ofertas' ? (
@@ -7336,7 +7399,13 @@ export default function AdminPage() {
                                   disabled
                                   className="w-full text-sm border-2 border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 font-medium"
                                 />
-                                <p className="text-xs text-purple-600 mt-2">📍 Enlaza a la página de ofertas especiales configurada</p>
+                                <p className="text-xs text-purple-600 mt-2 flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  Enlaza a la página de ofertas especiales configurada
+                                </p>
                               </div>
                             ) : (
                               <div className="mt-3">
@@ -7350,7 +7419,12 @@ export default function AdminPage() {
                                   className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all"
                                   placeholder="https://ejemplo.com o /?filter=ofertas"
                                 />
-                                <p className="text-xs text-purple-600 mt-2">💡 Ej: https://tupagina.com o /?category=tecnologia</p>
+                                <p className="text-xs text-purple-600 mt-2 flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                  </svg>
+                                  Ej: https://tupagina.com o /?category=tecnologia
+                                </p>
                               </div>
                             )}
                           </div>
@@ -7376,10 +7450,19 @@ export default function AdminPage() {
                             />
                             {uploadingImages[stateKey] ? (
                               <p className="text-xs text-orange-600 mt-2 font-medium flex items-center gap-1">
-                                <span className="animate-pulse">⏳</span> Subiendo imagen...
+                                <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Subiendo imagen...
                               </p>
                             ) : (
-                              <p className="text-xs text-green-600 mt-2">📐 1440x480px recomendado (ratio 3:1)</p>
+                              <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                </svg>
+                                1440x480px recomendado (ratio 3:1)
+                              </p>
                             )}
                           </div>
                         </div>
@@ -7437,19 +7520,29 @@ export default function AdminPage() {
                   target="_blank"
                   className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold shadow-lg flex items-center gap-2"
                 >
-                  👁️ Ver Página Principal (Nueva pestaña)
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Ver Página Principal (Nueva pestaña)
                 </a>
                 <button
                   onClick={() => saveHomepageContent()}
-                  className="px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                  className="px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
                 >
-                  💾 Forzar Guardado
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Forzar Guardado
                 </button>
                 <button
                   onClick={() => loadHomepageContent()}
-                  className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
                 >
-                  🔄 Recargar
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Recargar
                 </button>
               </div>
             </div>
@@ -7481,8 +7574,11 @@ export default function AdminPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      📞 Teléfono
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      Teléfono
                     </label>
                     <input
                       type="text"
@@ -7493,10 +7589,13 @@ export default function AdminPage() {
                       style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      📧 Email
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Email
                     </label>
                     <input
                       type="email"
@@ -7510,8 +7609,12 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📍 Dirección
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Dirección
                   </label>
                   <input
                     type="text"
