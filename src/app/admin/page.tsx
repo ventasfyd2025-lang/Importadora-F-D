@@ -825,11 +825,13 @@ export default function AdminPage() {
     setIsAutoSavingBanner(true);
     bannerAutoSaveTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log('💾 GUARDANDO BANNER:', bannerConfig.slides.map(s => ({ title: s.title, subtitle: s.subtitle })));
         await setDoc(doc(db, 'config', 'main-banner'), {
           active: bannerConfig.active,
           slides: bannerConfig.slides,
           updatedAt: new Date().toISOString()
         });
+        console.log('✅ BANNER GUARDADO EXITOSAMENTE');
       } catch (error) {
         console.error('❌ Error auto-guardando banner:', error);
       } finally {
