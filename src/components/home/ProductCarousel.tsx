@@ -163,6 +163,17 @@ const ProductCarousel = memo(({
   };
 
   const handleDragStart = (e: React.MouseEvent) => {
+    // No iniciar drag si el click fue en un botón o elemento interactivo
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'BUTTON' ||
+      target.closest('button') ||
+      target.tagName === 'A' ||
+      target.closest('a')
+    ) {
+      return;
+    }
+
     setIsDragging(true);
     setStartX(e.pageX);
     setScrollLeft(e.pageX);
@@ -195,7 +206,7 @@ const ProductCarousel = memo(({
   };
 
   const handleDragMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || !startX) return;
     e.preventDefault();
     setScrollLeft(e.pageX);
 
@@ -217,11 +228,24 @@ const ProductCarousel = memo(({
 
   // Manejo de swipe
   const handleTouchStart = (e: React.TouchEvent) => {
+    // No iniciar swipe si el toque fue en un botón o elemento interactivo
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'BUTTON' ||
+      target.closest('button') ||
+      target.tagName === 'A' ||
+      target.closest('a')
+    ) {
+      return;
+    }
+
     setTouchStart(e.targetTouches[0].clientX);
     setHasDragged(false); // Resetear flag al inicio
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return; // No procesar si no se inició el swipe
+
     setTouchEnd(e.targetTouches[0].clientX);
 
     // Marcar como dragged si hay movimiento significativo (aumentado de 10 a 30px)
