@@ -475,23 +475,32 @@ export default function AdminPage() {
   const [mainBannerForm, setMainBannerForm] = useState({
     active: true,
     slides: [
-      { 
-        linkType: "product" as "product" | "category", // "product" o "category"
-        productId: "1", 
+      {
+        linkType: "product" as "product" | "category" | "url", // "product", "category" o "url"
+        productId: "1",
         categoryId: "",
-        imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=400&fit=crop" 
+        customUrl: "",
+        title: "¡Oferta Especial!",
+        subtitle: "Hasta 50% de descuento",
+        imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=400&fit=crop"
       },
-      { 
-        linkType: "product" as "product" | "category",
-        productId: "2", 
+      {
+        linkType: "product" as "product" | "category" | "url",
+        productId: "2",
         categoryId: "",
-        imageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=400&fit=crop" 
+        customUrl: "",
+        title: "Nuevos Productos",
+        subtitle: "Descubre nuestra nueva colección",
+        imageUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=400&fit=crop"
       },
-      { 
-        linkType: "product" as "product" | "category",
-        productId: "3", 
+      {
+        linkType: "product" as "product" | "category" | "url",
+        productId: "3",
         categoryId: "",
-        imageUrl: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&h=400&fit=crop" 
+        customUrl: "",
+        title: "Los Más Vendidos",
+        subtitle: "Productos favoritos de nuestros clientes",
+        imageUrl: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&h=400&fit=crop"
       }
     ]
   });
@@ -5542,7 +5551,12 @@ export default function AdminPage() {
                             Imagen del Banner
                           </label>
                           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                            <p className="text-blue-800 font-medium">📐 Tamaño recomendado: 1920x640px (3:1) | Formato: JPG/PNG | Peso máx: 5MB</p>
+                            <p className="text-blue-800 font-medium flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                              </svg>
+                              Tamaño recomendado: 1920x640px (3:1) | Formato: JPG/PNG | Peso máx: 5MB
+                            </p>
                           </div>
                           <input
                             type="file"
@@ -5591,6 +5605,50 @@ export default function AdminPage() {
                           )}
                         </div>
 
+                        {/* Título */}
+                        <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                          <label className="block text-sm font-bold text-orange-700 mb-2 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Título del Banner
+                          </label>
+                          <input
+                            type="text"
+                            value={slide.title || ''}
+                            onChange={(e) => {
+                              const newSlides = [...mainBannerForm.slides];
+                              newSlides[index] = { ...newSlides[index], title: e.target.value };
+                              setMainBannerForm({ ...mainBannerForm, slides: newSlides });
+                            }}
+                            className="w-full text-sm border-2 border-orange-300 rounded-lg px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none bg-white transition-all"
+                            placeholder="Ej: ¡Ofertas Especiales! 🔥"
+                          />
+                          <p className="text-xs text-orange-600 mt-1">Este texto aparece grande sobre el banner</p>
+                        </div>
+
+                        {/* Subtítulo */}
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <label className="block text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Subtítulo / Descripción
+                          </label>
+                          <input
+                            type="text"
+                            value={slide.subtitle || ''}
+                            onChange={(e) => {
+                              const newSlides = [...mainBannerForm.slides];
+                              newSlides[index] = { ...newSlides[index], subtitle: e.target.value };
+                              setMainBannerForm({ ...mainBannerForm, slides: newSlides });
+                            }}
+                            className="w-full text-sm border-2 border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-white transition-all"
+                            placeholder="Ej: Hasta 50% de descuento en productos seleccionados"
+                          />
+                          <p className="text-xs text-blue-600 mt-1">Texto descriptivo que acompaña al título</p>
+                        </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Tipo de Enlace
@@ -5599,11 +5657,12 @@ export default function AdminPage() {
                             value={slide.linkType || "product"}
                             onChange={(e) => {
                               const newSlides = [...mainBannerForm.slides];
-                              newSlides[index] = { 
-                                ...newSlides[index], 
-                                linkType: e.target.value as "product" | "category",
+                              newSlides[index] = {
+                                ...newSlides[index],
+                                linkType: e.target.value as "product" | "category" | "url",
                                 productId: e.target.value === "product" ? newSlides[index].productId : "",
-                                categoryId: e.target.value === "category" ? newSlides[index].categoryId : ""
+                                categoryId: e.target.value === "category" ? newSlides[index].categoryId : "",
+                                customUrl: e.target.value === "url" ? newSlides[index].customUrl : ""
                               };
                               setMainBannerForm({ ...mainBannerForm, slides: newSlides });
                             }}
@@ -5611,6 +5670,7 @@ export default function AdminPage() {
                           >
                             <option value="product">Producto Específico</option>
                             <option value="category">Categoría (múltiples productos en promo)</option>
+                            <option value="url">URL Personalizada</option>
                           </select>
                         </div>
 
@@ -5727,15 +5787,46 @@ export default function AdminPage() {
                             </div>
                           );
                         })()}
+
+                        {slide.linkType === "url" && (
+                          <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                            <label className="block text-sm font-bold text-purple-700 mb-2 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                              </svg>
+                              URL Personalizada
+                            </label>
+                            <input
+                              type="text"
+                              value={slide.customUrl || ''}
+                              onChange={(e) => {
+                                const newSlides = [...mainBannerForm.slides];
+                                newSlides[index] = { ...newSlides[index], customUrl: e.target.value };
+                                setMainBannerForm({ ...mainBannerForm, slides: newSlides });
+                              }}
+                              className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all"
+                              placeholder="Ej: https://ejemplo.com o /?category=tecnologia"
+                            />
+                            <p className="text-xs text-purple-600 mt-1">URL completa o ruta relativa (/?filter=ofertas)</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
-                  
-                  
+
+
                   <button
                     type="button"
                     onClick={() => {
-                      const newSlides = [...mainBannerForm.slides, { linkType: "product" as "product" | "category", productId: "", categoryId: "", imageUrl: "" }];
+                      const newSlides = [...mainBannerForm.slides, {
+                        linkType: "product" as "product" | "category" | "url",
+                        productId: "",
+                        categoryId: "",
+                        customUrl: "",
+                        title: "",
+                        subtitle: "",
+                        imageUrl: ""
+                      }];
                       setMainBannerForm({ ...mainBannerForm, slides: newSlides });
                     }}
                     className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-orange-500 hover:text-orange-600 transition-colors"
@@ -5757,10 +5848,21 @@ export default function AdminPage() {
                 </div>
               </form>
 
-              
+
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa del Carrusel:</h3>
-                <div className="relative w-full max-w-full mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Vista Previa del Carrusel Principal
+                  </h3>
+                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                    Live Preview
+                  </span>
+                </div>
+                <div className="relative w-full max-w-full mx-auto border-4 border-gray-300 rounded-xl overflow-hidden shadow-2xl">
                   <MainBannerCarousel
                     config={{
                       active: mainBannerForm.active,
@@ -5768,6 +5870,22 @@ export default function AdminPage() {
                     }}
                     products={products}
                   />
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-sm text-blue-900">
+                      <p className="font-bold mb-1">Consejos para banners efectivos:</p>
+                      <ul className="space-y-1 text-blue-800">
+                        <li>• Usa imágenes de alta calidad (1920x640px)</li>
+                        <li>• Mantén el título corto y llamativo</li>
+                        <li>• El subtítulo debe complementar el título</li>
+                        <li>• Prueba diferentes combinaciones de texto e imágenes</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
 

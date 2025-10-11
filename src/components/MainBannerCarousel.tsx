@@ -6,18 +6,23 @@ import Image from 'next/image';
 import { Product } from '@/types';
 import { defaultHeroBanners } from '@/components/home/bannerData';
 
-type SlideLinkType = 'product' | 'category';
+type SlideLinkType = 'product' | 'category' | 'url';
 
 interface SlideConfig {
   linkType?: SlideLinkType;
   productId?: string;
   categoryId?: string;
+  customUrl?: string;
+  title?: string;
+  subtitle?: string;
   imageUrl: string;
 }
 
 interface ProcessedSlide {
   id: string;
   imageUrl: string;
+  title?: string;
+  subtitle?: string;
   featuredProduct: {
     id: string;
     nombre: string;
@@ -29,6 +34,7 @@ interface ProcessedSlide {
   linkType: SlideLinkType;
   productId?: string;
   categoryId?: string;
+  customUrl?: string;
   targetUrl: string;
 }
 
@@ -61,6 +67,7 @@ export default function MainBannerCarousel({
 
   // Create banner slides - INMEDIATO como PC Factory
   const resolveLinkType = (slide: SlideConfig): SlideLinkType => {
+    if (slide.linkType === 'url') return 'url';
     if (slide.linkType === 'category') return 'category';
     if (slide.linkType === 'product') return 'product';
     if (slide.categoryId && !slide.productId) return 'category';
@@ -92,12 +99,16 @@ export default function MainBannerCarousel({
             ? `Categoría: ${slide.categoryId || fallbackBanner?.title || 'en promoción'}`
             : product?.nombre || fallbackBanner?.title || 'Producto destacado';
 
-          const targetUrl = linkType === 'category'
-            ? (slide.categoryId ? `/?category=${slide.categoryId}` : '#')
-            : (slide.productId ? `/producto/${slide.productId}` : '#');
+          const targetUrl = linkType === 'url'
+            ? (slide.customUrl || '#')
+            : linkType === 'category'
+              ? (slide.categoryId ? `/?category=${slide.categoryId}` : '#')
+              : (slide.productId ? `/producto/${slide.productId}` : '#');
 
           return {
             imageUrl,
+            title: slide.title || baseTitle,
+            subtitle: slide.subtitle || '',
             featuredProduct: {
               id: slide.productId || uniqueSlideId,
               nombre: baseTitle,
@@ -111,6 +122,7 @@ export default function MainBannerCarousel({
             linkType,
             productId: slide.productId,
             categoryId: slide.categoryId,
+            customUrl: slide.customUrl,
             targetUrl,
             // ensure unique id per slide even if same category/product repeats
             id: uniqueSlideId
@@ -289,7 +301,7 @@ export default function MainBannerCarousel({
             >
               <Image
                 src={slide.imageUrl}
-                alt={slide.featuredProduct.nombre}
+                alt={slide.title || slide.featuredProduct.nombre}
                 fill
                 className="object-cover"
                 priority={index === 0} // Priority load for first image
@@ -299,6 +311,25 @@ export default function MainBannerCarousel({
                 loading={index === 0 ? 'eager' : 'lazy'}
                 fetchPriority={index === 0 ? 'high' : 'low'}
               />
+
+              {/* Overlay con texto */}
+              {(slide.title || slide.subtitle) && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center justify-center text-white p-4 sm:p-8">
+                  {slide.title && (
+                    <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-center drop-shadow-2xl mb-2 sm:mb-4 animate-fade-in">
+                      {slide.title}
+                    </h2>
+                  )}
+                  {slide.subtitle && (
+                    <p className="text-sm sm:text-lg md:text-xl lg:text-2xl text-center drop-shadow-lg opacity-95 max-w-3xl animate-fade-in">
+                      {slide.subtitle}
+                    </p>
+                  )}
+                  <button className="mt-4 sm:mt-6 bg-white text-gray-900 px-6 sm:px-8 py-2 sm:py-3 rounded-full text-sm sm:text-base font-bold hover:scale-110 hover:shadow-2xl transition-all duration-300 animate-fade-in">
+                    Ver Más
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
