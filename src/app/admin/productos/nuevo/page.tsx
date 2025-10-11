@@ -22,6 +22,8 @@ type ProductFormState = {
   subcategoria: string;
   nuevo: boolean;
   oferta: boolean;
+  nuevoDuracionHoras: number;
+  ofertaDuracionHoras: number;
   imagen: string;
   imagenes: string[];
 };
@@ -55,6 +57,8 @@ export default function NuevoProductoPage() {
     subcategoria: '',
     nuevo: false,
     oferta: false,
+    nuevoDuracionHoras: 24,
+    ofertaDuracionHoras: 24,
     imagen: '',
     imagenes: []
   });
@@ -157,6 +161,16 @@ export default function NuevoProductoPage() {
         fechaCreacion: new Date().toISOString(),
       };
 
+      // Agregar timestamps y duración para etiquetas
+      if (productForm.nuevo) {
+        productData.nuevoDesde = new Date().toISOString();
+        productData.nuevoDuracionHoras = productForm.nuevoDuracionHoras;
+      }
+      if (productForm.oferta) {
+        productData.ofertaDesde = new Date().toISOString();
+        productData.ofertaDuracionHoras = productForm.ofertaDuracionHoras;
+      }
+
       // Solo agregar precioOriginal si tiene valor (evitar undefined)
       if (productForm.precioOriginal && productForm.precioOriginal > 0) {
         productData.precioOriginal = productForm.precioOriginal;
@@ -169,8 +183,8 @@ export default function NuevoProductoPage() {
         console.log('📸 Imágenes guardadas en Firestore:', productData.imagenes);
         alert('Producto creado exitosamente');
 
-        // Redirect back to admin page
-        router.push('/admin');
+        // Redirect back to productos page to continue adding
+        router.push('/admin/productos');
       } catch (error) {
         console.error("Error creating product in Firestore: ", error);
         alert(`Error al crear el producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -556,30 +570,72 @@ export default function NuevoProductoPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F16529' }}>
                 <span className="text-white">🏷️</span>
               </div>
-              <h4 className="text-lg font-bold text-gray-800">Etiquetas</h4>
+              <h4 className="text-lg font-bold text-gray-800">Etiquetas con Duración</h4>
             </div>
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 cursor-pointer bg-orange-50 px-4 py-3 rounded-lg hover:bg-orange-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={productForm.nuevo}
-                  onChange={(e) => setProductForm({ ...productForm, nuevo: e.target.checked })}
-                  className="rounded w-5 h-5"
-                  style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as React.CSSProperties}
-                />
-                <span className="text-sm font-semibold" style={{ color: '#F16529' }}>✨ Nuevo</span>
-              </label>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Etiqueta Nuevo */}
+              <div className="border-2 border-green-200 rounded-lg p-4 bg-green-50/50">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={productForm.nuevo}
+                    onChange={(e) => setProductForm({ ...productForm, nuevo: e.target.checked })}
+                    className="rounded w-5 h-5 text-green-600"
+                  />
+                  <span className="text-sm font-bold text-green-700">✨ Nuevo</span>
+                </label>
+                {productForm.nuevo && (
+                  <div>
+                    <label className="block text-xs font-semibold text-green-700 mb-2">
+                      ⏱️ Duración (horas)
+                    </label>
+                    <input
+                      type="number"
+                      value={productForm.nuevoDuracionHoras}
+                      onChange={(e) => setProductForm({ ...productForm, nuevoDuracionHoras: Number(e.target.value) })}
+                      min="1"
+                      step="1"
+                      className="w-full px-3 py-2 text-sm border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500 bg-white"
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-green-600 mt-1">
+                      La etiqueta se quitará automáticamente después de {productForm.nuevoDuracionHoras}h
+                    </p>
+                  </div>
+                )}
+              </div>
 
-              <label className="flex items-center gap-2 cursor-pointer bg-orange-50 px-4 py-3 rounded-lg hover:bg-orange-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={productForm.oferta}
-                  onChange={(e) => setProductForm({ ...productForm, oferta: e.target.checked })}
-                  className="rounded w-5 h-5"
-                  style={{ color: '#F16529', '--tw-ring-color': '#F16529' } as React.CSSProperties}
-                />
-                <span className="text-sm font-semibold" style={{ color: '#F16529' }}>🔥 Oferta</span>
-              </label>
+              {/* Etiqueta Oferta */}
+              <div className="border-2 border-red-200 rounded-lg p-4 bg-red-50/50">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={productForm.oferta}
+                    onChange={(e) => setProductForm({ ...productForm, oferta: e.target.checked })}
+                    className="rounded w-5 h-5 text-red-600"
+                  />
+                  <span className="text-sm font-bold text-red-700">🔥 Oferta</span>
+                </label>
+                {productForm.oferta && (
+                  <div>
+                    <label className="block text-xs font-semibold text-red-700 mb-2">
+                      ⏱️ Duración (horas)
+                    </label>
+                    <input
+                      type="number"
+                      value={productForm.ofertaDuracionHoras}
+                      onChange={(e) => setProductForm({ ...productForm, ofertaDuracionHoras: Number(e.target.value) })}
+                      min="1"
+                      step="1"
+                      className="w-full px-3 py-2 text-sm border-2 border-red-300 rounded-lg focus:outline-none focus:border-red-500 bg-white"
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-red-600 mt-1">
+                      La etiqueta se quitará automáticamente después de {productForm.ofertaDuracionHoras}h
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

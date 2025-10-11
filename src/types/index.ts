@@ -21,6 +21,11 @@ export interface Product {
   rating?: number;
   reviews?: number;
   marca?: string;
+  // Etiquetas con duración
+  nuevoDesde?: string; // Timestamp cuando se activa etiqueta "Nuevo"
+  nuevoDuracionHoras?: number; // Duración en horas para etiqueta "Nuevo"
+  ofertaDesde?: string; // Timestamp cuando se activa etiqueta "Oferta"
+  ofertaDuracionHoras?: number; // Duración en horas para etiqueta "Oferta"
 }
 
 export interface CartItem {

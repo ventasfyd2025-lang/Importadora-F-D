@@ -21,6 +21,27 @@ const ProductCard = memo(function ProductCard({ product, customHeight, isSpecial
   const { addNotification } = useNotification();
   const router = useRouter();
 
+  // Verificar si las etiquetas están activas basadas en duración
+  const isEtiquetaActiva = (timestamp: string | undefined, duracionHoras: number | undefined): boolean => {
+    if (!timestamp || !duracionHoras) return false;
+
+    const inicio = new Date(timestamp);
+    const ahora = new Date();
+    const horasTranscurridas = (ahora.getTime() - inicio.getTime()) / (1000 * 60 * 60);
+
+    return horasTranscurridas < duracionHoras;
+  };
+
+  const mostrarNuevo = product.nuevo && isEtiquetaActiva(
+    product.nuevoDesde,
+    product.nuevoDuracionHoras
+  );
+
+  const mostrarOferta = product.oferta && isEtiquetaActiva(
+    product.ofertaDesde,
+    product.ofertaDuracionHoras
+  );
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -83,14 +104,14 @@ const ProductCard = memo(function ProductCard({ product, customHeight, isSpecial
       <div className={`bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 group border border-gray-200 flex flex-col ${customHeight || 'h-full'} hover:border-orange-400 cursor-pointer relative`}>
 
       {/* Badges flotantes */}
-      {product.oferta && (
+      {mostrarOferta && (
         <div className="absolute top-2 left-2 z-10">
           <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
             OFERTA
           </span>
         </div>
       )}
-      {product.nuevo && (
+      {mostrarNuevo && (
         <div className="absolute top-2 right-2 z-10">
           <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-md">
             NUEVO
