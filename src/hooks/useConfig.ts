@@ -21,6 +21,9 @@ interface MainBannerSlide {
   linkType?: string;
   productId?: string;
   categoryId?: string;
+  customUrl?: string;
+  title?: string;
+  subtitle?: string;
   imageUrl?: string;
 }
 
