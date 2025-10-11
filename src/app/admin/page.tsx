@@ -818,31 +818,18 @@ export default function AdminPage() {
 
   // Auto-save for main banner
   const autoSaveMainBanner = useCallback((bannerConfig: typeof mainBannerForm) => {
-    console.log('🚀 autoSaveMainBanner EJECUTADO');
     if (bannerAutoSaveTimeoutRef.current) {
-      console.log('⏰ Limpiando timeout anterior');
       clearTimeout(bannerAutoSaveTimeoutRef.current);
     }
 
-    console.log('🟢 Poniendo isAutoSavingBanner = true');
     setIsAutoSavingBanner(true);
     bannerAutoSaveTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log('💾 Guardando banner con datos:', {
-          slides: bannerConfig.slides.map((s, i) => ({
-            index: i,
-            title: s.title,
-            subtitle: s.subtitle,
-            hasTitle: !!s.title,
-            hasSubtitle: !!s.subtitle
-          }))
-        });
         await setDoc(doc(db, 'config', 'main-banner'), {
           active: bannerConfig.active,
           slides: bannerConfig.slides,
           updatedAt: new Date().toISOString()
         });
-        console.log('✅ Banner auto-guardado exitosamente');
       } catch (error) {
         console.error('❌ Error auto-guardando banner:', error);
       } finally {
@@ -862,14 +849,10 @@ export default function AdminPage() {
 
   // Watch mainBannerForm changes and auto-save
   useEffect(() => {
-    console.log('🔄 useEffect disparado - mainBannerForm cambió');
     // Skip auto-save on initial mount (when loading from Firebase)
     // Only auto-save when user makes changes
     if (mainBannerForm.slides.length > 0) {
-      console.log('✅ Llamando autoSaveMainBanner...');
       autoSaveMainBanner(mainBannerForm);
-    } else {
-      console.log('⚠️ No hay slides, no se guarda');
     }
   }, [mainBannerForm, autoSaveMainBanner]);
 

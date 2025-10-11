@@ -105,14 +105,6 @@ export default function MainBannerCarousel({
               ? (slide.categoryId ? `/?category=${slide.categoryId}` : '#')
               : (slide.productId ? `/producto/${slide.productId}` : '#');
 
-          console.log('🎯 Banner Slide Data:', {
-            index: i,
-            title: slide.title,
-            subtitle: slide.subtitle,
-            hasTitle: !!slide.title,
-            hasSubtitle: !!slide.subtitle
-          });
-
           return {
             imageUrl,
             title: slide.title || '',
