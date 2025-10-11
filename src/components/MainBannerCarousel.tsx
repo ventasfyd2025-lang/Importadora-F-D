@@ -75,11 +75,9 @@ export default function MainBannerCarousel({
   };
 
   const createBannerSlides = (): ProcessedSlide[] => {
-    console.log('🔍 MainBannerCarousel - config recibido:', JSON.stringify(config, null, 2));
     if (config?.active && config?.slides?.length) {
       return (config.slides
         .map((slide, i) => {
-          console.log(`📋 Procesando slide ${i}:`, { title: slide.title, subtitle: slide.subtitle, linkType: slide.linkType });
           const fallbackBanner = defaultHeroBanners[i % defaultHeroBanners.length];
           const sanitizedImageUrl = (slide?.imageUrl || '').trim();
           const imageUrl = sanitizedImageUrl || fallbackBanner.imageUrl;
@@ -136,6 +134,11 @@ export default function MainBannerCarousel({
   };
 
   const slides = createBannerSlides();
+
+  // Debug: log config cuando cambia
+  useEffect(() => {
+    console.log('🔍 MainBannerCarousel - Config actualizado:', config.slides.map(s => ({ title: s.title, subtitle: s.subtitle })));
+  }, [config]);
 
   // Optimized preload with proper timing
   useEffect(() => {

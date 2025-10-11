@@ -507,6 +507,7 @@ export default function AdminPage() {
   const [updatingMainBanner, setUpdatingMainBanner] = useState(false);
   const [isAutoSavingBanner, setIsAutoSavingBanner] = useState(false);
   const bannerAutoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstBannerLoadRef = useRef(true);
 
   // Homepage content management state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -761,6 +762,9 @@ export default function AdminPage() {
           }
         ];
 
+        // Marcar que estamos cargando desde Firebase (no auto-guardar)
+        isFirstBannerLoadRef.current = true;
+
         setMainBannerForm({
           active: mainBannerData.active !== undefined ? mainBannerData.active : true,
           slides: loadedSlides.length > 0 ? loadedSlides : defaultSlides
@@ -852,8 +856,15 @@ export default function AdminPage() {
   // Watch mainBannerForm changes and auto-save
   useEffect(() => {
     // Skip auto-save on initial mount (when loading from Firebase)
+    if (isFirstBannerLoadRef.current) {
+      isFirstBannerLoadRef.current = false;
+      console.log('⏭️ Primera carga del banner - NO auto-guardar');
+      return;
+    }
+
     // Only auto-save when user makes changes
     if (mainBannerForm.slides.length > 0) {
+      console.log('🔄 Usuario hizo cambios - ejecutando auto-save');
       autoSaveMainBanner(mainBannerForm);
     }
   }, [mainBannerForm, autoSaveMainBanner]);
