@@ -7119,7 +7119,12 @@ export default function AdminPage() {
               <div className="mt-10 border-t border-gray-200 pt-6">
                 <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">🖼️ Banners Intermedios</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Banners Intermedios
+                    </h3>
                     <p className="text-sm text-gray-600">
                       Banners que aparecen entre secciones de la página principal.
                     </p>
@@ -7132,14 +7137,25 @@ export default function AdminPage() {
                       autoSaveHomepageContent(newContent);
                       alert('✅ Banners restaurados');
                     }}
-                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-2 rounded transition-colors"
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-md"
                   >
-                    🔄 Restaurar
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Restaurar
                   </button>
                 </div>
 
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-blue-800 text-sm font-medium">📐 Tamaño recomendado: 1440x480px (3:1) | Formato: JPG/PNG | Peso máx: 4MB</p>
+                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-blue-900 text-sm font-bold">Especificaciones Recomendadas</p>
+                      <p className="text-blue-700 text-xs mt-1">Tamaño: 1440x480px (ratio 3:1) • Formato: JPG o PNG • Peso máximo: 4MB</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -7169,25 +7185,47 @@ export default function AdminPage() {
 
                         <div className="space-y-4">
                           {/* Preview Mejorada */}
-                          {banner.imageUrl && (
-                            <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden border-2 border-gray-200">
-                              <img
-                                src={banner.imageUrl}
-                                alt={banner.title}
-                                className="h-full w-full object-cover"
-                              />
-                              {/* Overlay de texto sobre preview */}
-                              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-white p-3">
-                                <p className="font-bold text-sm text-center">{banner.title || 'Sin título'}</p>
-                                <p className="text-xs text-center mt-1">{banner.subtitle || 'Sin subtítulo'}</p>
-                              </div>
+                          <div className="relative">
+                            <div className="absolute -top-2 left-3 z-10">
+                              <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                Vista Previa
+                              </span>
                             </div>
-                          )}
+                            {banner.imageUrl ? (
+                              <div className="relative h-48 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl overflow-hidden border-2 border-gray-300 shadow-lg">
+                                <img
+                                  src={banner.imageUrl}
+                                  alt={banner.title}
+                                  className="h-full w-full object-cover"
+                                />
+                                {/* Overlay mejorado con gradiente */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col items-center justify-center text-white p-4">
+                                  <h3 className="font-black text-lg text-center drop-shadow-lg mb-2">{banner.title || 'Tu Título Aquí'}</h3>
+                                  <p className="text-sm text-center drop-shadow-md opacity-90">{banner.subtitle || 'Tu subtítulo aquí'}</p>
+                                  <button className="mt-3 bg-white text-gray-900 px-4 py-1.5 rounded-full text-xs font-bold hover:scale-105 transition-transform">
+                                    Ver Más
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl overflow-hidden border-2 border-dashed border-gray-400 flex items-center justify-center">
+                                <div className="text-center text-gray-500">
+                                  <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <p className="text-sm font-medium">Sube una imagen para ver la vista previa</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
 
                           {/* Título - Mejorado */}
                           <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                            <label className="block text-sm font-bold text-orange-700 mb-2 flex items-center gap-1">
-                              ✏️ Título Principal
+                            <label className="block text-sm font-bold text-orange-700 mb-2 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              Título Principal
                             </label>
                             <input
                               type="text"
@@ -7201,8 +7239,11 @@ export default function AdminPage() {
 
                           {/* Subtítulo - Mejorado */}
                           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <label className="block text-sm font-bold text-blue-700 mb-2 flex items-center gap-1">
-                              📝 Subtítulo / Descripción
+                            <label className="block text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Subtítulo / Descripción
                             </label>
                             <input
                               type="text"
@@ -7216,8 +7257,11 @@ export default function AdminPage() {
 
                           {/* Tipo de Enlace - Mejorado */}
                           <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                            <label className="block text-sm font-bold text-purple-700 mb-2 flex items-center gap-1">
-                              🔗 Destino del Banner
+                            <label className="block text-sm font-bold text-purple-700 mb-2 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                              </svg>
+                              Destino del Banner
                             </label>
                             <select
                               value={banner.linkType || 'url'}
@@ -7313,8 +7357,11 @@ export default function AdminPage() {
 
                           {/* Subir Imagen - Mejorado */}
                           <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                            <label className="block text-sm font-bold text-green-700 mb-2 flex items-center gap-1">
-                              🖼️ Imagen del Banner
+                            <label className="block text-sm font-bold text-green-700 mb-2 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Imagen del Banner
                             </label>
                             <input
                               type="file"
@@ -7342,29 +7389,42 @@ export default function AdminPage() {
                 </div>
 
                 {/* Información de Ayuda */}
-                <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
-                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                    💡 Consejos para Banners Efectivos
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6 shadow-md">
+                  <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Consejos para Banners Efectivos
                   </h4>
-                  <ul className="space-y-2 text-sm text-blue-800">
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-500">✓</span>
+                  <ul className="space-y-3 text-sm text-blue-900">
+                    <li className="flex items-start gap-3 bg-white/50 p-2.5 rounded-lg">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                       <span><strong>Título claro:</strong> Usa mensajes cortos y directos (ej: "¡Ofertas Imperdibles!")</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-500">✓</span>
+                    <li className="flex items-start gap-3 bg-white/50 p-2.5 rounded-lg">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                       <span><strong>Subtítulo descriptivo:</strong> Complementa con información adicional (ej: "Hasta 50% OFF")</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-500">✓</span>
+                    <li className="flex items-start gap-3 bg-white/50 p-2.5 rounded-lg">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                       <span><strong>Imágenes de calidad:</strong> Usa imágenes de alta resolución (1440x480px ideal)</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-500">✓</span>
+                    <li className="flex items-start gap-3 bg-white/50 p-2.5 rounded-lg">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                       <span><strong>Destino correcto:</strong> Configura el enlace según lo que quieres promocionar</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-500">💾</span>
+                    <li className="flex items-start gap-3 bg-gradient-to-r from-green-50 to-emerald-50 p-2.5 rounded-lg border border-green-200">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                       <span><strong>Auto-guardado:</strong> Los cambios se guardan automáticamente cada 2 segundos</span>
                     </li>
                   </ul>
