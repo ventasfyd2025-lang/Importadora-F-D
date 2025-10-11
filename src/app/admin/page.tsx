@@ -7150,120 +7150,170 @@ export default function AdminPage() {
                     const stateKey = `middle-${banner.id}`;
 
                     return (
-                      <div key={banner.id || `middle-${index}`} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
-                        <h4 className="font-medium text-gray-900">Banner #{index + 1}</h4>
+                      <div key={banner.id || `middle-${index}`} className="border-2 border-gray-300 rounded-xl p-5 flex flex-col gap-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-lg">Banner #{index + 1}</h4>
+                          {isAutoSaving && (
+                            <span className="text-xs text-green-600 flex items-center gap-1">
+                              <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Guardando...
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 -mt-2">{placementLabel}</p>
 
-                        <div className="space-y-3">
-                          {/* Preview */}
+                        <div className="space-y-4">
+                          {/* Preview Mejorada */}
                           {banner.imageUrl && (
-                            <div className="relative h-32 bg-gray-100 rounded overflow-hidden">
+                            <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden border-2 border-gray-200">
                               <img
                                 src={banner.imageUrl}
                                 alt={banner.title}
                                 className="h-full w-full object-cover"
                               />
+                              {/* Overlay de texto sobre preview */}
+                              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-white p-3">
+                                <p className="font-bold text-sm text-center">{banner.title || 'Sin título'}</p>
+                                <p className="text-xs text-center mt-1">{banner.subtitle || 'Sin subtítulo'}</p>
+                              </div>
                             </div>
                           )}
 
-                          {/* Título */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Título</label>
+                          {/* Título - Mejorado */}
+                          <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                            <label className="block text-sm font-bold text-orange-700 mb-2 flex items-center gap-1">
+                              ✏️ Título Principal
+                            </label>
                             <input
                               type="text"
                               value={banner.title}
                               onChange={(e) => updateMiddleBanner(index, { ...banner, title: e.target.value })}
-                              className="w-full text-sm border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
-                              placeholder="Ej: Ofertas Especiales"
+                              className="w-full text-sm border-2 border-orange-300 rounded-lg px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none bg-white transition-all"
+                              placeholder="Ej: ¡Ofertas Especiales! 🔥"
                             />
+                            <p className="text-xs text-orange-600 mt-1">Este texto aparece grande en el banner</p>
                           </div>
 
-                          {/* Subtítulo */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Subtítulo</label>
+                          {/* Subtítulo - Mejorado */}
+                          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                            <label className="block text-sm font-bold text-blue-700 mb-2 flex items-center gap-1">
+                              📝 Subtítulo / Descripción
+                            </label>
                             <input
                               type="text"
                               value={banner.subtitle}
                               onChange={(e) => updateMiddleBanner(index, { ...banner, subtitle: e.target.value })}
-                              className="w-full text-sm border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
-                              placeholder="Ej: Hasta 50% de descuento"
+                              className="w-full text-sm border-2 border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-white transition-all"
+                              placeholder="Ej: Hasta 50% de descuento en productos seleccionados"
                             />
+                            <p className="text-xs text-blue-600 mt-1">Texto descriptivo que acompaña al título</p>
                           </div>
 
-                          {/* Tipo de Enlace */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de enlace</label>
+                          {/* Tipo de Enlace - Mejorado */}
+                          <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                            <label className="block text-sm font-bold text-purple-700 mb-2 flex items-center gap-1">
+                              🔗 Destino del Banner
+                            </label>
                             <select
                               value={banner.linkType || 'url'}
                               onChange={(e) => {
                                 const linkType = e.target.value as 'category' | 'product' | 'filter' | 'url' | 'popup-ofertas';
                                 updateMiddleBanner(index, { ...banner, linkType, linkValue: '', ctaLink: '' });
                               }}
-                              className="w-full text-xs border rounded px-2 py-1 focus:border-orange-500 focus:outline-none"
+                              className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all font-medium"
                             >
                               <option value="category">📁 Categoría</option>
                               <option value="product">📦 Producto</option>
-                              <option value="filter">🔍 Filtro</option>
-                              <option value="popup-ofertas">🎯 Secciones Especiales</option>
-                              <option value="url">🔗 URL personalizada</option>
+                              <option value="filter">🔍 Filtro (Ofertas/Nuevos)</option>
+                              <option value="popup-ofertas">🎯 Página de Ofertas Especiales</option>
+                              <option value="url">🔗 URL Personalizada</option>
                             </select>
 
                             {banner.linkType === 'category' ? (
-                              <div className="mt-2">
+                              <div className="mt-3">
+                                <label className="block text-xs font-semibold text-purple-700 mb-2">
+                                  Selecciona la categoría:
+                                </label>
                                 <select
                                   value={banner.linkValue || ''}
                                   onChange={(e) => {
                                     const value = e.target.value;
                                     updateMiddleBanner(index, { ...banner, linkValue: value, ctaLink: `/?category=${value}` });
                                   }}
-                                  className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                                  className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all"
                                 >
                                   <option value="">-- Selecciona una categoría --</option>
-                                  {availableCategories.map((cat) => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                  ))}
+                                  {availableCategories.length === 0 ? (
+                                    <option disabled>No hay categorías disponibles</option>
+                                  ) : (
+                                    availableCategories.map((cat) => (
+                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))
+                                  )}
                                 </select>
+                                {availableCategories.length === 0 && (
+                                  <p className="text-xs text-red-600 mt-2">⚠️ No se encontraron categorías. Crea categorías primero.</p>
+                                )}
+                                {banner.linkValue && (
+                                  <p className="text-xs text-green-600 mt-2">✓ Enlace: /?category={banner.linkValue}</p>
+                                )}
                               </div>
                             ) : banner.linkType === 'filter' ? (
-                              <div className="mt-2">
+                              <div className="mt-3">
+                                <label className="block text-xs font-semibold text-purple-700 mb-2">
+                                  Selecciona el filtro:
+                                </label>
                                 <select
                                   value={banner.linkValue || ''}
                                   onChange={(e) => {
                                     const value = e.target.value;
                                     updateMiddleBanner(index, { ...banner, linkValue: value, ctaLink: `/?filter=${value}` });
                                   }}
-                                  className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                                  className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all"
                                 >
                                   <option value="">-- Selecciona un filtro --</option>
-                                  <option value="ofertas">🏷️ Ofertas</option>
-                                  <option value="nuevos">✨ Nuevos</option>
+                                  <option value="ofertas">🏷️ Productos en Oferta</option>
+                                  <option value="nuevos">✨ Productos Nuevos</option>
                                 </select>
+                                {banner.linkValue && (
+                                  <p className="text-xs text-green-600 mt-2">✓ Enlace: /?filter={banner.linkValue}</p>
+                                )}
                               </div>
                             ) : banner.linkType === 'popup-ofertas' ? (
-                              <div className="mt-2">
+                              <div className="mt-3">
                                 <input
                                   type="text"
                                   value="/popup-ofertas"
                                   disabled
-                                  className="w-full text-xs border rounded px-2 py-1.5 bg-gray-100 text-gray-600"
+                                  className="w-full text-sm border-2 border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 font-medium"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Enlaza a la página de ofertas especiales</p>
+                                <p className="text-xs text-purple-600 mt-2">📍 Enlaza a la página de ofertas especiales configurada</p>
                               </div>
                             ) : (
-                              <div className="mt-2">
+                              <div className="mt-3">
+                                <label className="block text-xs font-semibold text-purple-700 mb-2">
+                                  URL completa:
+                                </label>
                                 <input
                                   type="text"
                                   value={banner.ctaLink}
                                   onChange={(e) => updateMiddleBanner(index, { ...banner, ctaLink: e.target.value })}
-                                  className="w-full text-sm border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                                  className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none bg-white transition-all"
                                   placeholder="https://ejemplo.com o /?filter=ofertas"
                                 />
+                                <p className="text-xs text-purple-600 mt-2">💡 Ej: https://tupagina.com o /?category=tecnologia</p>
                               </div>
                             )}
                           </div>
 
-                          {/* Subir Imagen */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Imagen del Banner</label>
+                          {/* Subir Imagen - Mejorado */}
+                          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                            <label className="block text-sm font-bold text-green-700 mb-2 flex items-center gap-1">
+                              🖼️ Imagen del Banner
+                            </label>
                             <input
                               type="file"
                               accept="image/*"
@@ -7273,18 +7323,49 @@ export default function AdminPage() {
                                   handleMiddleBannerImageUpload(file, index, banner);
                                 }
                               }}
-                              className="w-full text-xs border rounded px-2 py-1.5 focus:border-orange-500 focus:outline-none"
+                              className="w-full text-sm border-2 border-green-300 rounded-lg px-3 py-2 focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none bg-white transition-all file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-green-100 file:text-green-700 hover:file:bg-green-200"
                             />
-                            {uploadingImages[stateKey] && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                <span className="animate-pulse">⏳</span> Subiendo...
+                            {uploadingImages[stateKey] ? (
+                              <p className="text-xs text-orange-600 mt-2 font-medium flex items-center gap-1">
+                                <span className="animate-pulse">⏳</span> Subiendo imagen...
                               </p>
+                            ) : (
+                              <p className="text-xs text-green-600 mt-2">📐 1440x480px recomendado (ratio 3:1)</p>
                             )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Información de Ayuda */}
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
+                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    💡 Consejos para Banners Efectivos
+                  </h4>
+                  <ul className="space-y-2 text-sm text-blue-800">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-500">✓</span>
+                      <span><strong>Título claro:</strong> Usa mensajes cortos y directos (ej: "¡Ofertas Imperdibles!")</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-500">✓</span>
+                      <span><strong>Subtítulo descriptivo:</strong> Complementa con información adicional (ej: "Hasta 50% OFF")</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-500">✓</span>
+                      <span><strong>Imágenes de calidad:</strong> Usa imágenes de alta resolución (1440x480px ideal)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-500">✓</span>
+                      <span><strong>Destino correcto:</strong> Configura el enlace según lo que quieres promocionar</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500">💾</span>
+                      <span><strong>Auto-guardado:</strong> Los cambios se guardan automáticamente cada 2 segundos</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
 
