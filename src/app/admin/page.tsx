@@ -12,6 +12,7 @@ import { useFooterConfig } from '@/hooks/useFooterConfig';
 import { useBankConfig } from '@/hooks/useBankConfig';
 import { useLayoutPatterns, DEFAULT_LAYOUT_PATTERNS } from '@/hooks/useLayoutPatterns';
 import { useUserAuth, UserProfile } from '@/hooks/useUserAuth';
+import { useEmailNotifications } from '@/hooks/useEmailNotifications';
 import {
   collection,
   getDocs,
@@ -423,6 +424,7 @@ export default function AdminPage() {
   const { products, refetch, removeProduct, removeProducts } = useProducts();
   const { footerConfig, updateFooterConfig, loading: footerLoading } = useFooterConfig();
   const { bankConfig, updateBankConfig, loading: bankLoading } = useBankConfig();
+  const { notifyOrderStatusChange } = useEmailNotifications();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [ordersFilter, setOrdersFilter] = useState<'active' | 'completed'>('active');
@@ -1972,11 +1974,13 @@ export default function AdminPage() {
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
 
-      await updateDoc(doc(db, 'orders', orderId), { 
+      const oldStatus = order.status;
+
+      await updateDoc(doc(db, 'orders', orderId), {
         status: newStatus,
         updatedAt: serverTimestamp()
       });
-      
+
       // Send notification message about status change
       const statusMessages = {
         confirmed: `✅ **Pago Confirmado** - ${new Date().toLocaleString('es-CL')}\n\nTu pedido #${orderId.slice(-8).toUpperCase()} ha sido confirmado exitosamente. Hemos verificado tu pago y ahora estamos preparando tus productos para el envío.\n\n📋 **Siguiente paso:** Verificación de stock y preparación del pedido`,
@@ -1988,8 +1992,24 @@ export default function AdminPage() {
 
       const statusMessage = statusMessages[newStatus as keyof typeof statusMessages];
       if (statusMessage && order.customerEmail) {
-        // Try to find user by email to send notification
+        // Send chat notification
         await sendOrderNotification(orderId, order.customerEmail, order.customerName, statusMessage);
+
+        // Send email notification
+        try {
+          await notifyOrderStatusChange({
+            orderId: orderId,
+            oldStatus: oldStatus,
+            newStatus: newStatus,
+            customerName: order.customerName,
+            customerEmail: order.customerEmail,
+            total: order.total
+          });
+          console.log('✅ Email de cambio de estado enviado exitosamente');
+        } catch (emailError) {
+          console.error('❌ Error enviando email de cambio de estado:', emailError);
+          // No bloquear el proceso si falla el email
+        }
       }
 
       // Regenerar reporte diario cuando se entrega un pedido

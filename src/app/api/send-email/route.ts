@@ -133,14 +133,74 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'order_status_change':
-        subject = `📦 Cambio de Estado - Orden #${data.orderId}`;
+        const statusLabels: Record<string, string> = {
+          pending: '⏳ Pendiente',
+          pending_verification: '🔍 Pendiente de Verificación',
+          confirmed: '✅ Confirmado',
+          preparing: '📦 Preparando',
+          shipped: '🚚 Enviado',
+          delivered: '✔️ Entregado',
+          cancelled: '❌ Cancelado'
+        };
+
+        const statusDescriptions: Record<string, string> = {
+          confirmed: '¡Excelente noticia! Hemos confirmado tu pago y tu pedido está siendo procesado.',
+          preparing: 'Estamos preparando cuidadosamente tu pedido para el envío.',
+          shipped: '¡Tu pedido está en camino! Recibirás tu compra pronto.',
+          delivered: '¡Tu pedido ha sido entregado! Esperamos que disfrutes tu compra.',
+          cancelled: 'Tu pedido ha sido cancelado. Si tienes dudas, contáctanos.'
+        };
+
+        const orderIdShort = data.orderId.slice(-8).toUpperCase();
+        subject = `${statusLabels[data.newStatus] || '📦'} - Orden #${orderIdShort}`;
+
         emailContent = `
-          <h2>Cambio de Estado de Orden</h2>
-          <p><strong>ID de Orden:</strong> ${data.orderId}</p>
-          <p><strong>Estado Anterior:</strong> ${data.oldStatus}</p>
-          <p><strong>Estado Nuevo:</strong> ${data.newStatus}</p>
-          <p><strong>Cliente:</strong> ${data.customerName}</p>
-          <p><strong>Total:</strong> $${data.total.toLocaleString('es-CL')}</p>
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="font-size: 28px; margin-bottom: 10px;">¡Actualización de tu Pedido!</h2>
+            <p style="font-size: 16px; color: #666;">Orden #${orderIdShort}</p>
+          </div>
+
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="font-size: 18px; margin: 0;">
+              <strong>Estado actual:</strong> ${statusLabels[data.newStatus] || data.newStatus}
+            </p>
+            ${statusDescriptions[data.newStatus] ? `
+              <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                ${statusDescriptions[data.newStatus]}
+              </p>
+            ` : ''}
+          </div>
+
+          <div style="margin: 20px 0;">
+            <p><strong>Cliente:</strong> ${data.customerName}</p>
+            <p><strong>Total del pedido:</strong> $${data.total.toLocaleString('es-CL')}</p>
+          </div>
+
+          ${data.newStatus === 'confirmed' ? `
+            <div style="background-color: #d1fae5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+              <p style="margin: 0; color: #065f46;">
+                <strong>Próximos pasos:</strong><br>
+                • Estamos verificando el stock de tus productos<br>
+                • Preparando tu pedido para el envío<br>
+                • Te notificaremos cuando sea despachado
+              </p>
+            </div>
+          ` : ''}
+
+          ${data.newStatus === 'shipped' ? `
+            <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+              <p style="margin: 0; color: #1e40af;">
+                <strong>Tu pedido está en camino:</strong><br>
+                Pronto recibirás tu compra en la dirección indicada.
+              </p>
+            </div>
+          ` : ''}
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
+            <p style="color: #666; font-size: 14px;">
+              ¿Tienes preguntas? Contáctanos respondiendo este email o por WhatsApp.
+            </p>
+          </div>
         `;
         addRecipient(data.customerEmail || data.email);
         break;

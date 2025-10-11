@@ -66,8 +66,21 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      allow create, update: if isAdmin() && validateProduct(request.resource.data);
+
+      // Admin puede crear, actualizar y eliminar sin restricciones
+      allow create: if isAdmin() && validateProduct(request.resource.data);
       allow delete: if isAdmin();
+
+      // Admin puede actualizar todo
+      allow update: if isAdmin() && validateProduct(request.resource.data);
+
+      // Usuarios autenticados (incluyendo anónimos) pueden actualizar solo el stock
+      // durante el checkout, con validación
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['stock'])
+        && request.resource.data.stock is number
+        && request.resource.data.stock >= 0
+        && request.resource.data.stock <= resource.data.stock; // Solo puede decrementar
     }
 
     match /categories/{categoryId} {
@@ -119,18 +132,60 @@ service cloud.firestore {
     }
 
     match /chat_messages/{messageId} {
+      // Admins pueden crear mensajes para cualquier usuario
+      allow create: if isAdmin() && validateChatMessage(request.resource.data);
+
+      // Usuarios regulares solo pueden crear mensajes para sí mismos
       allow create: if isSignedIn()
         && request.auth.uid == request.resource.data.userId
         && validateChatMessage(request.resource.data);
+
+      // Lectura: admin o el propio usuario
       allow read: if isAdmin()
         || (isSignedIn() && request.auth.uid == resource.data.userId);
+
+      // Actualización: admin o el propio usuario (para marcar como leído)
       allow update: if isAdmin()
         || (isSignedIn() && request.auth.uid == resource.data.userId);
+
+      // Eliminación: solo admin
       allow delete: if isAdmin();
     }
 
     match /daily_reports/{reportId} {
       allow read, write: if isAdmin();
+    }
+
+    match /stock_transactions/{transactionId} {
+      // Admin puede leer todas las transacciones
+      allow read: if isAdmin();
+
+      // Usuarios autenticados pueden crear transacciones durante checkout
+      allow create: if isSignedIn()
+        && request.resource.data.productId is string
+        && request.resource.data.productName is string
+        && request.resource.data.type in ['reservation', 'release']
+        && request.resource.data.quantity is number
+        && request.resource.data.previousStock is number
+        && request.resource.data.newStock is number;
+
+      // Solo admin puede actualizar o eliminar
+      allow update, delete: if isAdmin();
+    }
+
+    match /stock_alerts/{alertId} {
+      // Admin puede leer todas las alertas
+      allow read: if isAdmin();
+
+      // Usuarios autenticados pueden crear alertas durante checkout
+      allow create: if isSignedIn()
+        && request.resource.data.productId is string
+        && request.resource.data.productName is string
+        && request.resource.data.currentStock is number
+        && request.resource.data.severity in ['low', 'critical', 'out'];
+
+      // Solo admin puede actualizar o eliminar
+      allow update, delete: if isAdmin();
     }
 
     match /{document=**} {

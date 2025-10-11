@@ -62,6 +62,7 @@ export function useEmailNotifications() {
     oldStatus: string;
     newStatus: string;
     customerName: string;
+    customerEmail: string;
     total: number;
   }) => {
     return sendEmail({ type: 'order_status_change', data: orderData });
