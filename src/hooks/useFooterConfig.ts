@@ -15,6 +15,7 @@ export interface FooterConfig {
   socialMedia: {
     facebook: string;
     instagram: string;
+    tiktok?: string;
     whatsapp: string;
   };
   showSocialMedia: boolean;
@@ -32,6 +33,7 @@ const defaultFooterConfig: FooterConfig = {
   socialMedia: {
     facebook: '#',
     instagram: '#',
+    tiktok: '#',
     whatsapp: '#'
   },
   showSocialMedia: true,

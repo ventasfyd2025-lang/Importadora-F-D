@@ -562,6 +562,7 @@ export default function AdminPage() {
     address: '',
     facebookUrl: '',
     instagramUrl: '',
+    tiktokUrl: '',
     whatsappUrl: ''
   });
   const [updatingFooter, setUpdatingFooter] = useState(false);
@@ -587,6 +588,7 @@ export default function AdminPage() {
         address: footerConfig.contact.address || '',
         facebookUrl: footerConfig.socialMedia.facebook || '',
         instagramUrl: footerConfig.socialMedia.instagram || '',
+        tiktokUrl: footerConfig.socialMedia.tiktok || '',
         whatsappUrl: footerConfig.socialMedia.whatsapp || ''
       });
     }
@@ -7493,7 +7495,21 @@ export default function AdminPage() {
                         style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
                       />
                     </div>
-                    
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        🎵 TikTok URL
+                      </label>
+                      <input
+                        type="url"
+                        value={footerForm.tiktokUrl}
+                        onChange={(e) => setFooterForm({ ...footerForm, tiktokUrl: e.target.value })}
+                        placeholder="https://tiktok.com/@tu-cuenta"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': '#F16529' } as React.CSSProperties}
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         💬 WhatsApp (número de teléfono)
@@ -7530,6 +7546,7 @@ export default function AdminPage() {
                         socialMedia: {
                           facebook: footerForm.facebookUrl,
                           instagram: footerForm.instagramUrl,
+                          tiktok: footerForm.tiktokUrl,
                           whatsapp: footerForm.whatsappUrl
                         }
                       });
