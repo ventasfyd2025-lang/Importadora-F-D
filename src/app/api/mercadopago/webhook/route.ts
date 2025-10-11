@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
+                        'x-email-api-secret': process.env.EMAIL_API_SECRET || '',
                       },
                       body: JSON.stringify({
                         type: 'new_order',

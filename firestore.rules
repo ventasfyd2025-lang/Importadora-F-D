@@ -44,6 +44,18 @@ service cloud.firestore {
         && (!('orderId' in data) || data.orderId is string);
     }
 
+    // Validar que usuarios regulares solo puedan editar campos permitidos
+    function validateUserUpdate(data) {
+      // Campos que el usuario puede editar libremente
+      let allowedFields = ['displayName', 'email', 'phone', 'address', 'photoURL', 'updatedAt'];
+
+      // Campos sensibles que NO pueden ser editados por usuarios regulares
+      let protectedFields = ['role', 'isAdmin', 'customClaims', 'createdAt'];
+
+      // Si el usuario intenta modificar campos protegidos, rechazar
+      return !data.keys().hasAny(protectedFields);
+    }
+
     match /products/{productId} {
       allow read: if true;
       allow create, update: if isAdmin() && validateProduct(request.resource.data);
@@ -70,6 +82,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /siteConfig/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /orders/{orderId} {
       allow create: if validateOrder(request.resource.data);
       allow read: if isAdmin() || isOrderOwner();
@@ -77,7 +94,19 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      // Lectura: admin o el propio usuario
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+
+      // Creación: solo admin o el propio usuario (sin campos protegidos)
+      allow create: if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId && validateUserUpdate(request.resource.data));
+
+      // Actualización: admin sin restricciones, usuario regular con validación
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId && validateUserUpdate(request.resource.data));
+
+      // Borrado: solo admin
+      allow delete: if isAdmin();
     }
 
     match /chat_messages/{messageId} {

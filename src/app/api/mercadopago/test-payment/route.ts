@@ -11,6 +11,18 @@ const client = new MercadoPagoConfig({
 const preference = new Preference(client);
 
 export async function POST(_request: NextRequest) {
+  // ⚠️ SEGURIDAD: Deshabilitar en producción
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Endpoint de prueba deshabilitado en producción',
+        message: 'Este endpoint solo está disponible en desarrollo'
+      },
+      { status: 403 }
+    );
+  }
+
   try {
     // Preferencia mínima siguiendo documentación oficial
     const testPreference = {

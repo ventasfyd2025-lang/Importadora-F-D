@@ -11,8 +11,9 @@ import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { useEmailNotifications } from '@/hooks/useEmailNotifications';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { addDoc, collection } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import dynamic from 'next/dynamic';
 
 const MercadoPagoWallet = dynamic(() => import('@/components/MercadoPagoWallet'), {
@@ -246,6 +247,17 @@ function CheckoutContent() {
     }
 
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authError) {
+          console.error('❌ Error iniciando sesión anónima antes de la transferencia:', authError);
+          alert('No pudimos preparar la subida del comprobante. Intenta nuevamente.');
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       console.log('🔄 Iniciando proceso de transferencia...');
       console.log('📁 Archivo del comprobante:', comprobanteFile.name, comprobanteFile.size, 'bytes');
 

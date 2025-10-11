@@ -34,9 +34,9 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <NotificationProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="min-h-screen w-full" style={{ paddingTop: `${paddingTop}px` }}>
+        <main className="flex-1 w-full" style={{ paddingTop: `${paddingTop}px` }}>
           {children}
         </main>
         <Footer />

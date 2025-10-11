@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { logError, logInfo } from '@/utils/logger';
+import { adminDb } from '@/lib/firebase-admin';
+import { Product } from '@/types';
 
 // Define interfaces for strong typing
 interface RequestItem {
@@ -28,6 +30,63 @@ interface RequestBody {
   items: RequestItem[];
   userInfo: UserInfo;
   orderId: string;
+}
+
+// Función para validar y recalcular precios desde el servidor
+async function validateAndRecalculatePrices(clientItems: RequestItem[]): Promise<{
+  validatedItems: RequestItem[];
+  serverTotal: number;
+  clientTotal: number;
+  priceMismatch: boolean;
+}> {
+  const validatedItems: RequestItem[] = [];
+  let serverTotal = 0;
+  let clientTotal = 0;
+
+  for (const clientItem of clientItems) {
+    // Calcular total del cliente
+    clientTotal += clientItem.price * clientItem.quantity;
+
+    // Obtener producto real de Firestore
+    const productDoc = await adminDb.collection('products').doc(clientItem.id).get();
+
+    if (!productDoc.exists) {
+      throw new Error(`Producto ${clientItem.id} no encontrado en la base de datos`);
+    }
+
+    const productData = productDoc.data() as Product;
+
+    // Verificar que el producto esté activo
+    if (productData.activo === false) {
+      throw new Error(`Producto ${productData.nombre} no está disponible`);
+    }
+
+    // Verificar stock suficiente
+    if (productData.stock < clientItem.quantity) {
+      throw new Error(`Stock insuficiente para ${productData.nombre}. Disponible: ${productData.stock}, solicitado: ${clientItem.quantity}`);
+    }
+
+    // Usar precio del servidor (el real)
+    const serverPrice = productData.precio;
+    serverTotal += serverPrice * clientItem.quantity;
+
+    // Crear item validado con precio del servidor
+    validatedItems.push({
+      id: clientItem.id,
+      title: productData.nombre,
+      description: productData.descripcion || clientItem.description,
+      quantity: clientItem.quantity,
+      price: serverPrice, // PRECIO DEL SERVIDOR
+      image: productData.imagen || clientItem.image
+    });
+  }
+
+  return {
+    validatedItems,
+    serverTotal,
+    clientTotal,
+    priceMismatch: Math.abs(serverTotal - clientTotal) > 0.01 // Tolerancia de 1 centavo por redondeo
+  };
 }
 
 // Configurar MercadoPago con el access token
@@ -64,22 +123,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Preparar items para MercadoPago
-    const mpItems = items.map((item) => ({
+    // ⚠️ VALIDACIÓN DE SEGURIDAD: Recalcular precios desde el servidor
+    const validation = await validateAndRecalculatePrices(items);
+
+    // Si hay diferencia de precios, rechazar la petición
+    if (validation.priceMismatch) {
+      logError('Intento de manipulación de precios detectado', {
+        orderId,
+        clientTotal: validation.clientTotal,
+        serverTotal: validation.serverTotal,
+        difference: validation.serverTotal - validation.clientTotal
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Los precios no coinciden con los del servidor',
+          message: 'Por favor actualiza tu carrito y vuelve a intentarlo',
+          clientTotal: validation.clientTotal,
+          serverTotal: validation.serverTotal
+        },
+        { status: 400 }
+      );
+    }
+
+    // Preparar items para MercadoPago con precios validados del servidor
+    const mpItems = validation.validatedItems.map((item) => ({
       id: item.id,
       title: item.title,
       description: item.description || `${item.title} - Producto`,
       quantity: item.quantity,
-      unit_price: parseFloat(item.price.toString()),
+      unit_price: parseFloat(item.price.toString()), // Precio validado del servidor
       currency_id: 'CLP', // Peso chileno
       picture_url: item.image
     }));
 
     // Obtener la URL base correcta y limpiarla
     const baseUrl = (process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').trim();
-    
-    // Calcular total desde los items
-    const total = mpItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+
+    // Calcular total desde los items validados del servidor
+    const total = validation.serverTotal;
 
     // Preparar datos del usuario de forma segura
     const customerName = `${userInfo?.firstName || ''} ${userInfo?.lastName || ''}`.trim();
@@ -110,11 +192,13 @@ export async function POST(request: NextRequest) {
     };
 
 
-    // Log de la preferencia antes de crearla
-    logInfo('Creando preferencia MercadoPago', {
+    // Log de la preferencia antes de crearla (con validación de precios)
+    logInfo('Creando preferencia MercadoPago con precios validados', {
       orderId: orderId || 'sin_orden',
       itemsCount: mpItems.length,
-      total: mpItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0),
+      totalValidado: validation.serverTotal,
+      totalCliente: validation.clientTotal,
+      preciosCoinciden: !validation.priceMismatch,
       userEmail: userInfo?.email || 'sin_email',
       baseUrl: baseUrl,
       successUrl: `${baseUrl}/checkout/success`

@@ -5,6 +5,45 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const DEFAULT_RECIPIENT = 'ventas.fyd2025@gmail.com';
 
+// ⚠️ SEGURIDAD: Token secreto para proteger el endpoint
+// Genera uno seguro y agrégalo en .env: EMAIL_API_SECRET=tu_token_secreto_aqui
+const EMAIL_API_SECRET = process.env.EMAIL_API_SECRET;
+
+// Rate limiting simple en memoria (para producción considera Redis o similar)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
+const MAX_REQUESTS_PER_WINDOW = 5; // 5 emails por minuto por IP
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS
+    });
+    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1 };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - record.count };
+}
+
+// Limpiar registros antiguos cada 5 minutos
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now > record.resetTime) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
 const normalizeEmail = (email?: string | null) => {
   if (!email) return null;
   const trimmed = email.trim();
@@ -16,6 +55,39 @@ const normalizeEmail = (email?: string | null) => {
 
 export async function POST(request: NextRequest) {
   try {
+    // ⚠️ SEGURIDAD: Verificar token de autenticación (opcional)
+    const authHeader = request.headers.get('x-email-api-secret');
+    const hasValidToken = EMAIL_API_SECRET && authHeader === EMAIL_API_SECRET;
+
+    // ⚠️ SEGURIDAD: Rate limiting
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+
+    const rateLimit = checkRateLimit(ip);
+
+    // Si NO tiene token válido, aplicar rate limiting estricto
+    if (!hasValidToken && !rateLimit.allowed) {
+      console.warn(`🚨 Rate limit excedido para IP sin autenticación: ${ip}`);
+      return NextResponse.json(
+        {
+          error: 'Demasiadas peticiones. Por favor intenta más tarde.',
+          retryAfter: RATE_LIMIT_WINDOW_MS / 1000
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(RATE_LIMIT_WINDOW_MS / 1000)
+          }
+        }
+      );
+    }
+
+    // Si tiene token válido, bypass del rate limiting (llamadas del servidor son confiables)
+    if (hasValidToken) {
+      console.log('✅ Llamada autenticada desde servidor (bypass rate limiting)');
+    }
+
     const body = await request.json();
     const { type, data } = body;
 

@@ -2,46 +2,66 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Public read access for all assets
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.isAdmin == true || request.auth.token.admin == true);
+    }
+
+    function isAllowedProofFile() {
+      return request.resource != null
+        && request.resource.size < 7 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+          || request.resource.contentType.matches('application/pdf'));
+    }
+
+    // Lectura pública de assets; escritura solo para administradores autenticados
     match /homepage-promotions/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow all writes for admin
+      allow write: if isAdmin();
     }
 
     match /homepage-middle-banners/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow all writes for admin
+      allow write: if isAdmin();
     }
 
     match /banners/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow all writes for admin
+      allow write: if isAdmin();
     }
 
     match /config/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow all writes for admin
+      allow write: if isAdmin();
     }
 
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow all writes for admin
+      allow write: if isAdmin();
     }
 
     match /main-banner/{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow all writes for admin
+      allow write: if isAdmin();
+    }
+
+    match /comprobantes/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isAdmin() || isSignedIn()) && isAllowedProofFile();
     }
 
     match /test/{allPaths=**} {
-      allow read: if true;
-      allow write: if true; // For testing
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
 
-    // Default: allow all for now (will restrict later)
+    // Regla por defecto para cualquier otra carpeta: lectura pública, escritura restringida
     match /{allPaths=**} {
       allow read: if true;
-      allow write: if true; // Temporarily open for admin functionality
+      allow write: if isAdmin();
     }
   }
 }

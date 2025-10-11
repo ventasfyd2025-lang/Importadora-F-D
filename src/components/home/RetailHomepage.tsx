@@ -17,7 +17,7 @@ import BannerCarousel from '@/components/home/BannerCarousel';
 import ProductCarousel from '@/components/home/ProductCarousel';
 import ProductCard from '@/components/ProductCard';
 import { ProductCardSkeleton, BannerSkeleton } from '@/components/home/SkeletonLoader';
-import { defaultMiddleBanners } from '@/components/home/bannerData';
+import { defaultHeroBanners, defaultMiddleBanners } from '@/components/home/bannerData';
 import MasonryProductGrid from '@/components/MasonryProductGrid';
 import HorizontalProductGrid from '@/components/HorizontalProductGrid';
 import { useCategories } from '@/hooks/useCategories';
@@ -348,20 +348,45 @@ export default function RetailHomepage() {
 
   // Transform main banner config to banner slides
   const bannerSlides = mainBannerConfig?.slides?.map((slide, index) => {
-    let ctaLink = '#';
+    const fallback = defaultHeroBanners[index % defaultHeroBanners.length];
 
-    // Handle different link types
-    if (slide.linkType === 'product' && slide.productId) {
-      ctaLink = `/producto/${slide.productId}`;
-    } else if (slide.linkType === 'category' && slide.categoryId) {
-      ctaLink = `/?category=${slide.categoryId}`;
-    } else if (slide.productId) {
-      // Fallback for old data format - assume product link
-      ctaLink = `/producto/${slide.productId}`;
-    } else if (slide.categoryId) {
-      // Fallback for old data format - assume category link
-      ctaLink = `/?category=${slide.categoryId}`;
-    }
+    const ensureString = (value: unknown): string | undefined => (
+      typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
+    );
+
+    const pickString = (value: unknown, fallbackValue: string): string => (
+      ensureString(value) ?? fallbackValue
+    );
+
+    const resolveImageUrl = () => ensureString(slide.imageUrl) ?? fallback.imageUrl;
+
+    const resolveCtaLink = () => {
+      if (slide.linkType === 'product' && slide.productId) {
+        return `/producto/${slide.productId}`;
+      }
+      if (slide.linkType === 'category' && slide.categoryId) {
+        return `/?category=${slide.categoryId}`;
+      }
+      if (slide.linkType === 'url' && ensureString(slide.customUrl)) {
+        return ensureString(slide.customUrl) as string;
+      }
+      if (slide.productId) {
+        return `/producto/${slide.productId}`;
+      }
+      if (slide.categoryId) {
+        return `/?category=${slide.categoryId}`;
+      }
+      return fallback.ctaLink ?? '#';
+    };
+
+    const defaultCtaByType = () => {
+      if (slide.linkType === 'category') return 'Ver categoría';
+      if (slide.linkType === 'url') return 'Ver más';
+      return 'Ver producto';
+    };
+
+    const resolvedBadgeText = pickString((slide as any)?.badgeText, fallback.badgeText ?? '');
+    const resolvedBadgeColor = ensureString((slide as any)?.badgeColor) ?? fallback.badgeColor;
 
     const baseId = slide.linkType === 'category'
       ? `category-${slide.categoryId || index}`
@@ -369,13 +394,13 @@ export default function RetailHomepage() {
 
     return {
       id: `${baseId}-${index}`,
-      title: `Oferta Especial ${index + 1}`,
-      subtitle: slide.linkType === 'category' ? 'Múltiples productos en promoción' : 'Producto en promoción',
-      imageUrl: slide.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=500&fit=crop',
-      ctaText: slide.linkType === 'category' ? 'Ver categoría' : 'Ver producto',
-      ctaLink: ctaLink,
-      badgeText: index === 0 ? 'OFERTA' : index === 1 ? 'NUEVO' : 'POPULAR',
-      badgeColor: index === 0 ? '#EF4444' : index === 1 ? '#3B82F6' : '#10B981'
+      title: pickString(slide.title, fallback.title),
+      subtitle: pickString(slide.subtitle, fallback.subtitle),
+      imageUrl: resolveImageUrl(),
+      ctaText: pickString((slide as any)?.ctaText, fallback.ctaText ?? defaultCtaByType()),
+      ctaLink: resolveCtaLink(),
+      badgeText: resolvedBadgeText || undefined,
+      badgeColor: resolvedBadgeColor,
     };
   }) || [];
 
