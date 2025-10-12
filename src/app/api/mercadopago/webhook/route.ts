@@ -68,10 +68,15 @@ export async function POST(request: NextRequest) {
     const bodyText = await request.text();
     const body = JSON.parse(bodyText);
 
+    console.log('🔔 Webhook recibido:', { type: body.type, action: body.action, paymentId: body.data?.id });
+
     // Validar firma del webhook
     if (!validateWebhookSignature(request, bodyText)) {
+      console.error('❌ Firma inválida - rechazando webhook');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
+
+    console.log('✅ Firma válida - procesando webhook');
 
     // Procesar diferentes tipos de notificación
     if (body.type === 'payment') {
@@ -134,8 +139,11 @@ export async function POST(request: NextRequest) {
                   updatedAt: new Date()
                 });
 
+                console.log(`📊 Estado del pago: ${status}, Estado anterior: ${previousStatus}`);
+
                 // Si el pago fue aprobado y el estado anterior era pending_payment, descontar stock
                 if (status === 'approved' && previousStatus === 'pending_payment') {
+                  console.log('✅ Condiciones cumplidas - procesando pago aprobado');
                   const items = orderData.items || [];
                   for (const item of items) {
                     const productRef = doc(db, 'products', item.productId);
