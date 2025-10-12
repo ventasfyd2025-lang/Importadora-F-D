@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
     const replyTo = normalizeEmail(data?.customerEmail || data?.email || null) || undefined;
 
     const { data: emailData, error } = await resend.emails.send({
-      from: 'ventas@importadora-fyd.cl',
+      from: 'Importadora F&D <onboarding@resend.dev>',
       to,
       ...(replyTo ? { reply_to: replyTo } : {}),
       subject,
