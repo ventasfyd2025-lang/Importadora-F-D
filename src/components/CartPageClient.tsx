@@ -2,11 +2,25 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 
 export default function CartPageClient() {
-  const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
+  const {
+    items,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    getTotalPrice,
+    appliedDiscount,
+    discountsByProduct,
+    applyDiscount,
+    removeDiscount
+  } = useCart();
+
+  const [discountCode, setDiscountCode] = useState('');
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
 
   const formatPrice = (price: number) => {
@@ -22,6 +36,16 @@ export default function CartPageClient() {
     } else {
       updateQuantity(productId, newQuantity);
     }
+  };
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) return;
+    setIsApplyingDiscount(true);
+    const success = await applyDiscount(discountCode);
+    if (success) {
+      setDiscountCode('');
+    }
+    setIsApplyingDiscount(false);
   };
 
 
@@ -105,6 +129,11 @@ export default function CartPageClient() {
                   <p className="text-gray-600 mt-1 text-sm sm:text-base">
                     {formatPrice(item.precio)} c/u
                   </p>
+                  {discountsByProduct[item.productId] && (
+                    <p className="text-green-600 text-sm font-medium mt-1">
+                      -${(discountsByProduct[item.productId] / item.cantidad).toLocaleString('es-CL')} desc.
+                    </p>
+                  )}
                 </div>
 
                 {/* Mobile controls wrapper */}
@@ -129,8 +158,21 @@ export default function CartPageClient() {
                   </div>
 
                   {/* Item Total */}
-                  <div className="text-lg font-semibold text-gray-900 min-w-[100px] text-right">
-                    {formatPrice(item.precio * item.cantidad)}
+                  <div className="flex flex-col items-end">
+                    {discountsByProduct[item.productId] ? (
+                      <>
+                        <div className="text-sm text-gray-500 line-through">
+                          {formatPrice(item.precio * item.cantidad)}
+                        </div>
+                        <div className="text-lg font-semibold text-green-600">
+                          {formatPrice((item.precio * item.cantidad) - discountsByProduct[item.productId])}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-lg font-semibold text-gray-900">
+                        {formatPrice(item.precio * item.cantidad)}
+                      </div>
+                    )}
                   </div>
 
                   {/* Remove Button */}
@@ -161,6 +203,57 @@ export default function CartPageClient() {
                 <span className="text-gray-600 font-medium">Subtotal</span>
                 <span className="font-semibold text-gray-800">{formatPrice(getTotalPrice())}</span>
               </div>
+
+              {/* Discount Code Section */}
+              <div className="border-t border-orange-100 pt-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Código de descuento
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value)}
+                      placeholder="Ingresa código"
+                      disabled={isApplyingDiscount || appliedDiscount !== null}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+                      onKeyPress={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                    />
+                    {!appliedDiscount ? (
+                      <button
+                        onClick={handleApplyDiscount}
+                        disabled={isApplyingDiscount || !discountCode.trim()}
+                        className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors"
+                      >
+                        {isApplyingDiscount ? '...' : 'Aplicar'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={removeDiscount}
+                        className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium text-sm transition-colors"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {appliedDiscount && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-green-800">Código aplicado ✓</p>
+                        <p className="text-xs text-green-700 mt-1">{appliedDiscount.codigo}</p>
+                      </div>
+                      <div className="text-lg font-bold text-green-600">
+                        -${Object.values(discountsByProduct).reduce((a, b) => a + b, 0).toLocaleString('es-CL')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="border-t border-orange-100 pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold text-gray-800">Total</span>

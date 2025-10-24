@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CartItem } from '@/types';
+import { CartItem, Discount } from '@/types';
 import { useStockManager } from './useStockManager';
 import { useNotification } from '@/context/NotificationContext';
 import { useUserAuth } from './useUserAuth';
+import { useDiscounts } from './useDiscounts';
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -12,9 +13,12 @@ export function useCartState() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [reservedOrderId, setReservedOrderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [appliedDiscount, setAppliedDiscount] = useState<Discount | null>(null);
+  const [discountsByProduct, setDiscountsByProduct] = useState<Record<string, number>>({}); // productId -> montoDescuento
   const { reserveStock, releaseStock, confirmSale, loading: stockLoading } = useStockManager();
   const { addNotification } = useNotification();
   const { currentUser } = useUserAuth();
+  const { validateDiscount, calculateDiscount } = useDiscounts();
 
   // Load cart from Firebase or localStorage
   useEffect(() => {
@@ -181,8 +185,87 @@ export function useCartState() {
   }, [items]);
 
   const getTotalPrice = useCallback(() => {
-    return items.reduce((total, item) => total + (item.precio * item.cantidad), 0);
-  }, [items]);
+    return items.reduce((total, item) => {
+      const precioBase = item.precio * item.cantidad;
+      const descuento = discountsByProduct[item.productId] || 0;
+      return total + (precioBase - descuento);
+    }, 0);
+  }, [items, discountsByProduct]);
+
+  /**
+   * Aplica un código de descuento al carrito
+   * Valida vigencia y aplica solo a productos configurados
+   */
+  const applyDiscount = useCallback(async (codigo: string) => {
+    try {
+      const validation = await validateDiscount(codigo);
+
+      if (!validation.valido || !validation.descuento) {
+        addNotification({
+          type: 'error',
+          title: 'Error',
+          message: validation.mensaje,
+          duration: 3000
+        });
+        return false;
+      }
+
+      const descuento = validation.descuento;
+
+      // Calcular descuentos por producto
+      const newDiscountsByProduct: Record<string, number> = {};
+      let totalDescuento = 0;
+
+      items.forEach(item => {
+        const { montoDescuento } = calculateDiscount(item.productId, item.precio, descuento);
+
+        if (montoDescuento > 0) {
+          newDiscountsByProduct[item.productId] = montoDescuento * item.cantidad;
+          totalDescuento += montoDescuento * item.cantidad;
+        }
+      });
+
+      setAppliedDiscount(descuento);
+      setDiscountsByProduct(newDiscountsByProduct);
+
+      const displayValue = descuento.tipo === 'porcentaje'
+        ? `${descuento.descuento}%`
+        : `$${descuento.descuento}`;
+
+      addNotification({
+        type: 'success',
+        title: 'Código aplicado',
+        message: `Descuento: -${displayValue}`,
+        duration: 3000
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error applying discount:', error);
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'No se pudo aplicar el código',
+        duration: 3000
+      });
+      return false;
+    }
+  }, [items, validateDiscount, calculateDiscount, addNotification]);
+
+  /**
+   * Remueve el descuento aplicado
+   */
+  const removeDiscount = useCallback(() => {
+    setAppliedDiscount(null);
+    setDiscountsByProduct({});
+
+    addNotification({
+      type: 'info',
+      title: 'Descuento removido',
+      message: 'El código de descuento ha sido removido',
+      duration: 2000
+    });
+  }, [addNotification]);
 
   // Reserve stock during checkout
   const reserveCartStock = useCallback(async (orderId: string) => {
@@ -251,6 +334,10 @@ export function useCartState() {
     releaseCartStock,
     confirmCartSale,
     reservedOrderId,
-    stockLoading
+    stockLoading,
+    appliedDiscount,
+    discountsByProduct,
+    applyDiscount,
+    removeDiscount
   };
 }

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useCartState } from '@/hooks/useCart';
-import { CartItem } from '@/types';
+import { CartItem, Discount } from '@/types';
 
 interface CartContextType {
   items: CartItem[];
@@ -17,6 +17,10 @@ interface CartContextType {
   confirmCartSale: () => Promise<boolean>;
   reservedOrderId: string | null;
   stockLoading: boolean;
+  appliedDiscount: Discount | null;
+  discountsByProduct: Record<string, number>;
+  applyDiscount: (codigo: string) => Promise<boolean>;
+  removeDiscount: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);

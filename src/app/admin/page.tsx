@@ -38,6 +38,7 @@ import AdminChatPopup from '@/components/AdminChatPopup';
 import StockAlerts from '@/components/StockAlerts';
 import StockManagement from '@/components/StockManagement';
 import B2BOrderManagement from '@/components/B2BOrderManagement';
+import DiscountManagement from '@/components/DiscountManagement';
 // import { syncCategoriesToFirebase } from '@/utils/syncCategories'; // Unused import
 import type { LayoutPatternsConfig, LayoutPatternVariant, LayoutPatternSpan, LayoutPatternRule, Product } from '@/types';
 import type { Order } from '@/types';
@@ -2341,6 +2342,7 @@ export default function AdminPage() {
                 { id: 'products', name: 'Productos & Stock', icon: '📦' },
                 { id: 'orders', name: 'Pedidos', icon: '🛒', badge: newOrdersCount > 0 ? newOrdersCount : null, badgeColor: 'bg-red-500' },
                 { id: 'user-management', name: 'Gestión de Usuario', icon: '👥' },
+                { id: 'discounts', name: 'Descuentos', icon: '🎟️' },
                 { id: 'main-banner', name: 'Banners', icon: '🏆' },
                 { id: 'product-layout', name: 'Layout Productos', icon: '🔲' },
                 { id: 'secciones', name: 'Secciones', icon: '📑' },
@@ -8057,6 +8059,12 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'discounts' && (
+          <div className="space-y-6">
+            <DiscountManagement />
           </div>
         )}
 

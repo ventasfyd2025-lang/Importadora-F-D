@@ -193,3 +193,24 @@ export interface B2BQuote {
   createdBy: string;
   convertedToPO?: string; // PO ID if converted
 }
+
+// Discount/Coupon Types
+export interface Discount {
+  id: string;
+  codigo: string; // Ej: "REGALO20" (case-insensitive)
+  descripcion?: string;
+  descuento: number; // Porcentaje (20) o monto fijo (5000)
+  tipo: 'porcentaje' | 'fijo'; // Tipo de descuento
+  productosAplicables: string[]; // IDs de productos donde aplica
+  fechaInicio: string; // ISO 8601
+  fechaFin: string; // ISO 8601
+  activo: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface DiscountValidation {
+  valido: boolean;
+  mensaje: string;
+  descuento?: Discount;
+}

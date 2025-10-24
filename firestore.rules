@@ -44,6 +44,18 @@ service cloud.firestore {
         && (!('orderId' in data) || data.orderId is string);
     }
 
+    function validateDiscount(data) {
+      return data.codigo is string
+        && data.descuento is number
+        && data.descuento > 0
+        && data.tipo in ['porcentaje', 'fijo']
+        && data.productosAplicables is list
+        && data.fechaInicio is string
+        && data.fechaFin is string
+        && data.activo is bool
+        && (!('descripcion' in data) || data.descripcion is string);
+    }
+
     // Validar que usuarios regulares solo puedan editar campos permitidos
     function validateUserUpdate() {
       // Campos sensibles que NO pueden ser editados por usuarios regulares
@@ -186,6 +198,20 @@ service cloud.firestore {
 
       // Solo admin puede actualizar o eliminar
       allow update, delete: if isAdmin();
+    }
+
+    match /discounts/{discountId} {
+      // Cualquiera puede leer descuentos (para validar códigos en el carrito)
+      allow read: if true;
+
+      // Solo admin puede crear descuentos
+      allow create: if isAdmin() && validateDiscount(request.resource.data);
+
+      // Solo admin puede actualizar descuentos
+      allow update: if isAdmin() && validateDiscount(request.resource.data);
+
+      // Solo admin puede eliminar descuentos
+      allow delete: if isAdmin();
     }
 
     match /{document=**} {
