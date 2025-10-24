@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    unoptimized: true, // Deshabilitado por límite de cuota
     remotePatterns: [
       {
         protocol: 'https',
