@@ -202,7 +202,7 @@ service cloud.firestore {
 
     match /discounts/{discountId} {
       // Cualquiera puede leer descuentos (para validar códigos en el carrito)
-      allow read: if true;
+      allow read;
 
       // Solo admin puede crear descuentos
       allow create: if isAdmin() && validateDiscount(request.resource.data);
