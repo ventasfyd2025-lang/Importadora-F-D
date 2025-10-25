@@ -195,15 +195,12 @@ export default function AdminChatPage() {
   }, [orderId]);
 
   const scrollToBottom = useCallback(() => {
-    // Scroll directo al final del contenedor de mensajes
+    // Usar setTimeout para asegurar que el DOM está completamente actualizado
     setTimeout(() => {
       if (messagesEndRef.current) {
-        const messagesContainer = messagesEndRef.current.parentElement;
-        if (messagesContainer) {
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+        messagesEndRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
       }
-    }, 0);
+    }, 100);
   }, []);
 
   useEffect(() => {
