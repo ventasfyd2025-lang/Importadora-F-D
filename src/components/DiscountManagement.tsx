@@ -15,6 +15,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useProducts } from '@/hooks/useProducts';
 import { useNotification } from '@/context/NotificationContext';
+import { useUserAuth } from '@/hooks/useUserAuth';
 import type { Discount, Product } from '@/types';
 import { TrashIcon, PencilIcon, PlusIcon } from '@heroicons/react/24/outline';
 
@@ -25,6 +26,16 @@ export default function DiscountManagement() {
   const [showForm, setShowForm] = useState(false);
   const { products } = useProducts();
   const { addNotification } = useNotification();
+  const { isAdmin, loading: authLoading } = useUserAuth();
+
+  // No renderizar si no es admin
+  if (!authLoading && !isAdmin) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-800">No tienes permiso para acceder a esta sección.</p>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState<{
     codigo: string;
@@ -46,10 +57,12 @@ export default function DiscountManagement() {
     activo: true,
   });
 
-  // Cargar descuentos
+  // Cargar descuentos solo si es admin
   useEffect(() => {
-    loadDiscounts();
-  }, []);
+    if (!authLoading && isAdmin) {
+      loadDiscounts();
+    }
+  }, [authLoading, isAdmin]);
 
   const loadDiscounts = useCallback(async () => {
     try {
