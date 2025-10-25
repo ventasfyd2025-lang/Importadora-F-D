@@ -171,15 +171,24 @@ export default function AdminChatPage() {
         } as ChatMessage);
       });
 
+      console.log('📤 [Admin Chat] Loaded messages for order', orderId, ':', chatMessages.length, 'total', {
+        admin: chatMessages.filter(m => m.isAdmin).length,
+        client: chatMessages.filter(m => !m.isAdmin).length,
+        messages: chatMessages.map(m => ({ isAdmin: m.isAdmin, userEmail: m.userEmail, substring: m.message.substring(0, 30) }))
+      });
+
       setMessages(chatMessages);
-      
+
       // Mark client messages as read
       const unreadClientMessages = chatMessages.filter(msg => !msg.read && !msg.isAdmin);
-      unreadClientMessages.forEach(msg => {
-        updateDoc(doc(db, 'chat_messages', msg.id), { read: true });
-      });
+      if (unreadClientMessages.length > 0) {
+        console.log('📧 [Admin Chat] Marking', unreadClientMessages.length, 'client messages as read');
+        unreadClientMessages.forEach(msg => {
+          updateDoc(doc(db, 'chat_messages', msg.id), { read: true });
+        });
+      }
     }, (error) => {
-      console.error('Error loading messages:', error);
+      console.error('❌ [Admin Chat] Error loading messages:', error);
     });
 
     return unsubscribe;
