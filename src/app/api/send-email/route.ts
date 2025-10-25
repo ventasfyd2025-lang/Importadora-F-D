@@ -103,21 +103,24 @@ export async function POST(request: NextRequest) {
 
     let emailContent;
     let subject;
-    const recipients = new Set<string>();
+    let primaryRecipient: string | null = null;
+    const ccRecipients = new Set<string>();
 
-    const addRecipient = (email?: string | null) => {
+    const addRecipient = (email?: string | null, isPrimary: boolean = false) => {
       const normalized = normalizeEmail(email);
-      console.log(`📧 [send-email] addRecipient called with: "${email}" -> normalized: "${normalized}"`);
+      console.log(`📧 [send-email] addRecipient called with: "${email}" -> normalized: "${normalized}" (primary: ${isPrimary})`);
       if (normalized) {
-        recipients.add(normalized);
-        console.log(`✅ [send-email] Added recipient: ${normalized}`);
+        if (isPrimary) {
+          primaryRecipient = normalized;
+          console.log(`✅ [send-email] Set as PRIMARY recipient: ${normalized}`);
+        } else {
+          ccRecipients.add(normalized);
+          console.log(`✅ [send-email] Added as CC recipient: ${normalized}`);
+        }
       } else {
         console.warn(`⚠️ [send-email] Failed to normalize email: "${email}"`);
       }
     };
-
-    // Siempre enviar copia al correo operativo
-    addRecipient(DEFAULT_RECIPIENT);
 
     switch (type) {
       case 'new_order':
@@ -143,7 +146,10 @@ export async function POST(request: NextRequest) {
           ${data.shippingAddress?.city || ''}, ${data.shippingAddress?.region || ''}<br>
           ${data.shippingAddress?.comuna || ''}</p>
         `;
-        addRecipient(data.customerEmail);
+        // Customer es el destinatario principal para new_order
+        addRecipient(data.customerEmail, true);
+        // Admin recibe copia
+        addRecipient(DEFAULT_RECIPIENT, false);
         break;
 
       case 'order_status_change':
@@ -274,10 +280,14 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    const to = Array.from(recipients);
-    console.log('📧 [send-email] Final recipients list:', to);
+    // Si no hay destinatario principal, usar admin como default
+    if (!primaryRecipient) {
+      primaryRecipient = DEFAULT_RECIPIENT;
+    }
 
-    if (to.length === 0) {
+    console.log('📧 [send-email] Final email structure:', { primaryRecipient, ccRecipients: Array.from(ccRecipients) });
+
+    if (!primaryRecipient) {
       console.error('❌ [send-email] No hay destinatarios válidos para el correo');
       return NextResponse.json(
         { error: 'No hay destinatarios válidos para el correo' },
@@ -285,22 +295,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`📧 [send-email] Sending email to ${to.length} recipient(s):`, to);
-
     const replyTo = normalizeEmail(data?.customerEmail || data?.email || null) || undefined;
 
-    // Separar destinatarios principales de copias
-    // El primer destinatario es el principal (customer), los demás van en CC (admin)
-    const toArray = Array.from(to);
-    const primaryTo = toArray[0] || DEFAULT_RECIPIENT;
-    const ccEmails = toArray.length > 1 ? toArray.slice(1) : [];
-
-    console.log(`📧 [send-email] Email structure:`, { primaryTo, ccEmails });
+    console.log(`📧 [send-email] Sending email:`, { primaryRecipient, ccEmails: Array.from(ccRecipients) });
 
     const { data: emailData, error } = await resend.emails.send({
       from: 'Importadora F&D <onboarding@resend.dev>',
-      to: primaryTo,
-      ...(ccEmails.length > 0 && { cc: ccEmails }),
+      to: primaryRecipient,
+      ...(ccRecipients.size > 0 && { cc: Array.from(ccRecipients) }),
       ...(replyTo ? { reply_to: replyTo } : {}),
       subject,
       html: `
