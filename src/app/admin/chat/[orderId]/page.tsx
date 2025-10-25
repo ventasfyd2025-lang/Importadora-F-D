@@ -195,12 +195,19 @@ export default function AdminChatPage() {
   }, [orderId]);
 
   const scrollToBottom = useCallback(() => {
-    // Usar setTimeout para asegurar que el DOM está completamente actualizado
-    setTimeout(() => {
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
-      }
-    }, 100);
+    // Usar requestAnimationFrame para sincronización óptima con el navegador
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          const container = messagesEndRef.current.parentElement;
+          if (container) {
+            // Forzar scroll al final del contenedor
+            container.scrollTop = container.scrollHeight;
+            console.log('📍 [Admin Chat] Scrolling to:', { scrollHeight: container.scrollHeight, scrollTop: container.scrollTop });
+          }
+        }
+      }, 0);
+    });
   }, []);
 
   useEffect(() => {
