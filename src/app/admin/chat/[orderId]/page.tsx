@@ -213,7 +213,7 @@ export default function AdminChatPage() {
     if (!newMessage.trim() || !order || loading || !orderId) return;
 
     setLoading(true);
-    
+
     try {
       const messageData = {
         orderId,
@@ -226,10 +226,17 @@ export default function AdminChatPage() {
         read: false
       };
 
+      console.log('📤 [Admin Chat] Sending message to order', orderId, {
+        customerEmail: order.customerEmail,
+        customerName: order.customerName,
+        message: newMessage.trim().substring(0, 50) + '...'
+      });
+
       await addDoc(collection(db, 'chat_messages'), messageData);
+      console.log('✅ [Admin Chat] Message sent successfully');
       setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ [Admin Chat] Error sending message:', error);
     } finally {
       setLoading(false);
     }

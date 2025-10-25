@@ -188,11 +188,11 @@ export default function ChatPage() {
   const loadMessages = useCallback(() => {
     if (!currentUser || !orderId) return undefined;
 
-    // Use userEmail for consistent filtering across all user types
+    // Load ALL messages for this order (admin messages will be visible to the customer)
     const messagesQuery = query(
       collection(db, 'chat_messages'),
       where('orderId', '==', orderId),
-      where('userEmail', '==', currentUser.email)
+      orderBy('timestamp', 'asc')
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -209,16 +209,24 @@ export default function ChatPage() {
 
       // Ordenar por timestamp en el cliente
       chatMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      
+
+      console.log('💬 [Chat] Loaded messages for order', orderId, ':', chatMessages.length, 'messages', {
+        admin: chatMessages.filter(m => m.isAdmin).length,
+        client: chatMessages.filter(m => !m.isAdmin).length
+      });
+
       setMessages(chatMessages);
-      
+
       // Mark admin messages as read
       const unreadAdminMessages = chatMessages.filter(msg => !msg.read && msg.isAdmin);
-      unreadAdminMessages.forEach(msg => {
-        updateDoc(doc(db, 'chat_messages', msg.id), { read: true });
-      });
+      if (unreadAdminMessages.length > 0) {
+        console.log('📧 [Chat] Marking', unreadAdminMessages.length, 'admin messages as read');
+        unreadAdminMessages.forEach(msg => {
+          updateDoc(doc(db, 'chat_messages', msg.id), { read: true });
+        });
+      }
     }, (error) => {
-      console.error('Error loading messages:', error);
+      console.error('❌ [Chat] Error loading messages:', error);
     });
 
     return unsubscribe;
