@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -39,6 +39,7 @@ export default function OrderDetailPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Protección de ruta: redirigir si no es administrador
   useEffect(() => {
@@ -100,6 +101,22 @@ export default function OrderDetailPage() {
 
     return () => unsubscribe();
   }, [orderId]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (messagesContainerRef.current) {
+        requestAnimationFrame(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            console.log('📍 [Order Detail Chat] Scrolled to bottom');
+          }
+        });
+      }
+    };
+
+    scrollToBottom();
+  }, [chatMessages]);
 
   const sendMessage = async () => {
     if ((!newMessage.trim() && !selectedImage) || !user || !order) return;
@@ -444,7 +461,7 @@ export default function OrderDetailPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                 {chatMessages.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
