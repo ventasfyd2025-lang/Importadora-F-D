@@ -14,6 +14,13 @@ export function useEmailNotifications() {
     setError(null);
 
     try {
+      console.log('📧 [useEmailNotifications] Sending email:', {
+        type: emailData.type,
+        customerEmail: (emailData.data as any)?.customerEmail,
+        email: (emailData.data as any)?.email,
+        customerName: (emailData.data as any)?.customerName
+      });
+
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
@@ -28,10 +35,11 @@ export function useEmailNotifications() {
       }
 
       const result = await response.json();
+      console.log('✅ [useEmailNotifications] Email sent successfully');
       return result;
     } catch (err: any) {
       setError(err.message);
-      console.error('Error enviando email:', err);
+      console.error('❌ [useEmailNotifications] Error enviando email:', err);
       return null;
     } finally {
       setIsSending(false);

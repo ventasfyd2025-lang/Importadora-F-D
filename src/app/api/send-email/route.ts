@@ -91,14 +91,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, data } = body;
 
+    console.log('📧 [send-email] Received email request:', {
+      type,
+      customerEmail: data?.customerEmail,
+      email: data?.email,
+      customerName: data?.customerName,
+      orderId: data?.orderId
+    });
+
     let emailContent;
     let subject;
     const recipients = new Set<string>();
 
     const addRecipient = (email?: string | null) => {
       const normalized = normalizeEmail(email);
+      console.log(`📧 [send-email] addRecipient called with: "${email}" -> normalized: "${normalized}"`);
       if (normalized) {
         recipients.add(normalized);
+        console.log(`✅ [send-email] Added recipient: ${normalized}`);
+      } else {
+        console.warn(`⚠️ [send-email] Failed to normalize email: "${email}"`);
       }
     };
 
@@ -261,12 +273,17 @@ export async function POST(request: NextRequest) {
     }
 
     const to = Array.from(recipients);
+    console.log('📧 [send-email] Final recipients list:', to);
+
     if (to.length === 0) {
+      console.error('❌ [send-email] No hay destinatarios válidos para el correo');
       return NextResponse.json(
         { error: 'No hay destinatarios válidos para el correo' },
         { status: 400 }
       );
     }
+
+    console.log(`📧 [send-email] Sending email to ${to.length} recipient(s):`, to);
 
     const replyTo = normalizeEmail(data?.customerEmail || data?.email || null) || undefined;
 

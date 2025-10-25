@@ -316,6 +316,12 @@ function CheckoutContent() {
 
       // Enviar notificación por email
       console.log('📧 Enviando notificación por email...');
+      console.log('📧 Email data to send:', {
+        orderId: orderRef.id,
+        customerName: finalData.name,
+        customerEmail: finalData.email,
+        customerPhone: finalData.phone
+      });
       notifyNewOrder({
         orderId: orderRef.id,
         customerName: finalData.name,
