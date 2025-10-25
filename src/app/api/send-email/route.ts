@@ -96,7 +96,9 @@ export async function POST(request: NextRequest) {
       customerEmail: data?.customerEmail,
       email: data?.email,
       customerName: data?.customerName,
-      orderId: data?.orderId
+      orderId: data?.orderId,
+      dataKeys: data ? Object.keys(data) : 'NO DATA',
+      fullData: JSON.stringify(data)
     });
 
     let emailContent;
