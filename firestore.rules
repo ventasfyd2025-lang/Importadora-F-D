@@ -144,8 +144,19 @@ service cloud.firestore {
     }
 
     match /chat_messages/{messageId} {
-      // Temporal: Reglas muy permisivas para diagnosticar problemas
-      allow read, write: if true;
+      // Admins pueden crear y actualizar cualquier mensaje
+      allow create: if isAdmin() && validateChatMessage(request.resource.data);
+      allow create: if isSignedIn() && validateChatMessage(request.resource.data);
+
+      // Cualquiera autenticado puede leer todos los mensajes de cualquier orden
+      allow read: if isSignedIn();
+
+      // Actualización: admin puede actualizar cualquier campo, usuarios solo marcan como leído
+      allow update: if isAdmin()
+        || (isSignedIn() && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']));
+
+      // Eliminación: solo admin
+      allow delete: if isAdmin();
     }
 
     match /daily_reports/{reportId} {
