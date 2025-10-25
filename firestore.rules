@@ -152,13 +152,19 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.userId
         && validateChatMessage(request.resource.data);
 
-      // Lectura: admin o el propio usuario
+      // Lectura: admin o el usuario propietario (comparar UID y email)
       allow read: if isAdmin()
-        || (isSignedIn() && request.auth.uid == resource.data.userId);
+        || (isSignedIn() && (
+          request.auth.uid == resource.data.userId
+          || request.auth.token.email == resource.data.userEmail
+        ));
 
-      // Actualización: admin o el propio usuario (para marcar como leído)
+      // Actualización: admin o el usuario propietario (para marcar como leído)
       allow update: if isAdmin()
-        || (isSignedIn() && request.auth.uid == resource.data.userId);
+        || (isSignedIn() && (
+          request.auth.uid == resource.data.userId
+          || request.auth.token.email == resource.data.userEmail
+        ));
 
       // Eliminación: solo admin
       allow delete: if isAdmin();
