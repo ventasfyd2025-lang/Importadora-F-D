@@ -151,8 +151,8 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && validateChatMessage(request.resource.data);
 
-      // Lectura: cualquiera puede leer (sin filtro para evitar problemas de permisos)
-      allow read: if true;
+      // Lectura: admin puede leer todos, usuarios pueden leer cualquier mensaje de su orden
+      allow read: if isAdmin() || isSignedIn();
 
       // Actualización: admin puede actualizar todos, usuarios pueden marcar como leído
       allow update: if isAdmin()
