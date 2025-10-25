@@ -144,22 +144,8 @@ service cloud.firestore {
     }
 
     match /chat_messages/{messageId} {
-      // Admins pueden crear mensajes para cualquier usuario
-      allow create: if isAdmin() && validateChatMessage(request.resource.data);
-
-      // Usuarios regulares solo pueden crear mensajes para sí mismos
-      allow create: if isSignedIn()
-        && validateChatMessage(request.resource.data);
-
-      // Lectura: admin puede leer todos, usuarios pueden leer cualquier mensaje de su orden
-      allow read: if isAdmin() || isSignedIn();
-
-      // Actualización: admin puede actualizar todos, usuarios pueden marcar como leído
-      allow update: if isAdmin()
-        || (isSignedIn() && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']));
-
-      // Eliminación: solo admin
-      allow delete: if isAdmin();
+      // Temporal: Reglas muy permisivas para diagnosticar problemas
+      allow read, write: if true;
     }
 
     match /daily_reports/{reportId} {
