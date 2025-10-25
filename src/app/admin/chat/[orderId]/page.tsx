@@ -195,12 +195,17 @@ export default function AdminChatPage() {
   }, [orderId]);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Usar setTimeout para asegurar que el DOM está completamente actualizado
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 0);
   }, []);
 
   useEffect(() => {
     if (authLoading) return;
-    
+
     if (!user) {
       router.push('/admin');
       return;
@@ -215,6 +220,7 @@ export default function AdminChatPage() {
   }, [authLoading, user, router, loadOrder, loadMessages]);
 
   useEffect(() => {
+    // Scroll cuando los mensajes cambian
     scrollToBottom();
   }, [messages, scrollToBottom]);
 

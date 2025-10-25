@@ -233,7 +233,12 @@ export default function ChatPage() {
   }, [currentUser, orderId]);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Usar setTimeout para asegurar que el DOM está completamente actualizado
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -253,6 +258,7 @@ export default function ChatPage() {
   }, [authLoading, currentUser, loadMessages, loadOrder, router]);
 
   useEffect(() => {
+    // Scroll cuando los mensajes cambian
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
