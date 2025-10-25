@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
     console.log(`📧 [send-email] Sending email:`, { primaryRecipient, ccEmails: Array.from(ccRecipients) });
 
     const { data: emailData, error } = await resend.emails.send({
-      from: 'Importadora F&D <onboarding@resend.dev>',
+      from: 'Importadora F&D <noreply@importadora-fyd.cl>',
       to: primaryRecipient,
       ...(ccRecipients.size > 0 && { cc: Array.from(ccRecipients) }),
       ...(replyTo ? { reply_to: replyTo } : {}),
