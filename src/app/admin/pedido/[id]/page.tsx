@@ -76,6 +76,8 @@ export default function OrderDetailPage() {
   useEffect(() => {
     if (!orderId) return;
 
+    console.log('📨 [Order Detail] Setting up message listener for order:', orderId);
+
     const messagesQuery = query(
       collection(db, 'chat_messages'),
       where('orderId', '==', orderId),
@@ -96,10 +98,20 @@ export default function OrderDetailPage() {
         messages.push(message);
       });
 
+      console.log('📨 [Order Detail] Messages updated:', messages.length, 'messages', {
+        docChanges: snapshot.docChanges().length,
+        changes: snapshot.docChanges().map(c => ({ type: c.type, id: c.doc.id }))
+      });
+
       setChatMessages(messages);
+    }, (error) => {
+      console.error('❌ [Order Detail] Error loading messages:', error);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 [Order Detail] Unsubscribing from message listener');
+      unsubscribe();
+    };
   }, [orderId]);
 
   // Auto-scroll to bottom when new messages arrive
