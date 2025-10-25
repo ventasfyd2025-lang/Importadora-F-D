@@ -289,9 +289,18 @@ export async function POST(request: NextRequest) {
 
     const replyTo = normalizeEmail(data?.customerEmail || data?.email || null) || undefined;
 
+    // Separar destinatarios principales de copias
+    // El primer destinatario es el principal (customer), los demás van en CC (admin)
+    const toArray = Array.from(to);
+    const primaryTo = toArray[0] || DEFAULT_RECIPIENT;
+    const ccEmails = toArray.length > 1 ? toArray.slice(1) : [];
+
+    console.log(`📧 [send-email] Email structure:`, { primaryTo, ccEmails });
+
     const { data: emailData, error } = await resend.emails.send({
       from: 'Importadora F&D <onboarding@resend.dev>',
-      to,
+      to: primaryTo,
+      ...(ccEmails.length > 0 && { cc: ccEmails }),
       ...(replyTo ? { reply_to: replyTo } : {}),
       subject,
       html: `
