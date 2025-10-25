@@ -49,27 +49,38 @@ export default function OrderDetailPage() {
     }
   }, [authLoading, user, isAdmin, router]);
 
-  // Load order details
+  // Load order details with real-time listener
   useEffect(() => {
-    const loadOrder = async () => {
-      try {
-        const orderDoc = await getDoc(doc(db, 'orders', orderId));
-        if (orderDoc.exists()) {
-          const orderData = {
-            id: orderDoc.id,
-            ...orderDoc.data(),
-            createdAt: orderDoc.data().createdAt?.toDate() || new Date()
-          } as Order;
-          setOrder(orderData);
+    if (!orderId) return;
+
+    console.log('📦 [Order Detail] Setting up order listener for:', orderId);
+
+    const unsubscribeOrder = onSnapshot(
+      doc(db, 'orders', orderId),
+      (orderDoc) => {
+        try {
+          if (orderDoc.exists()) {
+            const orderData = {
+              id: orderDoc.id,
+              ...orderDoc.data(),
+              createdAt: orderDoc.data().createdAt?.toDate() || new Date()
+            } as Order;
+            console.log('📦 [Order Detail] Order updated:', { status: orderData.status });
+            setOrder(orderData);
+          }
+        } catch (error) {
+          console.error('Error processing order snapshot:', error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
+      },
+      (error) => {
         console.error('Error loading order:', error);
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    loadOrder();
+    return () => unsubscribeOrder();
   }, [orderId]);
 
   // Load chat messages
