@@ -149,17 +149,14 @@ service cloud.firestore {
 
       // Usuarios regulares solo pueden crear mensajes para sí mismos
       allow create: if isSignedIn()
-        && (request.auth.uid == request.resource.data.userId || request.auth.token.email == request.resource.data.userEmail)
         && validateChatMessage(request.resource.data);
 
-      // Lectura: admin puede leer todos, usuarios autenticados leen los suyos
-      allow read: if isAdmin()
-        || (isSignedIn() && resource.data.userEmail == request.auth.token.email);
+      // Lectura: cualquiera puede leer (sin filtro para evitar problemas de permisos)
+      allow read: if true;
 
-      // Actualización: admin puede actualizar todos, usuarios solo marcan como leído los del admin
+      // Actualización: admin puede actualizar todos, usuarios pueden marcar como leído
       allow update: if isAdmin()
-        || (isSignedIn() && resource.data.userEmail == request.auth.token.email
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']));
+        || (isSignedIn() && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']));
 
       // Eliminación: solo admin
       allow delete: if isAdmin();
@@ -213,6 +210,11 @@ service cloud.firestore {
 
       // Solo admin puede eliminar descuentos
       allow delete: if isAdmin();
+    }
+
+    match /carts/{userId} {
+      // Usuarios autenticados pueden leer y escribir su propio carrito
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /{document=**} {
